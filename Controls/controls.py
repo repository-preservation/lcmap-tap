@@ -147,27 +147,27 @@ class PlotControls(QMainWindow):
 
             if data.model_on == True:
 
+                addmodelstr = "_MODELON"
+
                 for c in range(0, len(data.results["change_models"])):
                     axes[num].plot(data.prediction_dates[c * len(data.bands) + num],
                                      data.predicted_values[c * len(data.bands) + num], "orange", linewidth=2)
 
-                addmodelstr = "_MODELON"
+                for s in data.start_dates: axes[num].axvline(s, color='b')
 
-            for s in data.start_dates: axes[num].axvline(s, color='b')
+                for b in data.break_dates: axes[num].axvline(b, color='r')
 
-            for b in data.break_dates: axes[num].axvline(b, color='r')
+                plot_match_dates = []
 
-            plot_match_dates = []
+                for b in data.break_dates:
 
-            for b in data.break_dates:
+                    for s in data.start_dates:
 
-                for s in data.start_dates:
+                        if b == s: plot_match_dates.append(s)
 
-                    if b == s: plot_match_dates.append(s)
+                for m in plot_match_dates: axes[num].axvline(m, color='purple')
 
-            for m in plot_match_dates: axes[num].axvline(m, color='purple')
-
-            else:
+            elif data.model_on == False:
 
                 addmodelstr = "_MODELOFF"
 
