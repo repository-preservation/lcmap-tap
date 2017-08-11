@@ -208,9 +208,11 @@ class PlotControls(QMainWindow):
         # ****Save figure to .png and show figure in QWidget****
         fig.tight_layout()
 
-        plt.savefig(fname, figuresize=(16, 38), bbox_inches="tight", dpi=150)
+        if not os.path.exists(fname):
 
-        print("\nplt object saved to file {}\n".format(fname))
+            plt.savefig(fname, figuresize=(16, 38), bbox_inches="tight", dpi=150)
+
+            print("\nplt object saved to file {}\n".format(fname))
 
         global p
         p = PlotWindow(fig)
@@ -237,45 +239,60 @@ class PlotControls(QMainWindow):
 
     def get_shp(self):
 
+        # GeoCoordinate(x=(float value), y=(float value), reference coords.x and coords.y to access x and y values
         coords = data.coord
 
         layer_name = "H" + str(data.H) + "_V" + str(data.V) + "_" + str(coords.x) + "_" + str(coords.y)
 
         out_shp = data.OutputDir + os.sep + layer_name + ".shp"
 
-        from osgeo import ogr, osr
+        if not os.path.exists(out_shp):
 
-        driver = ogr.GetDriverByName("ESRI Shapefile")
+            from osgeo import ogr, osr
 
-        data_source = driver.CreateDataSource(out_shp)
+            # Set up driver
+            driver = ogr.GetDriverByName("ESRI Shapefile")
 
-        srs = osr.SpatialReference()
-        srs.ImportFromEPSG(5070)
+            # Create data source
+            data_source = driver.CreateDataSource(out_shp)
 
-        layer = data_source.CreateLayer(layer_name, srs)
-        layer.CreateField(ogr.FieldDefn("X", ogr.OFTReal))
-        layer.CreateField(ogr.FieldDefn("Y", ogr.OFTReal))
+            # Set the spatial reference system to NAD83 CONUS Albers
+            srs = osr.SpatialReference()
+            srs.ImportFromEPSG(5070)
 
-        feature = ogr.Feature(layer.GetLayerDefn())
-        feature.SetField("X", coords.x)
-        feature.SetField("Y", coords.y)
+            # Create layer, add fields to contain x and y coordinates
+            layer = data_source.CreateLayer(layer_name, srs)
+            layer.CreateField(ogr.FieldDefn("X", ogr.OFTReal))
+            layer.CreateField(ogr.FieldDefn("Y", ogr.OFTReal))
 
-        wkt = "POINT(%f %f)" %((coords.x), (coords.y))
+            # Create feature, populate X and Y fields
+            feature = ogr.Feature(layer.GetLayerDefn())
+            feature.SetField("X", coords.x)
+            feature.SetField("Y", coords.y)
 
-        point = ogr.CreateGeometryFromWkt(wkt)
+            # Create the Well Known Text for the feature
+            wkt = "POINT(%f %f)" %((coords.x), (coords.y))
 
-        feature.SetGeometry(point)
+            # Create a point from the Well Known Text
+            point = ogr.CreateGeometryFromWkt(wkt)
 
-        layer.CreateFeature(feature)
+            # Set feature geometry to point-type
+            feature.SetGeometry(point)
 
-        feature = None
+            # Create the feature in the layer
+            layer.CreateFeature(feature)
 
-        data_source = None
+            # Dereference the feature
+            feature = None
+
+            # Save and close the data source
+            data_source = None
 
         return None
 
     def exit_plot(self):
 
+        # Close the main GUI and plot window
         self.close()
 
         sys.exit(0)
