@@ -59,8 +59,8 @@ class CCDReader:
             self.extract_cachepoint(self.coord, self.results['processing_mask'])
 
         # Fix the scaling of the Brightness Temperature
-        self.data_in[6] = self.data_in[6] * 10 - 27315
-        self.data_out[6] = self.data_out[6] * 10 - 27315
+        self.data_in[6][self.data_in[6] != -9999] = self.data_in[6][self.data_in[6] != -9999] * 10 - 27315
+        self.data_out[6][self.data_out[6] != -9999] = self.data_out[6][self.data_out[6] != -9999] * 10 - 27315
 
         self.bands = ('blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'thermal')
 
