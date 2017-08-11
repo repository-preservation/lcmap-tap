@@ -94,6 +94,8 @@ class PlotControls(QMainWindow):
 
         masked_on = self.ui.radiomasked.isChecked()
 
+        shp_on = self.ui.radioshp.isChecked()
+
         global data
         data = CCDReader(h=int(hval), v=int(vval), cache_dir=str(cachedir),
                          json_dir=str(jsondir), arc_coords=str(arccoords), output_dir=str(outputdir),
@@ -201,6 +203,8 @@ class PlotControls(QMainWindow):
         fname = "{}{}h{}v{}_{}_{}{}.png".format(data.OutputDir, os.sep, data.H, data.V, data.arc_paste, addmaskstr,
                                                 addmodelstr)
 
+        if shp_on == True: self.get_shp()
+
         # ****Save figure to .png and show figure in QWidget****
         fig.tight_layout()
 
@@ -230,6 +234,45 @@ class PlotControls(QMainWindow):
         # Display the y-min and y-max for the currently selected band in the combobox
         self.ui.lineEdit_ymin.setText(str(ymin[self.band_index]))
         self.ui.lineEdit_ymax.setText(str(ymax[self.band_index]))
+
+    def get_shp(self):
+
+        coords = data.coord
+
+        layer_name = "H" + str(data.H) + "_V" + str(data.V) + "_" + str(coords.x) + "_" + str(coords.y)
+
+        out_shp = data.OutputDir + os.sep + layer_name + ".shp"
+
+        from osgeo import ogr, osr
+
+        driver = ogr.GetDriverByName("ESRI Shapefile")
+
+        data_source = driver.CreateDataSource(out_shp)
+
+        srs = osr.SpatialReference()
+        srs.ImportFromEPSG(5070)
+
+        layer = data_source.CreateLayer(layer_name, srs)
+        layer.CreateField(ogr.FieldDefn("X", ogr.OFTReal))
+        layer.CreateField(ogr.FieldDefn("Y", ogr.OFTReal))
+
+        feature = ogr.Feature(layer.GetLayerDefn())
+        feature.SetField("X", coords.x)
+        feature.SetField("Y", coords.y)
+
+        wkt = "POINT(%f %f)" %((coords.x), (coords.y))
+
+        point = ogr.CreateGeometryFromWkt(wkt)
+
+        feature.SetGeometry(point)
+
+        layer.CreateFeature(feature)
+
+        feature = None
+
+        data_source = None
+
+        return None
 
     def exit_plot(self):
 
