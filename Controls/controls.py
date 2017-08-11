@@ -40,7 +40,7 @@ class PlotControls(QMainWindow):
         # self.ui.comboBox_bands.activated()
         self.band_index = self.ui.comboBox_bands.currentIndex()
 
-        self.ui.comboBox_bands.activated.connect(self.updatePlot)
+        self.ui.comboBox_bands.activated.connect(self.updateplot)
 
         self.ui.plotbutton.clicked.connect(self.plot)
 
@@ -108,18 +108,14 @@ class PlotControls(QMainWindow):
             self.ui.plainTextEdit_results.appendPlainText("QA: {}".format(result["curve_qa"]))
             self.ui.plainTextEdit_results.appendPlainText("Change prob: {}\n".format(result["change_probability"]))
 
-
-
-
-
         xmin = min(data.dates_in[data.mask]) - 100
         xmax = max(data.dates_in[data.mask]) + 750
 
         ymin = [min(data.data_in[num, data.mask]) - 100 for num in range(len(data.bands))]
         ymax = [max(data.data_in[num, data.mask]) + 100 for num in range(len(data.bands))]
 
-        self.ui.lineEdit_xmin.setText(str(xmin))
-        self.ui.lineEdit_xmax.setText(str(xmax))
+        self.ui.lineEdit_xmin.setText(str(dt.datetime.fromordinal(xmin))[:10])
+        self.ui.lineEdit_xmax.setText(str(dt.datetime.fromordinal(xmax))[:10])
 
         self.ui.lineEdit_ymin.setText(str(ymin[self.band_index]))
         self.ui.lineEdit_ymax.setText(str(ymax[self.band_index]))
@@ -129,7 +125,7 @@ class PlotControls(QMainWindow):
 
         plt.style.use("ggplot")
 
-        fig, axes = plt.subplots(nrows=7, ncols=1, figsize=(16, 32), dpi=60)
+        fig, axes = plt.subplots(nrows=7, ncols=1, figsize=(16, 34), dpi=60)
 
         for num, b in enumerate(data.bands):
 
@@ -181,6 +177,7 @@ class PlotControls(QMainWindow):
 
             axes[num].set_ylim([ymin[num], ymax[num]])
 
+        # ****X-Axis Ticks and Labels****
         # list of years
         y = [yi for yi in range(1981, 2018, 2)]
 
@@ -200,9 +197,11 @@ class PlotControls(QMainWindow):
 
             axes[a].set_xticklabels(x_labels, rotation=70, horizontalalignment="right")
 
-        fname = "{}{}h{}v{}_{}_{}{}.png".format(data.OutputDir, os.sep, data.H, data.V, data.arc_paste,
-                                                 addmaskstr, addmodelstr)
+        # ****Generate the output .png filename****
+        fname = "{}{}h{}v{}_{}_{}{}.png".format(data.OutputDir, os.sep, data.H, data.V, data.arc_paste, addmaskstr,
+                                                addmodelstr)
 
+        # ****Save figure to .png and show figure in QWidget****
         fig.tight_layout()
 
         plt.savefig(fname, figuresize=(16, 38), bbox_inches="tight", dpi=150)
@@ -214,23 +213,23 @@ class PlotControls(QMainWindow):
 
         return None
 
-    def updatePlot(self):
+    def updateplot(self):
 
         self.band_index = self.ui.comboBox_bands.currentIndex()
-        
+
         xmin = min(data.dates_in[data.mask]) - 100
         xmax = max(data.dates_in[data.mask]) + 750
 
         ymin = [min(data.data_in[num, data.mask]) - 100 for num in range(len(data.bands))]
         ymax = [max(data.data_in[num, data.mask]) + 100 for num in range(len(data.bands))]
 
-        self.ui.lineEdit_xmin.setText(str(xmin))
-        self.ui.lineEdit_xmax.setText(str(xmax))
+        # Display the x-min and x-max in datetime format YYYY-MM-DD
+        self.ui.lineEdit_xmin.setText(str(dt.datetime.fromordinal(xmin))[:10])
+        self.ui.lineEdit_xmax.setText(str(dt.datetime.fromordinal(xmax))[:10])
 
+        # Display the y-min and y-max for the currently selected band in the combobox
         self.ui.lineEdit_ymin.setText(str(ymin[self.band_index]))
         self.ui.lineEdit_ymax.setText(str(ymax[self.band_index]))
-
-
 
     def exit_plot(self):
 
