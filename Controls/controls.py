@@ -20,6 +20,7 @@ from PlotFrame.plotwindow import PlotWindow
 
 import matplotlib.pyplot as plt
 
+WKT = "ard_srs.wkt"
 
 class PlotControls(QMainWindow):
 
@@ -248,7 +249,13 @@ class PlotControls(QMainWindow):
 
         if not os.path.exists(out_shp):
 
-            from osgeo import ogr, osr
+            try:
+
+                from osgeo import ogr, osr
+
+            except ImportError:
+
+                return None
 
             # Set up driver
             driver = ogr.GetDriverByName("ESRI Shapefile")
@@ -258,7 +265,10 @@ class PlotControls(QMainWindow):
 
             # Set the spatial reference system to NAD83 CONUS Albers
             srs = osr.SpatialReference()
-            srs.ImportFromEPSG(5070)
+            # srs.ImportFromEPSG(5070)
+
+            # Set the spatial reference system to match ARD output (WGS 84 Albers)
+            srs.ImportFromWkt(WKT)
 
             # Create layer, add fields to contain x and y coordinates
             layer = data_source.CreateLayer(layer_name, srs)
