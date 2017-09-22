@@ -180,6 +180,9 @@ class PlotControls(QMainWindow):
 
             axes[num].set_ylim([ymin[num], ymax[num]])
 
+        # TODO add indices to the plot output (NDVI, MSAVI-2, EVI, VI)
+
+
         # ****X-Axis Ticks and Labels****
         # list of years
         y = [yi for yi in range(1981, 2018, 2)]
@@ -254,6 +257,8 @@ class PlotControls(QMainWindow):
                 from osgeo import ogr, osr
 
             except ImportError:
+
+                import ogr, osr
 
                 return None
 
