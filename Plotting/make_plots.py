@@ -7,18 +7,25 @@ import numpy as np
 def draw(data, items):
 
     def get_plot_items():
-        if items is "all":
-            return data.bands + data.indices
+        if len(items) is 1:
+            if items[0] is "all":
+                return data.all_lookup
 
-        elif items is "all bands":
-            return data.bands
+            elif items[0] is "all bands":
+                return data.band_lookup
 
-        elif items is "all indices":
-            return data.indices
+            elif items[0] is "all indices":
+                return data.index_lookup
+
+        elif len(items) is 0:
+            return data.all_lookup
 
         else:
-            return items
+            try:
+                return {i: data.all_lookup[i] for i in items if i in data.all_lookup.keys()}
 
+            except KeyError:
+                pass
 
     plt.style.use('ggplot')
 
@@ -40,26 +47,26 @@ def draw(data, items):
 
     total_mask = np.logical_and(data.mask, data.qa_in)
 
-    plot_items = get_plot_items()
+    plot_data = get_plot_items()
 
-    fig, axes = plt.subplots(nrows=len(plot_items), ncols=1, figsize=(16, len(plot_items) * 9), dpi=200)
+    fig, axes = plt.subplots(nrows=len(plot_data), ncols=1, figsize=(16, len(plot_data) * 9), dpi=200)
 
-    for num, b in enumerate(data.bands):
+    for num, b in enumerate(plot_data.keys()):
         # fg = plt.figure(figsize=(16, 9), dpi=300)
         # ax = fg.add_subplot(2, 1, 1, xlim=(min(data.dates) - 100, max(data.dates) + 500),
         #                   ylim=(min(data.data_in[num, total_mask]) - 500, max(data.data_in[num, total_mask]) + 500))
 
         # Observed values in PyCCD time range
-        axes[num].plot(data.dates_in[total_mask], data.data_in[num, total_mask], 'go', ms=7, mec='k', mew=0.5,
-                label="Observations used by PyCCD")
+        axes[num].plot(data.dates_in[total_mask], plot_data[b][0][data.dates_mask][total_mask], 'go', ms=7, mec='k',
+                       mew=0.5, label="Observations used by PyCCD")
 
         # Observed values outside PyCCD time range
-        axes[num].plot(data.dates_out[data.qa_out], data.data_out[num][data.qa_out], 'ro', ms=5, mec='k', mew=0.5,
-                label="Observations not used by PyCCD")
+        axes[num].plot(data.dates_out[data.qa_out],  plot_data[b][0][~data.dates_mask][data.qa_out], 'ro', ms=5,
+                       mec='k', mew=0.5, label="Observations not used by PyCCD")
 
         # Observed values masked out
-        axes[num].plot(data.dates_in[~data.mask], data.data_in[num, ~data.mask], color="0.65", marker="o", linewidth=0, ms=3,
-                label="Observations masked by PyCCD")
+        axes[num].plot(data.dates_in[~data.mask], plot_data[b][0][data.dates_mask][~data.mask], color="0.65",
+                       marker="o", linewidth=0, ms=3, label="Observations masked by PyCCD")
 
         axes[num].set_title(f'{b}')
 
@@ -71,14 +78,15 @@ def draw(data, items):
                 axes[num].axvline(e, color="black", label="End dates")
 
             else:
+                # Plot without a label to remove duplicates in the legend
                 axes[num].axvline(e, color="black")
 
-        for ind, b in enumerate(data.break_dates):
+        for ind, br in enumerate(data.break_dates):
             if ind == 0:
-                axes[num].axvline(b, color='r', label="Break dates")
+                axes[num].axvline(br, color='r', label="Break dates")
 
             else:
-                axes[num].axvline(b, color='r')
+                axes[num].axvline(br, color='r')
 
         for ind, s in enumerate(data.start_dates):
             if ind == 0:
@@ -97,12 +105,11 @@ def draw(data, items):
         # Predicted curves
         for c in range(0, len(data.results["change_models"])):
             if c == 0:
-                axes[num].plot(data.prediction_dates[c * len(data.bands) + num], data.predicted_values[c * len(data.bands) + num],
-                        "orange", linewidth=2, label="PyCCD model fit")
+                axes[num].plot(data.prediction_dates[c * len(data.bands)],  plot_data[b][1][c], "orange", linewidth=2,
+                               label="PyCCD model fit")
 
             else:
-                axes[num].plot(data.prediction_dates[c * len(data.bands) + num], data.predicted_values[c * len(data.bands) + num],
-                        "orange", linewidth=2)
+                axes[num].plot(data.prediction_dates[c * len(data.bands)], plot_data[b][1][c], "orange", linewidth=2)
 
         # Add legend
         axes[num].legend(mode="expand", ncol=4, loc="lower center")
@@ -111,7 +118,5 @@ def draw(data, items):
         axes[num].set_xticks(ord_time)
 
         axes[num].set_xticklabels(x_labels, rotation=70, horizontalalignment="right")
-
-
 
     return fig

@@ -1,4 +1,3 @@
-
 import datetime as dt
 import json
 import os
@@ -9,8 +8,8 @@ import numpy as np
 
 from Plotting import plot_functions
 
-class CCDReader:
 
+class CCDReader:
     # Define some helper methods and data structures
 
     GeoExtent = namedtuple("GeoExtent", ["x_min", "y_max", "x_max", "y_min"])
@@ -25,7 +24,6 @@ class CCDReader:
         self.OutputDir = output_dir
 
         if not os.path.exists(self.OutputDir):
-
             os.makedirs(self.OutputDir)
 
         self.CACHE_INV = [os.path.join(cache_dir, f) for f in os.listdir(cache_dir)]
@@ -60,8 +58,6 @@ class CCDReader:
         self.BEGIN_DATE = dt.datetime.fromordinal(self.dates[0])
         self.END_DATE = dt.datetime.fromordinal(self.dates[len(self.results["processing_mask"]) - 1])
 
-        self.test_data()
-
         self.date_mask = self.mask_daterange(self.dates)
 
         self.dates_in = self.dates[self.date_mask]
@@ -70,6 +66,8 @@ class CCDReader:
         self.data_in = self.data[self.date_mask]
         self.data_out = self.data[~self.date_mask]
 
+        self.test_data()
+
         self.qa = self.data[-1]
         self.qa_mask = np.ones_like(self.qa, dtype=np.bool)
         self.qa_mask[self.qa == 1] = False
@@ -77,6 +75,9 @@ class CCDReader:
         self.qa_in = self.qa_mask[self.date_mask]
         self.qa_out = self.qa_mask[~self.date_mask]
 
+        self.mask = np.array(self.results['processing_mask'], dtype=bool)
+
+        self.total_mask = np.logical_and(self.mask, self.qa_mask)
 
         # Fix the scaling of the Brightness Temperature
         # self.data_in[6][self.data_in[6] != -9999] = self.data_in[6][self.data_in[6] != -9999] * 10 - 27315
@@ -90,7 +91,6 @@ class CCDReader:
 
         self.band_info = {b: {'coefs': [], 'inter': [], 'pred': []} for b in self.bands}
 
-        self.mask = np.array(self.results['processing_mask'], dtype=bool)
         # self.mask = np.ones_like(self.dates_in, dtype=bool)
 
         # self.mask[: len(self.results['processing_mask'])] = self.results['processing_mask']
@@ -140,13 +140,15 @@ class CCDReader:
         self.NBR2 = plot_functions.nbr2(SWIR1=self.data[4], SWIR2=self.data[5])
 
         # Calculate indices from model predicted values
+        # TODO update get_predicts to take in a list and use for the indices predicted values
+
         self.NDVI_ = [plot_functions.ndvi(NIR=self.predicted_values[m * len(self.bands) + 3],
                                           R=self.predicted_values[m * len(self.bands) + 2])
                       for m in range(len(self.results["change_models"]))]
 
         self.MSAVI_ = [plot_functions.msavi(R=self.predicted_values[m * len(self.bands) + 2],
                                             NIR=self.predicted_values[m * len(self.bands) + 3])
-                  for m in range(len(self.results["change_models"]))]
+                       for m in range(len(self.results["change_models"]))]
 
         self.EVI_ = [plot_functions.evi(B=self.predicted_values[m * len(self.bands)],
                                         NIR=self.predicted_values[m * len(self.bands) + 3],
@@ -155,19 +157,19 @@ class CCDReader:
 
         self.SAVI_ = [plot_functions.savi(NIR=self.predicted_values[m * len(self.bands) + 3],
                                           R=self.predicted_values[m * len(self.bands) + 2])
-                 for m in range(len(self.results["change_models"]))]
+                      for m in range(len(self.results["change_models"]))]
 
         self.NDMI_ = [plot_functions.ndmi(NIR=self.predicted_values[m * len(self.bands) + 3],
                                           SWIR1=self.predicted_values[m * len(self.bands) + 4])
-                 for m in range(len(self.results["change_models"]))]
+                      for m in range(len(self.results["change_models"]))]
 
         self.NBR_ = [plot_functions.nbr(NIR=self.predicted_values[m * len(self.bands) + 3],
                                         SWIR2=self.predicted_values[m * len(self.bands) + 5])
-                for m in range(len(self.results["change_models"]))]
+                     for m in range(len(self.results["change_models"]))]
 
         self.NBR2_ = [plot_functions.nbr2(SWIR1=self.predicted_values[m * len(self.bands) + 4],
                                           SWIR2=self.predicted_values[m * len(self.bands) + 5])
-                 for m in range(len(self.results["change_models"]))]
+                      for m in range(len(self.results["change_models"]))]
 
         self.index_lookup = {"ndvi": (self.NDVI, self.NDVI_),
                              "msavi": (self.MSAVI, self.MSAVI_),
@@ -177,16 +179,15 @@ class CCDReader:
                              "nbr": (self.NBR, self.NBR_),
                              "nbr2": (self.NBR2, self.NBR2_)}
 
-        self.band_lookup = {"blue" : (self.data[0], self.get_predicts(0)),
-                            "green" : (self.data[1], self.get_predicts(1)),
-                            "red" : (self.data[2], self.get_predicts(2)),
-                            "nir" : (self.data[3], self.get_predicts(3)),
-                            "swir-1" : (self.data[4], self.get_predicts(4)),
-                            "swir-2" : (self.data[5], self.get_predicts(5)),
-                            "thermal" : (self.data[6], self.get_predicts(6))}
+        self.band_lookup = {"blue": (self.data[0], self.get_predicts(0)),
+                            "green": (self.data[1], self.get_predicts(1)),
+                            "red": (self.data[2], self.get_predicts(2)),
+                            "nir": (self.data[3], self.get_predicts(3)),
+                            "swir-1": (self.data[4], self.get_predicts(4)),
+                            "swir-2": (self.data[5], self.get_predicts(5)),
+                            "thermal": (self.data[6], self.get_predicts(6))}
 
-        self.lookup = {**self.index_lookup, **self.band_lookup}
-
+        self.all_lookup = {**self.index_lookup, **self.band_lookup}
 
     def geospatial_hv(self, h, v, loc):
         """
@@ -431,14 +432,12 @@ class CCDReader:
     def test_data(self):
 
         if len(self.dates_in) == len(self.results["processing_mask"]):
-
             print("The number of observations is consistent with the length of the PyCCD internal processing mask.\n"
                   "No changes to the input observations are necessary.")
 
             return None
 
         if len(np.unique(self.dates_in)) == len(self.results["processing_mask"]):
-
             print("There is a duplicate date occurrence in observations.  Removing duplicate occurrences makes the "
                   "number of observations consistent with the length of the PyCCD internal processing mask.")
 

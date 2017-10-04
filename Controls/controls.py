@@ -22,7 +22,6 @@ from Plotting import make_plots
 
 import matplotlib.pyplot as plt
 
-
 # ARD standard projection
 WKT = 'PROJCS["Albers",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378140,298.2569999999957,AUTHORITY["EPSG",' \
       '"7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],AUTHORITY["EPSG",' \
@@ -149,12 +148,12 @@ class PlotControls(QMainWindow):
         if self.check_if_values is True:
             # global data
             extracted_data = CCDReader(h=int(self.ui.hline.text()), v=int(self.ui.vline.text()),
-                             cache_dir=str(self.ui.browsecacheline.text()),
-                             json_dir=str(self.ui.browsejsonline.text()),
-                             arc_coords=str(self.ui.arccoordsline.text()),
-                             output_dir=str(self.ui.browseoutputline.text()),
-                             model_on=self.ui.radiomodelfit.isChecked(),
-                             masked_on=self.ui.radiomasked.isChecked())
+                                       cache_dir=str(self.ui.browsecacheline.text()),
+                                       json_dir=str(self.ui.browsejsonline.text()),
+                                       arc_coords=str(self.ui.arccoordsline.text()),
+                                       output_dir=str(self.ui.browseoutputline.text()),
+                                       model_on=self.ui.radiomodelfit.isChecked(),
+                                       masked_on=self.ui.radiomasked.isChecked())
 
         else:
             return None
@@ -177,7 +176,6 @@ class PlotControls(QMainWindow):
             self.ui.plainTextEdit_results.appendPlainText("QA: {}".format(result["curve_qa"]))
 
             self.ui.plainTextEdit_results.appendPlainText("Change prob: {}\n".format(result["change_probability"]))
-        """
 
 
         xmin = min(extracted_data.dates_in[extracted_data.mask]) - 100
@@ -187,14 +185,12 @@ class PlotControls(QMainWindow):
         ymax = [max(extracted_data.data_in[num, extracted_data.mask]) + 100 for num in range(len(extracted_data.bands))]
 
 
-        """
         self.ui.lineEdit_xmin.setText(str(dt.datetime.fromordinal(xmin))[:10])
         self.ui.lineEdit_xmax.setText(str(dt.datetime.fromordinal(xmax))[:10])
 
         self.ui.lineEdit_ymin.setText(str(ymin[self.band_index]))
         self.ui.lineEdit_ymax.setText(str(ymax[self.band_index]))
         """
-
 
         print("Plotting...")
 
@@ -205,7 +201,7 @@ class PlotControls(QMainWindow):
 
         fig, axes = plt.subplots(nrows=7, ncols=1, figsize=(16, 34), dpi=60)
 
-        addmaskstr, addmodelstr = "MASKEDOFF", "_MODELOFF"
+        
 
         for num, b in enumerate(data.bands):
 
@@ -280,13 +276,14 @@ class PlotControls(QMainWindow):
             axes[a].set_xticklabels(x_labels, rotation=70, horizontalalignment="right")
         """
 
+        addmaskstr, addmodelstr = "MASKEDOFF", "_MODELOFF"
 
         # ****Generate the output .png filename****
-        fname = "{}{}h{}v{}_{}_{}{}.png".format(data.OutputDir, os.sep, data.H, data.V, data.arc_paste, addmaskstr,
-                                                addmodelstr)
+        fname = "{}{}h{}v{}_{}_{}{}.png".format(extracted_data.OutputDir, os.sep, extracted_data.H, extracted_data.V,
+                                                extracted_data.arc_paste, addmaskstr, addmodelstr)
 
         if shp_on is True:
-            self.get_shp()
+            self.get_shp(extracted_data)
 
         # ****Save figure to .png and show figure in QWidget****
         fig.tight_layout()
@@ -296,31 +293,10 @@ class PlotControls(QMainWindow):
 
             print("\nplt object saved to file {}\n".format(fname))
 
-        # global p
+        global p
         p = PlotWindow(fig)
 
         return None
-
-    def updateplot(self, data):
-
-        self.band_index = self.ui.comboBox_bands.currentIndex()
-
-        xmin = min(data.dates_in[data.mask]) - 100
-        xmax = max(data.dates_in[data.mask]) + 750
-
-        ymin = [min(data.data_in[num, data.mask]) - 100 for num in range(len(data.bands))]
-        ymax = [max(data.data_in[num, data.mask]) + 100 for num in range(len(data.bands))]
-
-        """
-        # Display the x-min and x-max in datetime format YYYY-MM-DD
-        self.ui.lineEdit_xmin.setText(str(dt.datetime.fromordinal(xmin))[:10])
-        self.ui.lineEdit_xmax.setText(str(dt.datetime.fromordinal(xmax))[:10])
-
-        # Display the y-min and y-max for the currently selected band in the combobox
-        self.ui.lineEdit_ymin.setText(str(ymin[self.band_index]))
-        self.ui.lineEdit_ymax.setText(str(ymax[self.band_index]))
-        """
-
 
     def get_shp(self, data):
 
@@ -384,7 +360,6 @@ class PlotControls(QMainWindow):
             feature, point, layer = None, None, None
 
         return None
-
 
     def exit_plot(self):
 
