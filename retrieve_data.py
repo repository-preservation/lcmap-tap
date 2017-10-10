@@ -21,10 +21,10 @@ class CCDReader:
     def __init__(self, h, v, arc_coords, cache_dir, json_dir, output_dir, masked_on=True, model_on=True):
 
         # ****Setup file locations****
-        self.OutputDir = output_dir
+        self.output_dir = output_dir
 
-        if not os.path.exists(self.OutputDir):
-            os.makedirs(self.OutputDir)
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
 
         self.CACHE_INV = [os.path.join(cache_dir, f) for f in os.listdir(cache_dir)]
 
@@ -56,15 +56,13 @@ class CCDReader:
         # self.BEGIN_DATE = dt.date(year=1982, month=1, day=1)
         # self.END_DATE = dt.date(year=2015, month=12, day=31)
         self.BEGIN_DATE = dt.datetime.fromordinal(self.dates[0])
-        self.END_DATE = dt.datetime.fromordinal(self.dates[len(self.results["processing_mask"]) - 1])
+        # self.END_DATE = dt.datetime.fromordinal(self.dates[len(self.results["processing_mask"]) - 1])
+        self.END_DATE = dt.datetime.fromordinal(self.dates[len(self.results["processing_mask"])])
 
         self.date_mask = self.mask_daterange(self.dates)
 
         self.dates_in = self.dates[self.date_mask]
         self.dates_out = self.dates[~self.date_mask]
-
-        self.data_in = self.data[self.date_mask]
-        self.data_out = self.data[~self.date_mask]
 
         self.test_data()
 
@@ -72,12 +70,16 @@ class CCDReader:
         self.qa_mask = np.ones_like(self.qa, dtype=np.bool)
         self.qa_mask[self.qa == 1] = False
 
+        print("QA mask made")
+
         self.qa_in = self.qa_mask[self.date_mask]
         self.qa_out = self.qa_mask[~self.date_mask]
 
         self.mask = np.array(self.results['processing_mask'], dtype=bool)
 
-        self.total_mask = np.logical_and(self.mask, self.qa_mask)
+        self.total_mask = np.logical_and(self.mask, self.qa_in)
+
+        print("Total mask made")
 
         # Fix the scaling of the Brightness Temperature
         # self.data_in[6][self.data_in[6] != -9999] = self.data_in[6][self.data_in[6] != -9999] * 10 - 27315
@@ -86,14 +88,12 @@ class CCDReader:
         self.temp_thermal[self.qa_mask] = self.temp_thermal[self.qa_mask] * 10 - 27315
         self.data[6] = np.copy(self.temp_thermal)
 
+        print("Thermal data rescaled")
+
         self.bands = ('blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'thermal')
         self.indices = ('ndvi', 'msavi', 'evi', 'savi', 'ndmi', 'nbr', 'nbr2')
 
         self.band_info = {b: {'coefs': [], 'inter': [], 'pred': []} for b in self.bands}
-
-        # self.mask = np.ones_like(self.dates_in, dtype=bool)
-
-        # self.mask[: len(self.results['processing_mask'])] = self.results['processing_mask']
 
         self.predicted_values = []
         self.prediction_dates = []
@@ -120,10 +120,13 @@ class CCDReader:
                 self.prediction_dates.append(days)
                 self.predicted_values.append(self.band_info[b]['pred'])
 
+        print("Predicted values and dates retrieved")
+
         self.model_on = model_on
 
         self.masked_on = masked_on
 
+        print("Calculating Indices")
         # Calculate indices from observed values
         self.EVI = plot_functions.evi(B=self.data[0], NIR=self.data[3], R=self.data[2])
 
@@ -171,23 +174,28 @@ class CCDReader:
                                           SWIR2=self.predicted_values[m * len(self.bands) + 5])
                       for m in range(len(self.results["change_models"]))]
 
-        self.index_lookup = {"ndvi": (self.NDVI, self.NDVI_),
-                             "msavi": (self.MSAVI, self.MSAVI_),
-                             "evi": (self.EVI, self.EVI_),
-                             "savi": (self.SAVI, self.SAVI_),
-                             "ndmi": (self.NDMI, self.NDMI_),
-                             "nbr": (self.NBR, self.NBR_),
-                             "nbr2": (self.NBR2, self.NBR2_)}
+        print("Done Calculating Indices")
 
-        self.band_lookup = {"blue": (self.data[0], self.get_predicts(0)),
-                            "green": (self.data[1], self.get_predicts(1)),
-                            "red": (self.data[2], self.get_predicts(2)),
-                            "nir": (self.data[3], self.get_predicts(3)),
-                            "swir-1": (self.data[4], self.get_predicts(4)),
-                            "swir-2": (self.data[5], self.get_predicts(5)),
-                            "thermal": (self.data[6], self.get_predicts(6))}
+        self.index_lookup = {"NDVI": (self.NDVI, self.NDVI_),
+                             "MSAVI": (self.MSAVI, self.MSAVI_),
+                             "EVI": (self.EVI, self.EVI_),
+                             "SAVI": (self.SAVI, self.SAVI_),
+                             "NDMI": (self.NDMI, self.NDMI_),
+                             "NBR": (self.NBR, self.NBR_),
+                             "NBR-2": (self.NBR2, self.NBR2_)}
 
-        self.all_lookup = {**self.index_lookup, **self.band_lookup}
+        self.band_lookup = {"Blue": (self.data[0], self.get_predicts(0)),
+                            "Green": (self.data[1], self.get_predicts(1)),
+                            "Red": (self.data[2], self.get_predicts(2)),
+                            "NIR": (self.data[3], self.get_predicts(3)),
+                            "SWIR-1": (self.data[4], self.get_predicts(4)),
+                            "SWIR-2": (self.data[5], self.get_predicts(5)),
+                            "Thermal": (self.data[6], self.get_predicts(6))}
+
+        # Combine these two dictionaries
+        self.all_lookup = {**self.band_lookup, **self.index_lookup }
+
+        print("All_Lookup created")
 
     def geospatial_hv(self, h, v, loc):
         """
@@ -431,6 +439,8 @@ class CCDReader:
 
     def test_data(self):
 
+        # TODO return either the second or first of duplicate pairs, need to figure out which (does it matter?)
+
         if len(self.dates_in) == len(self.results["processing_mask"]):
             print("The number of observations is consistent with the length of the PyCCD internal processing mask.\n"
                   "No changes to the input observations are necessary.")
@@ -441,11 +451,23 @@ class CCDReader:
             print("There is a duplicate date occurrence in observations.  Removing duplicate occurrences makes the "
                   "number of observations consistent with the length of the PyCCD internal processing mask.")
 
-            self.dates_in, ind = np.unique(self.dates_in, return_index=True)
-            self.data_in = self.data_in[:, ind]
+            self.dates, ind = np.unique(self.dates, return_index=True)
+
+            self.data = self.data[:, ind]
+
+            self.date_mask = self.mask_daterange(self.dates)
+
+            self.dates_in = self.dates[self.date_mask]
+
+            self.dates_out = self.dates[~self.date_mask]
 
             return None
 
     def get_predicts(self, num):
 
-        return [self.predicted_values[m * len(self.bands) + num] for m in range(len(self.results["change_models"]))]
+        # Check for type int, return list if true
+        if isinstance(num, int):
+            num = [num]
+
+        return [self.predicted_values[m * len(self.bands) + n] for n in num
+                for m in range(len(self.results["change_models"]))]

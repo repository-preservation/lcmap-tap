@@ -1,6 +1,7 @@
 
 
-# Define various index calculations
+# Define various functions useful for plotting
+
 def msavi(R, NIR):
     # Modified Soil Adjusted Vegetation Index
 
