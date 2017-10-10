@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QMainWindow, QFileDialog
 
 # Import the main GUI built in QTDesigner, compiled into python with pyuic5.bat
 # from Controls.ui_main import Ui_PyCCDPlottingTool
-from Controls.UI_MAINv4 import Ui_PyCCDPlottingTool
+from Controls.ui_main import Ui_PyCCDPlottingTool
 
 # Import the CCDReader class which retrieves json and cache data
 from retrieve_data import CCDReader
