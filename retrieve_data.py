@@ -1,15 +1,15 @@
-
 import datetime as dt
 import json
 import os
 import re
 import sys
 from collections import namedtuple
-
 import numpy as np
 
-class CCDReader:
+from Plotting import plot_functions
 
+
+class CCDReader:
     # Define some helper methods and data structures
 
     GeoExtent = namedtuple("GeoExtent", ["x_min", "y_max", "x_max", "y_min"])
@@ -24,7 +24,6 @@ class CCDReader:
         self.OutputDir = output_dir
 
         if not os.path.exists(self.OutputDir):
-
             os.makedirs(self.OutputDir)
 
         self.CACHE_INV = [os.path.join(cache_dir, f) for f in os.listdir(cache_dir)]
@@ -41,13 +40,10 @@ class CCDReader:
         self.V = v
 
         self.EXTENT, self.PIXEL_AFFINE = self.geospatial_hv(self.H, self.V, self.CONUS_EXTENT)
+
         self.CHIP_AFFINE = self.GeoAffine(ul_x=self.PIXEL_AFFINE.ul_x, x_res=3000, rot_1=0, ul_y=self.PIXEL_AFFINE.ul_y,
                                           rot_2=0,
                                           y_res=-3000)
-
-        self.BEGIN_DATE = dt.date(year=1982, month=1, day=1)
-
-        self.END_DATE = dt.date(year=2015, month=12, day=31)
 
         self.arc_paste = arc_coords
 
@@ -55,44 +51,63 @@ class CCDReader:
 
         self.results = self.extract_jsoncurve(self.coord)
 
-        self.data_in, self.dates_in, self.data_out, self.dates_out = \
-            self.extract_cachepoint(self.coord, self.results['processing_mask'])
+        self.data, self.dates = self.extract_cachepoint(self.coord, self.results['processing_mask'])
+
+        # self.BEGIN_DATE = dt.date(year=1982, month=1, day=1)
+        # self.END_DATE = dt.date(year=2015, month=12, day=31)
+        self.BEGIN_DATE = dt.datetime.fromordinal(self.dates[0])
+        self.END_DATE = dt.datetime.fromordinal(self.dates[len(self.results["processing_mask"]) - 1])
+
+        self.date_mask = self.mask_daterange(self.dates)
+
+        self.dates_in = self.dates[self.date_mask]
+        self.dates_out = self.dates[~self.date_mask]
+
+        self.data_in = self.data[self.date_mask]
+        self.data_out = self.data[~self.date_mask]
+
+        self.test_data()
+
+        self.qa = self.data[-1]
+        self.qa_mask = np.ones_like(self.qa, dtype=np.bool)
+        self.qa_mask[self.qa == 1] = False
+
+        self.qa_in = self.qa_mask[self.date_mask]
+        self.qa_out = self.qa_mask[~self.date_mask]
+
+        self.mask = np.array(self.results['processing_mask'], dtype=bool)
+
+        self.total_mask = np.logical_and(self.mask, self.qa_mask)
 
         # Fix the scaling of the Brightness Temperature
-        self.data_in[6][self.data_in[6] != -9999] = self.data_in[6][self.data_in[6] != -9999] * 10 - 27315
-        self.data_out[6][self.data_out[6] != -9999] = self.data_out[6][self.data_out[6] != -9999] * 10 - 27315
+        # self.data_in[6][self.data_in[6] != -9999] = self.data_in[6][self.data_in[6] != -9999] * 10 - 27315
+        # self.data_out[6][self.data_out[6] != -9999] = self.data_out[6][self.data_out[6] != -9999] * 10 - 27315
+        self.temp_thermal = np.copy(self.data[6])
+        self.temp_thermal[self.qa_mask] = self.temp_thermal[self.qa_mask] * 10 - 27315
+        self.data[6] = np.copy(self.temp_thermal)
 
         self.bands = ('blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'thermal')
+        self.indices = ('ndvi', 'msavi', 'evi', 'savi', 'ndmi', 'nbr', 'nbr2')
 
         self.band_info = {b: {'coefs': [], 'inter': [], 'pred': []} for b in self.bands}
 
-        # self.mask = np.array(self.results['processing_mask'], dtype=bool)
-        self.mask = np.ones_like(self.dates_in, dtype=bool)
+        # self.mask = np.ones_like(self.dates_in, dtype=bool)
 
-        self.mask[: len(self.results['processing_mask'])] = self.results['processing_mask']
+        # self.mask[: len(self.results['processing_mask'])] = self.results['processing_mask']
 
         self.predicted_values = []
         self.prediction_dates = []
         self.break_dates = []
         self.start_dates = []
-
-
+        self.end_dates = []
 
         for num, result in enumerate(self.results['change_models']):
-
-            """
-            print('Result: {}'.format(num))
-            print('Start Date: {}'.format(dt.date.fromordinal(result['start_day'])))
-            print('End Date: {}'.format(dt.date.fromordinal(result['end_day'])))
-            print('Break Date: {}'.format(dt.date.fromordinal(result['break_day'])))
-            print('QA: {}'.format(result['curve_qa']))
-            print('Change prob: {}'.format(result['change_probability']))
-            """
 
             days = np.arange(result['start_day'], result['end_day'] + 1)
 
             self.break_dates.append(result['break_day'])
             self.start_dates.append(result['start_day'])
+            self.end_dates.append(result['end_day'])
 
             for b in self.bands:
                 self.band_info[b]['inter'] = result[b]['intercept']
@@ -109,7 +124,70 @@ class CCDReader:
 
         self.masked_on = masked_on
 
-        # self.send_to_plotter()
+        # Calculate indices from observed values
+        self.EVI = plot_functions.evi(B=self.data[0], NIR=self.data[3], R=self.data[2])
+
+        self.NDVI = plot_functions.ndvi(R=self.data[2], NIR=self.data[3])
+
+        self.MSAVI = plot_functions.msavi(R=self.data[2], NIR=self.data[3])
+
+        self.SAVI = plot_functions.savi(R=self.data[2], NIR=self.data[3])
+
+        self.NDMI = plot_functions.ndmi(NIR=self.data[3], SWIR1=self.data[4])
+
+        self.NBR = plot_functions.nbr(NIR=self.data[3], SWIR2=self.data[5])
+
+        self.NBR2 = plot_functions.nbr2(SWIR1=self.data[4], SWIR2=self.data[5])
+
+        # Calculate indices from model predicted values
+        # TODO update get_predicts to take in a list and use for the indices predicted values
+
+        self.NDVI_ = [plot_functions.ndvi(NIR=self.predicted_values[m * len(self.bands) + 3],
+                                          R=self.predicted_values[m * len(self.bands) + 2])
+                      for m in range(len(self.results["change_models"]))]
+
+        self.MSAVI_ = [plot_functions.msavi(R=self.predicted_values[m * len(self.bands) + 2],
+                                            NIR=self.predicted_values[m * len(self.bands) + 3])
+                       for m in range(len(self.results["change_models"]))]
+
+        self.EVI_ = [plot_functions.evi(B=self.predicted_values[m * len(self.bands)],
+                                        NIR=self.predicted_values[m * len(self.bands) + 3],
+                                        R=self.predicted_values[m * len(self.bands) + 2])
+                     for m in range(len(self.results["change_models"]))]
+
+        self.SAVI_ = [plot_functions.savi(NIR=self.predicted_values[m * len(self.bands) + 3],
+                                          R=self.predicted_values[m * len(self.bands) + 2])
+                      for m in range(len(self.results["change_models"]))]
+
+        self.NDMI_ = [plot_functions.ndmi(NIR=self.predicted_values[m * len(self.bands) + 3],
+                                          SWIR1=self.predicted_values[m * len(self.bands) + 4])
+                      for m in range(len(self.results["change_models"]))]
+
+        self.NBR_ = [plot_functions.nbr(NIR=self.predicted_values[m * len(self.bands) + 3],
+                                        SWIR2=self.predicted_values[m * len(self.bands) + 5])
+                     for m in range(len(self.results["change_models"]))]
+
+        self.NBR2_ = [plot_functions.nbr2(SWIR1=self.predicted_values[m * len(self.bands) + 4],
+                                          SWIR2=self.predicted_values[m * len(self.bands) + 5])
+                      for m in range(len(self.results["change_models"]))]
+
+        self.index_lookup = {"ndvi": (self.NDVI, self.NDVI_),
+                             "msavi": (self.MSAVI, self.MSAVI_),
+                             "evi": (self.EVI, self.EVI_),
+                             "savi": (self.SAVI, self.SAVI_),
+                             "ndmi": (self.NDMI, self.NDMI_),
+                             "nbr": (self.NBR, self.NBR_),
+                             "nbr2": (self.NBR2, self.NBR2_)}
+
+        self.band_lookup = {"blue": (self.data[0], self.get_predicts(0)),
+                            "green": (self.data[1], self.get_predicts(1)),
+                            "red": (self.data[2], self.get_predicts(2)),
+                            "nir": (self.data[3], self.get_predicts(3)),
+                            "swir-1": (self.data[4], self.get_predicts(4)),
+                            "swir-2": (self.data[5], self.get_predicts(5)),
+                            "thermal": (self.data[6], self.get_predicts(6))}
+
+        self.all_lookup = {**self.index_lookup, **self.band_lookup}
 
     def geospatial_hv(self, h, v, loc):
         """
@@ -195,7 +273,7 @@ class CCDReader:
         return np.array([dt.datetime.strptime(d[15:23], "%Y%m%d").toordinal()
                          for d in image_ids])
 
-    def mask_daterange(self, dates):
+    def mask_daterange_edit(self, dates):
         """
         Create a mask for values outside of the global BEGIN_DATE and END_DATE.
         :param dates: 
@@ -203,12 +281,21 @@ class CCDReader:
         """
 
         mask_in = np.zeros_like(dates, dtype=bool)
-        mask_out = np.zeros_like(dates, dtype=bool)
+        mask_out = np.copy(mask_in)
 
         mask_in[(dates > self.BEGIN_DATE.toordinal()) & (dates < self.END_DATE.toordinal())] = 1
         mask_out[(dates <= self.BEGIN_DATE.toordinal()) | (dates >= self.END_DATE.toordinal())] = 1
 
         return mask_in, mask_out
+
+    def mask_daterange(self, dates):
+        """
+        Create a mask for values outside of the global BEGIN_DATE and END_DATE.
+        :param dates:
+        :return:
+        """
+
+        return np.logical_and(dates >= self.BEGIN_DATE.toordinal(), dates <= self.END_DATE.toordinal())
 
     def find_chipcurve(self, results_chip, coord):
         """
@@ -226,6 +313,22 @@ class CCDReader:
         return next(gen, None)
 
     def extract_cachepoint(self, coord, results):
+        """
+        Extract the spectral values from the cache file
+        :param coord:
+        :param results:
+        :return:
+        """
+
+        rowcol = self.geo_to_rowcol(self.PIXEL_AFFINE, coord)
+
+        data, image_ids = self.load_cache(self.find_file(self.CACHE_INV, f"r{rowcol.row}"))
+
+        dates = self.imageid_date(image_ids)
+
+        return data[:, :, rowcol.column], dates
+
+    def extract_cachepoint_edit(self, coord, results):
 
         """
         Extract the spectral values from the cache file and remove duplicate dates.
@@ -244,10 +347,11 @@ class CCDReader:
 
         data_ = data[:, indices]
 
-        # check if the len of the processing mask equals the len of dates with duplicates removed
+        mask_in, mask_out = self.mask_daterange_edit(dates_)
 
-        mask_in, mask_out = self.mask_daterange(dates_)
-
+        # Check if the len of the processing mask equals the len of dates with duplicates removed
+        # For most cases the length of the internal processing mask should be equal to the
+        # number of observations within the BEGIN and END date range
         if len(results) == len(dates_[mask_in]):
 
             print("The length of the pyccd internal processing mask ({}) is consistent with the number of observations"
@@ -265,9 +369,9 @@ class CCDReader:
 
             if len(results) == len(dates[mask_in]):
 
-                print("The length of the pyccd internal processing mask ({}) is consistent with the number of observations"
-                    " in the cache files ({}) if duplicate dates are not removed".format(len(results),
-                                                                                         len(dates[mask_in])))
+                print("The length of the pyccd internal processing mask ({}) is consistent with the "
+                      "number of observations in the cache files ({}) if duplicate dates are not "
+                      "removed".format(len(results), len(dates[mask_in])))
 
                 return data[:, mask_in, rowcol.column], dates[mask_in], \
                        data[:, mask_out, rowcol.column], dates[mask_out]
@@ -324,3 +428,24 @@ class CCDReader:
 
         return self.GeoCoordinate(x=float(re.sub(",", "", pieces[0])),
                                   y=float(re.sub(",", "", pieces[1])))
+
+    def test_data(self):
+
+        if len(self.dates_in) == len(self.results["processing_mask"]):
+            print("The number of observations is consistent with the length of the PyCCD internal processing mask.\n"
+                  "No changes to the input observations are necessary.")
+
+            return None
+
+        if len(np.unique(self.dates_in)) == len(self.results["processing_mask"]):
+            print("There is a duplicate date occurrence in observations.  Removing duplicate occurrences makes the "
+                  "number of observations consistent with the length of the PyCCD internal processing mask.")
+
+            self.dates_in, ind = np.unique(self.dates_in, return_index=True)
+            self.data_in = self.data_in[:, ind]
+
+            return None
+
+    def get_predicts(self, num):
+
+        return [self.predicted_values[m * len(self.bands) + num] for m in range(len(self.results["change_models"]))]
