@@ -12,13 +12,13 @@ def get_plot_items(data, items):
                  "All Indices": data.index_lookup}
 
     if len(items) > 0:
-        temp = {i: data.all_lookup[i] for i in items if i in data.all_lookup.keys()}
+        temp_dict = {i: data.all_lookup[i] for i in items if i in data.all_lookup.keys()}
 
         for a in set_lists.keys():
             if a in items:
-                temp =  {**temp, **set_lists[a]}
+                temp_dict =  {**temp_dict, **set_lists[a]}
 
-        return temp
+        return temp_dict
 
 
         # temp = {i : data.all_lookup[i] for i in items if i in data.all_lookup.keys()}
