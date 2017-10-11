@@ -132,7 +132,7 @@ class Ui_PyCCDPlottingTool(object):
         self.exitbutton.setObjectName("exitbutton")
         self.gridLayout_main.addWidget(self.exitbutton, 22, 0, 1, 1, QtCore.Qt.AlignHCenter)
         self.listitems = QtWidgets.QListWidget(self.centralwidget)
-        self.listitems.setAlternatingRowColors(True)
+        self.listitems.setAlternatingRowColors(False)
         self.listitems.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
         self.listitems.setObjectName("listitems")
         item = QtWidgets.QListWidgetItem()

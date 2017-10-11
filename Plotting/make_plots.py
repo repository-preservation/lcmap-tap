@@ -66,26 +66,19 @@ def draw_figure(data, items, model_on, masked_on):
 
     # squeeze=False allows for plt.subplots to have a single subplot, must specify the column index as well
     # when calling a subplot e.g. axes[num, 0] for plot number 'num' and column 1
-    fig, axes = plt.subplots(nrows=len(plot_data), ncols=1, figsize=(16, len(plot_data) * 7.5), dpi=65, squeeze=False)
-
-    print("created figure and subplots objects")
+    # global fig
+    fig, axes = plt.subplots(nrows=len(plot_data), ncols=1, figsize=(18, len(plot_data) * 7.5), dpi=65, squeeze=False)
 
     for num, b in enumerate(plot_data.keys()):
-        print("Working on plot ", b, num)
-        # fg = plt.figure(figsize=(16, 9), dpi=300)
-        # ax = fg.add_subplot(2, 1, 1, xlim=(min(data.dates) - 100, max(data.dates) + 500),
-        #                   ylim=(min(data.data_in[num, total_mask]) - 500, max(data.data_in[num, total_mask]) + 500))
-
+        print("Working on plot ", b)
 
         # Observed values in PyCCD time range
         axes[num, 0].plot(data.dates_in[total_mask], plot_data[b][0][data.date_mask][total_mask], 'go', ms=7, mec='k',
                        mew=0.5, label="Observations used by PyCCD")
-        print(f"Observed values for {b} in time range plotted")
 
         # Observed values outside PyCCD time range
         axes[num, 0].plot(data.dates_out[data.qa_out],  plot_data[b][0][~data.date_mask][data.qa_out], 'ro', ms=5,
                        mec='k', mew=0.5, label="Observations not used by PyCCD")
-        print(f"Observed values for {b} outside time range plotted")
 
         # Observed values masked out
         if masked_on is True:
@@ -96,16 +89,12 @@ def draw_figure(data, items, model_on, masked_on):
 
                 axes[num, 0].plot(data.dates_in[~data.mask][index_plot != 0], index_plot[index_plot != 0], color="0.65",
                                marker="o", linewidth=0, ms=3, label="Observations masked by PyCCD")
-                print(f"Masked observed values for {b} plotted")
 
             else:
                 axes[num, 0].plot(data.dates_in[~data.mask], plot_data[b][0][data.date_mask][~data.mask], color="0.65",
                                marker="o", linewidth=0, ms=3, label="Observations masked by PyCCD")
-                print(f"Masked observed values for {b} plotted")
-
 
         axes[num, 0].set_title(f'{b}')
-        print("Plot title added")
 
         # plot model break and start dates
         if model_on is True:
@@ -136,7 +125,6 @@ def draw_figure(data, items, model_on, masked_on):
                     axes[num, 0].axvline(s, color='b')
             print("start dates plotted")
 
-
             for ind, m in enumerate(match_dates):
                 if ind == 0:
                     axes[num, 0].axvline(m, color="magenta", linewidth=1.5, label="Break date = Start date")
@@ -144,7 +132,6 @@ def draw_figure(data, items, model_on, masked_on):
                 else:
                     axes[num, 0].axvline(m, color="magenta", linewidth=1.5)
             print("match dates plotted")
-
 
             # Predicted curves
             for c in range(0, len(data.results["change_models"])):
@@ -168,9 +155,6 @@ def draw_figure(data, items, model_on, masked_on):
 
         axes[num, 0].set_ylim([ymin, ymax])
 
-        # Add legend
-        axes[num, 0].legend(mode="expand", ncol=4, loc="lower center")
-
         # Add x-ticks and x-tick_labels
         axes[num, 0].set_xticks(ord_time)
 
@@ -178,5 +162,9 @@ def draw_figure(data, items, model_on, masked_on):
 
         axes[num, 0].format_coord = lambda x, y: "({0:f}, ".format(y) +  \
                                                  "{0:%Y-%m-%d})".format(dt.datetime.fromordinal(int(x)))
+
+        # Only add a legend to the final subplot to avoid repetition
+        if b == list(plot_data.keys())[-1]:
+            axes[num, 0].legend(mode="expand", ncol=4, bbox_to_anchor=(0., -0.35, 1, 0.25), loc=8, borderaxespad=0.)
 
     return fig

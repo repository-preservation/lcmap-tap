@@ -16,6 +16,7 @@ from Controls.ui_main import Ui_PyCCDPlottingTool
 from retrieve_data import CCDReader
 
 # Import the PlotWindow display built in QT Designer
+# from PlotFrame.plotwindow import PlotWindow
 from PlotFrame.plotwindow import PlotWindow
 
 from Plotting import make_plots
@@ -39,11 +40,21 @@ class PlotControls(QMainWindow):
 
         self.ui.setupUi(self)
 
+        # some temporary default values to make testing easier
+        self.ui.browseoutputline.setText(r"D:\Plot_Outputs\test_10.10.2017")
+        self.ui.browsejsonline.setText(r"D:\LCMAP\ARD_h13v05\json")
+        self.ui.browsecacheline.setText(r"D:\LCMAP\ARD_h13v05\cache")
+        self.ui.arccoordsline.setText(r"-608,699.743  2,437,196.249 Meters")
+        self.ui.hline.setText(r"13")
+        self.ui.vline.setText(r"5")
+
         self.ui.browsecachebutton.clicked.connect(self.browsecache)
 
         self.ui.browsejsonbutton.clicked.connect(self.browsejson)
 
         self.ui.browseoutputbutton.clicked.connect(self.browseoutput)
+
+        self.check_if_values()
 
         self.ui.arccoordsline.textChanged.connect(self.check_if_values)
 
@@ -187,10 +198,10 @@ class PlotControls(QMainWindow):
                 f"{extracted_data.arc_paste}_{addmaskstr}{addmodelstr}{self.item_list}.png"
 
         # ****Save figure to .png and show figure in QWidget****
-        fig.tight_layout()
-
         if os.path.exists(fname):
             os.remove(fname)
+
+        fig.tight_layout(h_pad=8.0)
 
         plt.savefig(fname, figuresize=(16, 38), bbox_inches="tight", dpi=150)
 
@@ -201,6 +212,8 @@ class PlotControls(QMainWindow):
 
         global p
         p = PlotWindow(fig)
+        #plotting(fig)
+
 
         return None
 
