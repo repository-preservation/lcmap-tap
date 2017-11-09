@@ -6,7 +6,9 @@ from matplotlib import pyplot as plt
 def get_plot_items(data, items):
     """
     Check to see which bands and/or indices were selected to plot.
-    :return:
+    :data: <class>
+    :items: <dict>
+    :return: <dict>
     """
     set_lists = {"All Bands and Indices": data.all_lookup, "All Bands": data.band_lookup,
                  "All Indices": data.index_lookup}
@@ -16,12 +18,11 @@ def get_plot_items(data, items):
 
         for a in set_lists.keys():
             if a in items:
+                # Update the dictionary to include the user-specified items
                 temp_dict =  {**temp_dict, **set_lists[a]}
 
         return temp_dict
 
-
-        # temp = {i : data.all_lookup[i] for i in items if i in data.all_lookup.keys()}
     else:
         return data.all_lookup
 
@@ -35,18 +36,14 @@ def draw_figure(data, items, model_on, masked_on):
     :param items: list of strings
     :return: dictionary
     """
-    print("Entered draw function")
-
     plt.style.use('ggplot')
-
-    # ****X-Axis Ticks and Labels****
 
     # get year values for labeling plots
     year1 = str(dt.datetime.fromordinal(data.dates[0]))[:4]
     year2 = str(dt.datetime.fromordinal(data.dates[-1]))[:4]
     years = range(int(year1), int(year2) + 2, 2)
 
-    # list of datetime objects with YYYY-MM-dd pattern
+    # list of datetime objects with YYYY-MM-dd pattern using July 1 for month and day
     t = [dt.datetime(yx, 7, 1) for yx in years]
 
     # list of ordinal time objects
@@ -55,48 +52,46 @@ def draw_figure(data, items, model_on, masked_on):
     # list of datetime formatted strings
     x_labels = [str(dt.datetime.fromordinal(int(L)))[:10] if L != "0.0" and L != "" else "0" for L in ord_time]
 
-    print("x_labels generated")
-
     total_mask = data.total_mask
 
+    # plot_data is a dict whose keys are band names, index names, or a combination of both
+    # plot_data.key[0] contains the observed values
+    # plot_data.key[1] contains the model predicted values
     plot_data = get_plot_items(data=data, items=items)
-
-    print("plot data dictionary retrieved")
-    # print(plot_data)
 
     # squeeze=False allows for plt.subplots to have a single subplot, must specify the column index as well
     # when calling a subplot e.g. axes[num, 0] for plot number 'num' and column 1
-    # global fig
     fig, axes = plt.subplots(nrows=len(plot_data), ncols=1, figsize=(18, len(plot_data) * 7.5), dpi=65, squeeze=False)
 
     for num, b in enumerate(plot_data.keys()):
         print("Working on plot ", b)
 
-        # Observed values in PyCCD time range
+        # Observed values within the PyCCD time range
         axes[num, 0].plot(data.dates_in[total_mask], plot_data[b][0][data.date_mask][total_mask], 'go', ms=7, mec='k',
                        mew=0.5, label="Observations used by PyCCD")
 
-        # Observed values outside PyCCD time range
-        axes[num, 0].plot(data.dates_out[data.qa_out],  plot_data[b][0][~data.date_mask][data.qa_out], 'ro', ms=5,
+        # Observed values outside of the PyCCD time range
+        axes[num, 0].plot(data.dates_out[data.fill_out],  plot_data[b][0][~data.date_mask][data.fill_out], 'ro', ms=5,
                        mec='k', mew=0.5, label="Observations not used by PyCCD")
 
-        # Observed values masked out
+        # Plot the observed values masked out by PyCCD
         if masked_on is True:
 
-            # Remove the 0-value masked observations
+            # Remove the 0-value masked observations for the index plots
             if b in data.index_lookup.keys():
-                index_plot = plot_data[b][0][data.date_mask][~data.mask]
+                index_plot = plot_data[b][0][data.date_mask][~data.ccd_mask]
 
-                axes[num, 0].plot(data.dates_in[~data.mask][index_plot != 0], index_plot[index_plot != 0], color="0.65",
-                               marker="o", linewidth=0, ms=3, label="Observations masked by PyCCD")
+                axes[num, 0].plot(data.dates_in[~data.ccd_mask][index_plot != 0], index_plot[index_plot != 0], color="0.65",
+                               marker="o", linewidth=0, ms=3, label="Masked Observations")
 
             else:
-                axes[num, 0].plot(data.dates_in[~data.mask], plot_data[b][0][data.date_mask][~data.mask], color="0.65",
-                               marker="o", linewidth=0, ms=3, label="Observations masked by PyCCD")
+                axes[num, 0].plot(data.dates_in[~data.ccd_mask], plot_data[b][0][data.date_mask][~data.ccd_mask], color="0.65",
+                               marker="o", linewidth=0, ms=3, label="Masked Observations")
 
+        # Give each subplot a title
         axes[num, 0].set_title(f'{b}')
 
-        # plot model break and start dates
+        # plot the model start, end, and break dates
         if model_on is True:
             match_dates = [b for b in data.break_dates for s in data.start_dates if b == s]
 
@@ -107,7 +102,6 @@ def draw_figure(data, items, model_on, masked_on):
                 else:
                     # Plot without a label to remove duplicates in the legend
                     axes[num, 0].axvline(e, color="black", linewidth=1.5)
-            print("End dates plotted")
 
             for ind, br in enumerate(data.break_dates):
                 if ind == 0:
@@ -115,7 +109,6 @@ def draw_figure(data, items, model_on, masked_on):
 
                 else:
                     axes[num, 0].axvline(br, color='r', linewidth=1.5)
-            print("break dates plotted")
 
             for ind, s in enumerate(data.start_dates):
                 if ind == 0:
@@ -123,7 +116,6 @@ def draw_figure(data, items, model_on, masked_on):
 
                 else:
                     axes[num, 0].axvline(s, color='b')
-            print("start dates plotted")
 
             for ind, m in enumerate(match_dates):
                 if ind == 0:
@@ -131,7 +123,6 @@ def draw_figure(data, items, model_on, masked_on):
 
                 else:
                     axes[num, 0].axvline(m, color="magenta", linewidth=1.5)
-            print("match dates plotted")
 
             # Predicted curves
             for c in range(0, len(data.results["change_models"])):
@@ -142,8 +133,6 @@ def draw_figure(data, items, model_on, masked_on):
                 else:
                     axes[num, 0].plot(data.prediction_dates[c * len(data.bands)], plot_data[b][1][c], "orange",
                                       alpha=0.8, linewidth=2)
-
-            print("predicted curves plotted")
 
         # Get ymin and ymax values to constrain the plot size
         if b in data.index_lookup.keys():
@@ -160,10 +149,11 @@ def draw_figure(data, items, model_on, masked_on):
 
         axes[num, 0].set_xticklabels(x_labels, rotation=70, horizontalalignment="right")
 
+        # Display the x and y values where the cursor is placed on a subplot
         axes[num, 0].format_coord = lambda x, y: "({0:f}, ".format(y) +  \
                                                  "{0:%Y-%m-%d})".format(dt.datetime.fromordinal(int(x)))
 
-        # Only add a legend to the final subplot to avoid repetition
+        # Only add a legend to the final subplot to avoid repetition and wasted space
         if b == list(plot_data.keys())[-1]:
             axes[num, 0].legend(mode="expand", ncol=4, bbox_to_anchor=(0., -0.35, 1, 0.25), loc=8, borderaxespad=0.)
 

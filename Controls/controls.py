@@ -16,7 +16,6 @@ from Controls.ui_main import Ui_PyCCDPlottingTool
 from retrieve_data import CCDReader
 
 # Import the PlotWindow display built in QT Designer
-# from PlotFrame.plotwindow import PlotWindow
 from PlotFrame.plotwindow import PlotWindow
 
 from Plotting import make_plots
@@ -41,9 +40,9 @@ class PlotControls(QMainWindow):
         self.ui.setupUi(self)
 
         # some temporary default values to make testing easier
-        self.ui.browseoutputline.setText(r"D:\Plot_Outputs\test_10.10.2017")
-        self.ui.browsejsonline.setText(r"D:\LCMAP\ARD_h13v05\json")
-        self.ui.browsecacheline.setText(r"D:\LCMAP\ARD_h13v05\cache")
+        self.ui.browseoutputline.setText(r"D:\Plot_Outputs\test_10.12.2017")
+        self.ui.browsejsonline.setText(r"Z:\sites\sd\pyccd-results\H13V05\2017.08.18\json")
+        self.ui.browsecacheline.setText(r"Z:\sites\sd\ARD\h13v05\cache")
         self.ui.arccoordsline.setText(r"-608,699.743  2,437,196.249 Meters")
         self.ui.hline.setText(r"13")
         self.ui.vline.setText(r"5")
@@ -53,8 +52,6 @@ class PlotControls(QMainWindow):
         self.ui.browsejsonbutton.clicked.connect(self.browsejson)
 
         self.ui.browseoutputbutton.clicked.connect(self.browseoutput)
-
-        self.check_if_values()
 
         self.ui.arccoordsline.textChanged.connect(self.check_if_values)
 
@@ -68,6 +65,8 @@ class PlotControls(QMainWindow):
 
         self.ui.browseoutputline.textChanged.connect(self.check_if_values)
 
+        self.check_if_values()
+
         self.ui.plotbutton.clicked.connect(self.plot)
 
         self.ui.exitbutton.clicked.connect(self.exit_plot)
@@ -75,15 +74,17 @@ class PlotControls(QMainWindow):
         self.init_ui()
 
     def init_ui(self):
-
+        """
+        Show the user interface
+        :return:
+        """
         self.show()
 
     def check_if_values(self):
         """
-        Check to make sure all required values have been entered before enabling the plot button
-        :return:
+        Check to make sure all of the required parameters have been entered before enabling the plot button
+        :return: None
         """
-
         # A list of 'switches' to identify whether a particular field has been populated
         c, j, h, v, o, a = 0, 0, 0, 0, 0, 0
 
@@ -147,6 +148,11 @@ class PlotControls(QMainWindow):
         return None
 
     def show_results(self, data):
+        """
+        Print the model results out to the GUI QPlainTextEdit widget
+        :param data:
+        :return:
+        """
         for num, result in enumerate(data.results["change_models"]):
             self.ui.plainTextEdit_results.appendPlainText("Result: {}".format(num))
 
@@ -173,31 +179,28 @@ class PlotControls(QMainWindow):
 
         masked_on = self.ui.radiomasked.isChecked()
 
-        extracted_data = CCDReader(h=int(self.ui.hline.text()), v=int(self.ui.vline.text()),
+        extracted_data = CCDReader(model_on=self.ui.radiomodelfit.isChecked(),
+                                   masked_on=self.ui.radiomasked.isChecked(),
+                                   h=int(self.ui.hline.text()),
+                                   v=int(self.ui.vline.text()),
                                    cache_dir=str(self.ui.browsecacheline.text()),
                                    json_dir=str(self.ui.browsejsonline.text()),
                                    arc_coords=str(self.ui.arccoordsline.text()),
-                                   output_dir=str(self.ui.browseoutputline.text()),
-                                   model_on=self.ui.radiomodelfit.isChecked(),
-                                   masked_on=self.ui.radiomasked.isChecked())
+                                   output_dir=str(self.ui.browseoutputline.text()))
 
         self.show_results(data=extracted_data)
 
-        print("Drawing plot...")
-
         self.item_list = [str(i.text()) for i in self.ui.listitems.selectedItems()]
-
-        print("User selected items:\n", self.item_list)
 
         fig = make_plots.draw_figure(data=extracted_data, items=self.item_list, model_on=model_on, masked_on=masked_on)
 
         addmaskstr, addmodelstr = "MASKEDOFF", "_MODELOFF"
 
-        # ****Generate the output .png filename****
+        # Generate the output .png filename
         fname = f"{extracted_data.output_dir}{os.sep}h{extracted_data.H}v{extracted_data.V}_" \
-                f"{extracted_data.arc_paste}_{addmaskstr}{addmodelstr}{self.item_list}.png"
+                f"{extracted_data.coord}_{addmaskstr}{addmodelstr}{self.item_list}.png"
 
-        # ****Save figure to .png and show figure in QWidget****
+        # Save figure to .png and show figure in QWidget
         if os.path.exists(fname):
             os.remove(fname)
 
@@ -212,12 +215,17 @@ class PlotControls(QMainWindow):
 
         global p
         p = PlotWindow(fig)
-        #plotting(fig)
-
+        # global p
 
         return None
 
-    def get_shp(self, data):
+    @staticmethod
+    def get_shp(data):
+        """
+        Create a point shapefile from the pair of x, y coordinates entered into the GUI
+        :param data:
+        :return:
+        """
 
         # GeoCoordinate(x=(float value), y=(float value), reference coords.x and coords.y to access x and y values
         coords = data.coord
@@ -277,8 +285,10 @@ class PlotControls(QMainWindow):
         return None
 
     def exit_plot(self):
-
-        # Close the main GUI and plot window
+        """
+        Close the main GUI and plot window
+        :return:
+        """
         self.close()
 
         sys.exit(0)
