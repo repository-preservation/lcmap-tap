@@ -40,12 +40,12 @@ class PlotControls(QMainWindow):
         self.ui.setupUi(self)
 
         # some temporary default values to make testing easier
-        self.ui.browseoutputline.setText(r"D:\Plot_Outputs\test_10.12.2017")
-        self.ui.browsejsonline.setText(r"Z:\sites\sd\pyccd-results\H13V05\2017.08.18\json")
-        self.ui.browsecacheline.setText(r"Z:\sites\sd\ARD\h13v05\cache")
-        self.ui.arccoordsline.setText(r"-608,699.743  2,437,196.249 Meters")
-        self.ui.hline.setText(r"13")
-        self.ui.vline.setText(r"5")
+        # self.ui.browseoutputline.setText(r"D:\Plot_Outputs\test_10.12.2017")
+        # self.ui.browsejsonline.setText(r"Z:\sites\sd\pyccd-results\H13V05\2017.08.18\json")
+        # self.ui.browsecacheline.setText(r"Z:\sites\sd\ARD\h13v05\cache")
+        # self.ui.arccoordsline.setText(r"-608,699.743  2,437,196.249 Meters")
+        # self.ui.hline.setText(r"13")
+        # self.ui.vline.setText(r"5")
 
         self.ui.browsecachebutton.clicked.connect(self.browsecache)
 
@@ -153,6 +153,10 @@ class PlotControls(QMainWindow):
         :param data:
         :return:
         """
+        self.ui.plainTextEdit_results.appendPlainText("Begin Date: {}".format(data.BEGIN_DATE))
+
+        self.ui.plainTextEdit_results.appendPlainText("End Date: {}".format(data.END_DATE))
+
         for num, result in enumerate(data.results["change_models"]):
             self.ui.plainTextEdit_results.appendPlainText("Result: {}".format(num))
 

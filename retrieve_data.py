@@ -409,17 +409,29 @@ class CCDReader:
 
         if len(self.dates_in) != len(self.ccd_mask) and len(np.unique(self.dates_in)) != len(self.ccd_mask):
 
-            print("There is an inconsistency with the length of the processing mask, therefore it will not be used.  "
-                  "PIXELQA band will be used to filter observations.")
-
             # TODO Must check the date mask range, some tiles are inclusive of the end date
-            # self.END_DATE = dt.date(year=2016, month=1, day=1)
+            self.END_DATE = dt.date(year=2016, month=1, day=1)
 
+            self.date_mask = self.mask_daterange(self.dates)
 
+            self.dates_in = self.dates[self.date_mask]
+            self.dates_out = self.dates[~self.date_mask]
 
-            self.ccd_mask = self.get_pqa_mask()
+            # Try using the inclusive date mask
+            if len(self.dates_in) == len(self.ccd_mask):
+                print(
+                    "The number of observations is consistent with the length of the PyCCD internal processing mask.\n"
+                    "No changes to the input observations are necessary.")
 
-            return None
+                return None
+
+            # If the inclusive date mask doesn't match the processing mask, then resort to using the PIXELQA
+            else:
+                print("There is an inconsistency with the length of the processing mask, therefore it will not be used."
+                    "  PIXELQA band will be used to filter observations.")
+                self.ccd_mask = self.get_pqa_mask()
+
+                return None
 
     def get_predicts(self, num):
         """
@@ -436,7 +448,6 @@ class CCDReader:
         return [self.predicted_values[m * len(self.bands) + n] for n in num
                 for m in range(len(self.results["change_models"]))]
 
-    # TODO Write method for generating PIXELQA mask
     def get_pqa_mask(self):
         """
         Generate a mask from the Pixel QA

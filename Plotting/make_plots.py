@@ -134,10 +134,11 @@ def draw_figure(data, items, model_on, masked_on):
                     axes[num, 0].plot(data.prediction_dates[c * len(data.bands)], plot_data[b][1][c], "orange",
                                       alpha=0.8, linewidth=2)
 
-        # Get ymin and ymax values to constrain the plot size
+        # Get ymin and ymax values to constrain the plot window size
         if b in data.index_lookup.keys():
             ymin = min(plot_data[b][0][data.date_mask][total_mask]) - 0.15
             ymax = max(plot_data[b][0][data.date_mask][total_mask]) + 0.1
+
         else:
             ymin = min(plot_data[b][0][data.date_mask][total_mask]) - 700
             ymax = max(plot_data[b][0][data.date_mask][total_mask]) + 500

@@ -39,7 +39,9 @@ def msavi(R, NIR):
 
     result = (2.0 * NIR + 1.0 - (sqrt ** 0.5)) / 2.0
 
-    result[result < -2] = 0
+    result[result >= 1.0] = 1.0
+
+    result[result <= -1.0] = -1.0
 
     return result
 
@@ -59,6 +61,10 @@ def ndvi(R, NIR):
     # result[mask] = (NIR[mask] - R[mask]) / (NIR[mask] + R[mask])
 
     result = (NIR - R) / res
+
+    result[result >= 1.0] = 1.0
+
+    result[result <= -1.0] = -1.0
 
     return result
 
