@@ -155,7 +155,7 @@ class PlotControls(QMainWindow):
         """
         self.ui.plainTextEdit_results.appendPlainText("Begin Date: {}".format(data.BEGIN_DATE))
 
-        self.ui.plainTextEdit_results.appendPlainText("End Date: {}".format(data.END_DATE))
+        self.ui.plainTextEdit_results.appendPlainText("End Date: {}\n".format(data.END_DATE))
 
         for num, result in enumerate(data.results["change_models"]):
             self.ui.plainTextEdit_results.appendPlainText("Result: {}".format(num))
