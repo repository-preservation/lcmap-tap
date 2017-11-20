@@ -147,17 +147,24 @@ class PlotControls(QMainWindow):
 
         return None
 
-    def show_results(self, data):
+    def show_results(self, begin_date, end_date, results):
         """
         Print the model results out to the GUI QPlainTextEdit widget
-        :param data:
+        :param begin_date: Time series begin date
+        :type begin_date: datetime.date
+        :param end_date: Time series end date
+        :type end_date: datetime.date
+        :param results: list of the PyCCD results
+        :type results: list[dict]
         :return:
         """
-        self.ui.plainTextEdit_results.appendPlainText("Begin Date: {}".format(data.BEGIN_DATE))
+        self.ui.plainTextEdit_results.clear()
 
-        self.ui.plainTextEdit_results.appendPlainText("End Date: {}\n".format(data.END_DATE))
+        self.ui.plainTextEdit_results.appendPlainText("Begin Date: {}".format(begin_date))
 
-        for num, result in enumerate(data.results["change_models"]):
+        self.ui.plainTextEdit_results.appendPlainText("End Date: {}\n".format(end_date))
+
+        for num, result in enumerate(results):
             self.ui.plainTextEdit_results.appendPlainText("Result: {}".format(num))
 
             self.ui.plainTextEdit_results.appendPlainText(
@@ -192,7 +199,9 @@ class PlotControls(QMainWindow):
                                    arc_coords=str(self.ui.arccoordsline.text()),
                                    output_dir=str(self.ui.browseoutputline.text()))
 
-        self.show_results(data=extracted_data)
+        # self.show_results(data=extracted_data)
+        self.show_results(begin_date=extracted_data.BEGIN_DATE, end_date=extracted_data.END_DATE,
+                          results=extracted_data.results["change_models"])
 
         self.item_list = [str(i.text()) for i in self.ui.listitems.selectedItems()]
 
