@@ -34,17 +34,25 @@ def draw_figure(data, items, model_on, masked_on):
     :param model_on: boolean
     :param data: class instance
     :param items: list of strings
-    :return: dictionary
+    :return:
     """
     plt.style.use('ggplot')
 
     # get year values for labeling plots
     year1 = str(dt.datetime.fromordinal(data.dates[0]))[:4]
     year2 = str(dt.datetime.fromordinal(data.dates[-1]))[:4]
+
+    # List of every other year
     years = range(int(year1), int(year2) + 2, 2)
+
+    # List of every single year
+    years_ = range(int(year1), int(year2) + 2, 1)
 
     # list of datetime objects with YYYY-MM-dd pattern using July 1 for month and day
     t = [dt.datetime(yx, 7, 1) for yx in years]
+
+    # list of datetime objects with YYYY-MM-dd pattern using January 1 for month and day
+    t_ = [dt.datetime(yx, 1, 1) for yx in years_]
 
     # list of ordinal time objects
     ord_time = [dt.datetime.toordinal(tx) for tx in t]
@@ -61,7 +69,7 @@ def draw_figure(data, items, model_on, masked_on):
 
     # squeeze=False allows for plt.subplots to have a single subplot, must specify the column index as well
     # when calling a subplot e.g. axes[num, 0] for plot number 'num' and column 1
-    fig, axes = plt.subplots(nrows=len(plot_data), ncols=1, figsize=(18, len(plot_data) * 7.5), dpi=65, squeeze=False)
+    fig, axes = plt.subplots(nrows=len(plot_data), fig_size=(18, len(plot_data)), ncols=1, dpi=65, squeeze=False)
 
     for num, b in enumerate(plot_data.keys()):
         print("Working on plot ", b)
@@ -153,6 +161,10 @@ def draw_figure(data, items, model_on, masked_on):
         # Display the x and y values where the cursor is placed on a subplot
         axes[num, 0].format_coord = lambda x, y: "({0:f}, ".format(y) +  \
                                                  "{0:%Y-%m-%d})".format(dt.datetime.fromordinal(int(x)))
+
+        # Plot a vertical line at January 1 of each year on the time series
+        for y in t_:
+            axes[num, 0].axvline(y, color=(0.4, 0.4, 0.4), linewidth=1.5)
 
         # Only add a legend to the final subplot to avoid repetition and wasted space
         if b == list(plot_data.keys())[-1]:

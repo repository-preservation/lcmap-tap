@@ -228,7 +228,6 @@ class PlotControls(QMainWindow):
 
         global p
         p = PlotWindow(fig)
-        # global p
 
         return None
 

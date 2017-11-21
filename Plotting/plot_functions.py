@@ -10,7 +10,7 @@ def test_for_zero(num):
     """
     # mask = np.zeros_like(num, dtype=np.bool)
 
-    num[num == 0] = 0.00001
+    num[num == 0] = 0.001
     # mask[num != 0.0] = True
 
     return num
