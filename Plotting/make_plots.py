@@ -69,7 +69,7 @@ def draw_figure(data, items, model_on, masked_on):
 
     # squeeze=False allows for plt.subplots to have a single subplot, must specify the column index as well
     # when calling a subplot e.g. axes[num, 0] for plot number 'num' and column 1
-    fig, axes = plt.subplots(nrows=len(plot_data), fig_size=(18, len(plot_data)), ncols=1, dpi=65, squeeze=False)
+    fig, axes = plt.subplots(nrows=len(plot_data), ncols=1, figsize=(18, len(plot_data) * 7.5), dpi=65, squeeze=False)
 
     for num, b in enumerate(plot_data.keys()):
         print("Working on plot ", b)
@@ -105,11 +105,11 @@ def draw_figure(data, items, model_on, masked_on):
 
             for ind, e in enumerate(data.end_dates):
                 if ind == 0:
-                    axes[num, 0].axvline(e, color="black", linewidth=1.5, label="End dates")
+                    axes[num, 0].axvline(e, color="maroon", linewidth=1.5, label="End dates")
 
                 else:
                     # Plot without a label to remove duplicates in the legend
-                    axes[num, 0].axvline(e, color="black", linewidth=1.5)
+                    axes[num, 0].axvline(e, color="maroon", linewidth=1.5)
 
             for ind, br in enumerate(data.break_dates):
                 if ind == 0:
@@ -164,10 +164,11 @@ def draw_figure(data, items, model_on, masked_on):
 
         # Plot a vertical line at January 1 of each year on the time series
         for y in t_:
-            axes[num, 0].axvline(y, color=(0.4, 0.4, 0.4), linewidth=1.5)
+            axes[num, 0].axvline(y, color="dimgray", linewidth=1.5)
 
-        # Only add a legend to the final subplot to avoid repetition and wasted space
-        if b == list(plot_data.keys())[-1]:
-            axes[num, 0].legend(mode="expand", ncol=4, bbox_to_anchor=(0., -0.35, 1, 0.25), loc=8, borderaxespad=0.)
+        # Only add a legend to the first subplot to avoid repetition and wasted space
+        if b == list(plot_data.keys())[0]:
+            axes[num, 0].legend(mode="expand", ncol=4, loc="upper center", bbox_to_anchor=(0, 1.01, 1, 0.25),
+                                borderaxespad=0.)
 
     return fig

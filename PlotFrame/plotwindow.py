@@ -40,6 +40,6 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.widget.layout().addWidget(self.scroll)
 
         self.canvas.fig.tight_layout(h_pad=6.0)
-        self.canvas.fig.subplots_adjust(top=0.99, bottom=0.10, left=0.05, right=0.95)
+        self.canvas.fig.subplots_adjust(top=0.98, bottom=0.01, left=0.05, right=0.95)
 
         self.show()
