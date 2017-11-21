@@ -219,8 +219,8 @@ class PlotControls(QMainWindow):
 
         fig.tight_layout(h_pad=8.0)
 
-        plt.savefig(fname, figuresize=(16, 38), bbox_inches="tight", dpi=150)
-
+        # plt.savefig(fname, figuresize=(16, 38), bbox_inches="tight", dpi=150)
+        plt.savefig(fname, bbox_inches="tight", dpi=150)
         print("\nplt object saved to file {}\n".format(fname))
 
         if shp_on is True:
