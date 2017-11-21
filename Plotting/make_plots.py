@@ -69,7 +69,7 @@ def draw_figure(data, items, model_on, masked_on):
 
     # squeeze=False allows for plt.subplots to have a single subplot, must specify the column index as well
     # when calling a subplot e.g. axes[num, 0] for plot number 'num' and column 1
-    fig, axes = plt.subplots(nrows=len(plot_data), ncols=1, figsize=(18, len(plot_data) * 7.5), dpi=65, squeeze=False)
+    fig, axes = plt.subplots(nrows=len(plot_data), ncols=1, figsize=(18, len(plot_data) * 6), dpi=65, squeeze=False)
 
     for num, b in enumerate(plot_data.keys()):
         print("Working on plot ", b)
