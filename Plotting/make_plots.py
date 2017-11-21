@@ -168,7 +168,7 @@ def draw_figure(data, items, model_on, masked_on):
 
         # Only add a legend to the first subplot to avoid repetition and wasted space
         if b == list(plot_data.keys())[0]:
-            axes[num, 0].legend(mode="expand", ncol=4, loc="upper center", bbox_to_anchor=(0, 1.01, 1, 0.25),
+            axes[num, 0].legend(ncol=4, loc="lower center", bbox_to_anchor=(0.5, 0.01),
                                 borderaxespad=0.)
 
     return fig
