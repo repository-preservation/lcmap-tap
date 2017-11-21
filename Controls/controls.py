@@ -219,33 +219,32 @@ class PlotControls(QMainWindow):
 
         fig.tight_layout(h_pad=8.0)
 
-        plt.savefig(fname, figuresize=(16, 38), bbox_inches="tight", dpi=150)
-
+        # plt.savefig(fname, figuresize=(16, 38), bbox_inches="tight", dpi=150)
+        plt.savefig(fname, bbox_inches="tight", dpi=150)
         print("\nplt object saved to file {}\n".format(fname))
 
         if shp_on is True:
-            self.get_shp(extracted_data)
+            self.get_shp(extracted_data.H, extracted_data.V, extracted_data.coord, extracted_data.output_dir)
 
         global p
         p = PlotWindow(fig)
-        # global p
 
         return None
 
     @staticmethod
-    def get_shp(data):
+    def get_shp(h, v, coords, output_dir):
         """
         Create a point shapefile from the pair of x, y coordinates entered into the GUI
-        :param data:
+        :param h:
+        :param v:
+        :param coords:
+        :param output_dir:
         :return:
         """
-
         # GeoCoordinate(x=(float value), y=(float value), reference coords.x and coords.y to access x and y values
-        coords = data.coord
+        layer_name = "H" + str(h) + "_V" + str(v) + "_" + str(coords.x) + "_" + str(coords.y)
 
-        layer_name = "H" + str(data.H) + "_V" + str(data.V) + "_" + str(coords.x) + "_" + str(coords.y)
-
-        out_shp = data.output_dir + os.sep + layer_name + ".shp"
+        out_shp = output_dir + os.sep + layer_name + ".shp"
 
         try:
             from osgeo import ogr, osr
