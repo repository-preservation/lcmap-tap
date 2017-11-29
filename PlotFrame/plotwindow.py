@@ -1,10 +1,8 @@
 
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtWidgets
 
-from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-import matplotlib
 
 
 class MplCanvas(FigureCanvas):
@@ -30,7 +28,6 @@ class PlotWindow(QtWidgets.QMainWindow):
 
         self.widget = QtWidgets.QWidget()
         self.setCentralWidget(self.widget)
-        # self.widget.setLayout(QtWidgets.QGridLayout())
         self.widget.setLayout(QtWidgets.QVBoxLayout())
         self.widget.layout().setContentsMargins(0, 0, 0, 0)
         self.widget.layout().setSpacing(0)
@@ -53,6 +50,5 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.widget.layout().addWidget(self.scroll)
 
         self.canvas.fig.tight_layout(h_pad=6.0)
-        #self.canvas.fig.subplots_adjust(top=0.99, bottom=0.00, left=0.05, right=0.85)
 
         self.show()

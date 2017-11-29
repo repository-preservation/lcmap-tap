@@ -1,4 +1,5 @@
 import sys
+import traceback
 import os
 import datetime as dt
 
@@ -183,21 +184,35 @@ class PlotControls(QMainWindow):
         return None
 
     def plot(self):
-
+        """
+        Generate the plots
+        :return:
+        """
         shp_on = self.ui.radioshp.isChecked()
 
         model_on = self.ui.radiomodelfit.isChecked()
 
         masked_on = self.ui.radiomasked.isChecked()
 
-        extracted_data = CCDReader(model_on=self.ui.radiomodelfit.isChecked(),
-                                   masked_on=self.ui.radiomasked.isChecked(),
-                                   h=int(self.ui.hline.text()),
-                                   v=int(self.ui.vline.text()),
-                                   cache_dir=str(self.ui.browsecacheline.text()),
-                                   json_dir=str(self.ui.browsejsonline.text()),
-                                   arc_coords=str(self.ui.arccoordsline.text()),
-                                   output_dir=str(self.ui.browseoutputline.text()))
+        try:
+            extracted_data = CCDReader(model_on=self.ui.radiomodelfit.isChecked(),
+                                       masked_on=self.ui.radiomasked.isChecked(),
+                                       h=int(self.ui.hline.text()),
+                                       v=int(self.ui.vline.text()),
+                                       cache_dir=str(self.ui.browsecacheline.text()),
+                                       json_dir=str(self.ui.browsejsonline.text()),
+                                       arc_coords=str(self.ui.arccoordsline.text()),
+                                       output_dir=str(self.ui.browseoutputline.text()))
+
+        except:
+            self.ui.plainTextEdit_results.clear()
+
+            self.ui.plainTextEdit_results.appendPlainText(f"***Plotting Error***"
+                                                          f"\n\nType of Exception: {sys.exc_info()[0]}"
+                                                          f"\nException Value: {sys.exc_info()[1]}"
+                                                          f"\nTraceback Info: {traceback.print_tb(sys.exc_info()[2])}")
+
+            return None
 
         # self.show_results(data=extracted_data)
         self.show_results(begin_date=extracted_data.BEGIN_DATE, end_date=extracted_data.END_DATE,
@@ -298,7 +313,7 @@ class PlotControls(QMainWindow):
 
     def exit_plot(self):
         """
-        Close the main GUI and plot window
+        Close the tool at the user's behest
         :return:
         """
         self.close()
