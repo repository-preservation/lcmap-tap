@@ -15,4 +15,4 @@ PROJCS["Albers",
     PARAMETER["false_easting",0],
     PARAMETER["false_northing",0],
     UNIT["metre",1,
-        AUTHORITY["EPSG","9001"]]]
+    AUTHORITY["EPSG","9001"]]]

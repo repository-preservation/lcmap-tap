@@ -9,7 +9,6 @@ matplotlib.use('Qt5Agg')
 from PyQt5.QtWidgets import QMainWindow, QFileDialog
 
 # Import the main GUI built in QTDesigner, compiled into python with pyuic5.bat
-# from Controls.ui_main import Ui_PyCCDPlottingTool
 from Controls.ui_main import Ui_PyCCDPlottingTool
 
 # Import the CCDReader class which retrieves json and cache data
@@ -47,6 +46,7 @@ class PlotControls(QMainWindow):
         # self.ui.hline.setText(r"13")
         # self.ui.vline.setText(r"5")
 
+        # Connect the various widgets to the methods they interact with
         self.ui.browsecachebutton.clicked.connect(self.browsecache)
 
         self.ui.browsejsonbutton.clicked.connect(self.browsejson)
