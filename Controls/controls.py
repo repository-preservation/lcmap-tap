@@ -66,6 +66,8 @@ class PlotControls(QMainWindow):
 
         self.ui.browseoutputline.textChanged.connect(self.check_if_values)
 
+        # self.ui.radiomasked.clicked.connect(self.updateplot)
+
         self.check_if_values()
 
         self.ui.plotbutton.clicked.connect(self.plot)
@@ -80,6 +82,16 @@ class PlotControls(QMainWindow):
         :return:
         """
         self.show()
+
+    def update_plot(self):
+        """
+
+        :return:
+        """
+        # TODO Write a method that updates the plots by turning certain artists on or off
+        pass
+        # p.canvas.draw()
+
 
     def check_if_values(self):
         """

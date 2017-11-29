@@ -36,7 +36,10 @@ class PlotWindow(QtWidgets.QMainWindow):
 
         self.canvas.draw()
 
+        self.canvas.figure.mpl_connect()
+
         self.nav = NavigationToolbar(self.canvas, self.widget)
+
         self.widget.layout().addWidget(self.nav)
 
         self.widget.layout().addWidget(self.canvas)
