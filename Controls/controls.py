@@ -90,7 +90,7 @@ class PlotControls(QMainWindow):
         """
         # TODO Write a method that updates the plots by turning certain artists on or off
         pass
-        # p.canvas.draw()
+        p.canvas.draw()
 
 
     def check_if_values(self):
