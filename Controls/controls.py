@@ -29,7 +29,7 @@ WKT = 'PROJCS["Albers",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",637814
       'PARAMETER["standard_parallel_2",45.5],PARAMETER["latitude_of_center",23],PARAMETER["longitude_of_center",-96],' \
       'PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]]]'
 
-
+# TODO need to add a separate plainTextEdit area on the GUI to show the clicked values
 class PlotControls(QMainWindow):
     def __init__(self):
 
@@ -82,16 +82,6 @@ class PlotControls(QMainWindow):
         :return:
         """
         self.show()
-
-    def update_plot(self):
-        """
-
-        :return:
-        """
-        # TODO Write a method that updates the plots by turning certain artists on or off
-        pass
-        p.canvas.draw()
-
 
     def check_if_values(self):
         """
@@ -232,7 +222,7 @@ class PlotControls(QMainWindow):
 
         self.item_list = [str(i.text()) for i in self.ui.listitems.selectedItems()]
 
-        fig = make_plots.draw_figure(data=extracted_data, items=self.item_list, model_on=model_on, masked_on=masked_on)
+        fig, artist_map = make_plots.draw_figure(data=extracted_data, items=self.item_list, model_on=model_on, masked_on=masked_on)
 
         addmaskstr, addmodelstr = "MASKEDOFF", "_MODELOFF"
 
@@ -254,7 +244,7 @@ class PlotControls(QMainWindow):
             self.get_shp(extracted_data.H, extracted_data.V, extracted_data.coord, extracted_data.output_dir)
 
         global p
-        p = PlotWindow(fig)
+        p = PlotWindow(fig=fig, artist_map=artist_map, gui=self)
 
         return None
 

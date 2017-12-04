@@ -67,20 +67,33 @@ def draw_figure(data, items, model_on, masked_on):
     # plot_data.key[1] contains the model predicted values
     plot_data = get_plot_items(data=data, items=items)
 
+    # Create an empty dict to contain the mapping of data series to artists
+    # artist_map.key[0] contains the x-series
+    # artist_map.key[1] contains the y-series
+    artist_map = {}
+
     # squeeze=False allows for plt.subplots to have a single subplot, must specify the column index as well
     # when calling a subplot e.g. axes[num, 0] for plot number 'num' and column 1
     fig, axes = plt.subplots(nrows=len(plot_data), ncols=1, figsize=(18, len(plot_data) * 6), dpi=65, squeeze=False)
 
     for num, b in enumerate(plot_data.keys()):
-        print("Working on plot ", b)
+        # print("Working on plot ", b)
 
         # Observed values within the PyCCD time range
-        axes[num, 0].plot(data.dates_in[total_mask], plot_data[b][0][data.date_mask][total_mask], 'go', ms=7, mec='k',
-                       mew=0.5, label="Observations used by PyCCD")
+        points1 = axes[num, 0].scatter(x=data.dates_in[total_mask],
+                                       y=plot_data[b][0][data.date_mask][total_mask], s=44, c="green", marker="o",
+                                       edgecolors="black", label="Observations used by PyCCD",
+                                       picker=3)
+
+        artist_map[points1] = [data.dates_in[total_mask], plot_data[b][0][data.date_mask][total_mask]]
 
         # Observed values outside of the PyCCD time range
-        axes[num, 0].plot(data.dates_out[data.fill_out],  plot_data[b][0][~data.date_mask][data.fill_out], 'ro', ms=5,
-                       mec='k', mew=0.5, label="Observations not used by PyCCD")
+        points2 = axes[num, 0].scatter(x=data.dates_out[data.fill_out],
+                                       y=plot_data[b][0][~data.date_mask][data.fill_out], s=21, color="red", marker="o",
+                                       edgecolors="black", label="Observations not used by PyCCD",
+                                       picker=5)
+
+        artist_map[points2] = [data.dates_out[data.fill_out], plot_data[b][0][~data.date_mask][data.fill_out]]
 
         # Plot the observed values masked out by PyCCD
         if masked_on is True:
@@ -89,12 +102,18 @@ def draw_figure(data, items, model_on, masked_on):
             if b in data.index_lookup.keys():
                 index_plot = plot_data[b][0][data.date_mask][~data.ccd_mask]
 
-                axes[num, 0].plot(data.dates_in[~data.ccd_mask][index_plot != 0], index_plot[index_plot != 0], color="0.65",
-                               marker="o", linewidth=0, ms=3, label="Masked Observations")
+                points3 = axes[num, 0].scatter(x=data.dates_in[~data.ccd_mask][index_plot != 0],
+                                               y=index_plot[index_plot != 0], color="0.65", marker="o",
+                                               label="Masked Observations", picker=5)
+
+                artist_map[points3] = [data.dates_in[~data.ccd_mask][index_plot != 0], index_plot[index_plot != 0]]
 
             else:
-                axes[num, 0].plot(data.dates_in[~data.ccd_mask], plot_data[b][0][data.date_mask][~data.ccd_mask], color="0.65",
-                               marker="o", linewidth=0, ms=3, label="Masked Observations")
+                points3 = axes[num, 0].scatter(x=data.dates_in[~data.ccd_mask],
+                                               y=plot_data[b][0][data.date_mask][~data.ccd_mask], color="0.65",
+                                               marker="o", label="Masked Observations", picker=5)
+
+                artist_map[points3] = [data.dates_in[~data.ccd_mask], plot_data[b][0][data.date_mask][~data.ccd_mask]]
 
         # Give each subplot a title
         axes[num, 0].set_title(f'{b}')
@@ -154,9 +173,11 @@ def draw_figure(data, items, model_on, masked_on):
         axes[num, 0].set_ylim([ymin, ymax])
 
         # Add x-ticks and x-tick_labels
-        axes[num, 0].set_xticks(ord_time)
+        # I think that commenting this out is for the best.  Letting the backend handle the tick labeling allows for
+        # auto-rescaling as far as I can tell.
+        # axes[num, 0].set_xticks(ord_time)
 
-        axes[num, 0].set_xticklabels(x_labels, rotation=70, horizontalalignment="right")
+        # axes[num, 0].set_xticklabels(x_labels, rotation=70, horizontalalignment="right")
 
         # Display the x and y values where the cursor is placed on a subplot
         axes[num, 0].format_coord = lambda x, y: "({0:f}, ".format(y) +  \
@@ -167,8 +188,9 @@ def draw_figure(data, items, model_on, masked_on):
             axes[num, 0].axvline(y, color="dimgray", linewidth=1.5)
 
         # Only add a legend to the first subplot to avoid repetition and wasted space
-        if b == list(plot_data.keys())[0]:
-            axes[num, 0].legend(ncol=4, loc="lower center", bbox_to_anchor=(0.5, 0.01),
-                                borderaxespad=0.)
+        # Trying legend in all axes right now
+        # if b == list(plot_data.keys())[0]:
+        axes[num, 0].legend(ncol=4, loc="upper left", bbox_to_anchor=(0.0, 1.00),
+                            borderaxespad=0.)
 
-    return fig
+    return fig, artist_map
