@@ -163,6 +163,8 @@ class PlotControls(QMainWindow):
         """
         self.ui.plainTextEdit_results.clear()
 
+        self.ui.plainTextEdit_click.clear()
+
         self.ui.plainTextEdit_results.appendPlainText("Begin Date: {}".format(begin_date))
 
         self.ui.plainTextEdit_results.appendPlainText("End Date: {}\n".format(end_date))
@@ -206,6 +208,8 @@ class PlotControls(QMainWindow):
                                        arc_coords=str(self.ui.arccoordsline.text()),
                                        output_dir=str(self.ui.browseoutputline.text()))
 
+        # I left the exception clause bare because there are at least 2 different exception types that can occur
+        # if any of the parameters passed with the GUI are incorrect.
         except:
             self.ui.plainTextEdit_results.clear()
 
@@ -230,7 +234,7 @@ class PlotControls(QMainWindow):
         fname = f"{extracted_data.output_dir}{os.sep}h{extracted_data.H}v{extracted_data.V}_" \
                 f"{extracted_data.coord}_{addmaskstr}{addmodelstr}{self.item_list}.png"
 
-        # Save figure to .png and show figure in QWidget
+        # Save figure to .png
         if os.path.exists(fname):
             os.remove(fname)
 
@@ -243,6 +247,7 @@ class PlotControls(QMainWindow):
         if shp_on is True:
             self.get_shp(extracted_data.H, extracted_data.V, extracted_data.coord, extracted_data.output_dir)
 
+        # Show the figure in an interactive window
         global p
         p = PlotWindow(fig=fig, artist_map=artist_map, gui=self)
 
@@ -267,7 +272,8 @@ class PlotControls(QMainWindow):
             from osgeo import ogr, osr
 
         except ImportError:
-            import ogr, osr
+            # import ogr, osr
+            print("GDAL not found, can't generate point shapefile.")
 
             return None
 
