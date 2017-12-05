@@ -51,3 +51,4 @@ docs/_build/
 
 # JetBrains
 .idea/
+.ipynb_checkpoints/
