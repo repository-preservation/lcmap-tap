@@ -8,10 +8,7 @@ def test_for_zero(num):
     :param num: <numpy.ndarray>
     :return mask: <numpy.ndarray> A boolean-type mask, 1 for valid, 0 for ignore
     """
-    # mask = np.zeros_like(num, dtype=np.bool)
-
-    num[num == 0] = 0.001
-    # mask[num != 0.0] = True
+    num[num == 0.0] = 0.001
 
     return num
 
@@ -35,13 +32,11 @@ def msavi(R, NIR):
     :param NIR:
     :return:
     """
-    sqrt = test_for_negative((2.0 * NIR + 1.0) ** 2.0 - 8.0 * (NIR - R))
+    sqrt = (2.0 * (NIR * 0.0001) + 1.0) ** 2.0 - 8.0 * ((NIR * 0.0001) - (R * 0.0001))
 
-    result = (2.0 * NIR + 1.0 - (sqrt ** 0.5)) / 2.0
+    sqrt = test_for_negative(sqrt)
 
-    result[result >= 1.0] = 1.0
-
-    result[result <= -1.0] = -1.0
+    result = (2.0 * (NIR * 0.0001) + 1.0 - (sqrt ** 0.5)) / 2.0
 
     return result
 
@@ -54,22 +49,16 @@ def ndvi(R, NIR):
     :param NIR:
     :return:
     """
-    res = test_for_zero(NIR + R)
+    den = NIR + R
 
-    # result = np.zeros_like(R, dtype=np.float32)
+    den = test_for_zero(den)
 
-    # result[mask] = (NIR[mask] - R[mask]) / (NIR[mask] + R[mask])
-
-    result = (NIR - R) / res
-
-    result[result >= 1.0] = 1.0
-
-    result[result <= -1.0] = -1.0
+    result = (NIR - R) / den
 
     return result
 
 
-def evi(B, R, NIR, G=2.5, L=1.0, C1=6, C2=7.5):
+def evi(B, R, NIR, G=2.5, L=1.0, C1=6.0, C2=7.5):
     """
     Enhanced Vegetation Index
     G * ((NIR - R) / (NIR + C1 * R - C2 * B + L))
@@ -82,14 +71,11 @@ def evi(B, R, NIR, G=2.5, L=1.0, C1=6, C2=7.5):
     :param C2: <float> Constant
     :return:
     """
-    res = test_for_zero(NIR + C1 * R - C2 * B + L)
-    # result = np.zeros_like(R, dtype=np.float32)
+    den = (NIR * 0.0001) + C1 * (R * 0.0001) - C2 * (B * 0.0001) + L
 
-    # result[mask] = G * ((NIR[mask] - R[mask]) / (NIR[mask] + C1 * R[mask] - C2 * B[mask] + L))
-    result = G * ((NIR - R) / res)
+    den = test_for_zero(den)
 
-    result[result >= 5] = 0
-    result[result <= -5] = 0
+    result = G * (((NIR * 0.0001) - (R * 0.0001)) / den)
 
     return result
 
@@ -103,11 +89,11 @@ def savi(R, NIR, L=0.5):
     :param L:
     :return:
     """
-    res = test_for_zero(NIR + R + L)
-    # result = np.zeros_like(R, dtype=np.float32)
+    den = (NIR * 0.0001) + (R * 0.0001) + L
 
-    # result[mask] = ((NIR[mask] - R[mask]) / (NIR[mask] +R[mask] + L)) * (1 + L)
-    result = ((NIR - R) / (res)) * (1 + L)
+    den = test_for_zero(den)
+
+    result = (((NIR * 0.0001) - (R * 0.0001)) / den) * (1 + L)
 
     return result
 
@@ -120,11 +106,11 @@ def ndmi(NIR, SWIR1):
     :param SWIR1:
     :return:
     """
-    res = test_for_zero(NIR + SWIR1)
-    # result = np.zeros_like(NIR, dtype=np.float32)
+    den = NIR + SWIR1
 
-    # result[mask] = (NIR[mask] - SWIR1[mask]) / (NIR[mask] + SWIR1[mask])
-    result = (NIR - SWIR1) / res
+    den = test_for_zero(den)
+
+    result = (NIR - SWIR1) / den
 
     return result
 
@@ -137,11 +123,11 @@ def nbr(NIR, SWIR2):
     :param SWIR2:
     :return:
     """
-    res = test_for_zero(NIR + SWIR2)
-    # result = np.zeros_like(NIR, dtype=np.float32)
+    den = NIR + SWIR2
 
-    # result[mask] = (NIR[mask] - SWIR2[mask]) / (NIR[mask] + SWIR2[mask])
-    result = (NIR - SWIR2) / res
+    den = test_for_zero(den)
+
+    result = (NIR - SWIR2) / den
 
     return result
 
@@ -154,10 +140,10 @@ def nbr2(SWIR1, SWIR2):
     :param SWIR2:
     :return:
     """
-    res = test_for_zero(SWIR1 + SWIR2)
-    # result = np.zeros_like(SWIR1, dtype=np.float32)
+    den = SWIR1 + SWIR2
 
-    # result[mask] = (SWIR1[mask] - SWIR2[mask]) / (SWIR1[mask] + SWIR2[mask])
-    result = (SWIR1 - SWIR2) / res
+    den = test_for_zero(den)
+
+    result = (SWIR1 - SWIR2) / den
 
     return result

@@ -130,19 +130,20 @@ class CCDReader:
         self.masked_on = masked_on
 
         # Calculate indices from observed values
-        self.EVI = plot_functions.evi(B=self.data[0], NIR=self.data[3], R=self.data[2])
+        self.EVI = plot_functions.evi(B=self.data[0].astype(np.float), NIR=self.data[3].astype(np.float),
+                                      R=self.data[2].astype(np.float))
 
-        self.NDVI = plot_functions.ndvi(R=self.data[2], NIR=self.data[3])
+        self.NDVI = plot_functions.ndvi(R=self.data[2].astype(np.float), NIR=self.data[3].astype(np.float))
 
-        self.MSAVI = plot_functions.msavi(R=self.data[2], NIR=self.data[3])
+        self.MSAVI = plot_functions.msavi(R=self.data[2].astype(np.float), NIR=self.data[3].astype(np.float))
 
-        self.SAVI = plot_functions.savi(R=self.data[2], NIR=self.data[3])
+        self.SAVI = plot_functions.savi(R=self.data[2].astype(np.float), NIR=self.data[3].astype(np.float))
 
-        self.NDMI = plot_functions.ndmi(NIR=self.data[3], SWIR1=self.data[4])
+        self.NDMI = plot_functions.ndmi(NIR=self.data[3].astype(np.float), SWIR1=self.data[4].astype(np.float))
 
-        self.NBR = plot_functions.nbr(NIR=self.data[3], SWIR2=self.data[5])
+        self.NBR = plot_functions.nbr(NIR=self.data[3].astype(np.float), SWIR2=self.data[5].astype(np.float))
 
-        self.NBR2 = plot_functions.nbr2(SWIR1=self.data[4], SWIR2=self.data[5])
+        self.NBR2 = plot_functions.nbr2(SWIR1=self.data[4].astype(np.float), SWIR2=self.data[5].astype(np.float))
 
         # Calculate indices from the results' change models.  The change models are stored by order of model, then
         # band number.  For example, the band values for the first change model are represented by indices 0-5,
