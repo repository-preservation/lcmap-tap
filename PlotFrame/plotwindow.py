@@ -84,7 +84,6 @@ class PlotWindow(QtWidgets.QMainWindow):
 
                     artist_data = [nearest_x, nearest_y]
 
-                    # TODO need to figure out how/where to send this
                     print(f"point clicked: {point_clicked}\n"
                           f"nearest artist: {self.value_holder}")
 
