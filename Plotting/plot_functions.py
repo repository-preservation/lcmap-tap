@@ -8,10 +8,7 @@ def test_for_zero(num):
     :param num: <numpy.ndarray>
     :return mask: <numpy.ndarray> A boolean-type mask, 1 for valid, 0 for ignore
     """
-    # mask = np.zeros_like(num, dtype=np.bool)
-
     num[num == 0.0] = 0.001
-    # mask[num != 0.0] = True
 
     return num
 
@@ -36,13 +33,10 @@ def msavi(R, NIR):
     :return:
     """
     sqrt = (2.0 * (NIR * 0.0001) + 1.0) ** 2.0 - 8.0 * ((NIR * 0.0001) - (R * 0.0001))
+
     sqrt = test_for_negative(sqrt)
 
     result = (2.0 * (NIR * 0.0001) + 1.0 - (sqrt ** 0.5)) / 2.0
-
-    # result[result >= 1.0] = 1.0
-
-    # result[result <= -1.0] = -1.0
 
     return result
 
@@ -59,15 +53,7 @@ def ndvi(R, NIR):
 
     den = test_for_zero(den)
 
-    # result = np.zeros_like(R, dtype=np.float32)
-
-    # result[mask] = (NIR[mask] - R[mask]) / (NIR[mask] + R[mask])
-
     result = (NIR - R) / den
-
-    # result[result >= 1.0] = 1.0
-
-    # result[result <= -1.0] = -1.0
 
     return result
 
@@ -86,13 +72,10 @@ def evi(B, R, NIR, G=2.5, L=1.0, C1=6.0, C2=7.5):
     :return:
     """
     den = (NIR * 0.0001) + C1 * (R * 0.0001) - C2 * (B * 0.0001) + L
+
     den = test_for_zero(den)
 
-    # result[mask] = G * ((NIR[mask] - R[mask]) / (NIR[mask] + C1 * R[mask] - C2 * B[mask] + L))
     result = G * (((NIR * 0.0001) - (R * 0.0001)) / den)
-
-    # result[result >= 5] = 0
-    # result[result <= -5] = 0
 
     return result
 
@@ -107,10 +90,9 @@ def savi(R, NIR, L=0.5):
     :return:
     """
     den = (NIR * 0.0001) + (R * 0.0001) + L
-    den = test_for_zero(den)
-    # result = np.zeros_like(R, dtype=np.float32)
 
-    # result[mask] = ((NIR[mask] - R[mask]) / (NIR[mask] +R[mask] + L)) * (1 + L)
+    den = test_for_zero(den)
+
     result = (((NIR * 0.0001) - (R * 0.0001)) / den) * (1 + L)
 
     return result
@@ -125,10 +107,9 @@ def ndmi(NIR, SWIR1):
     :return:
     """
     den = NIR + SWIR1
-    den = test_for_zero(den)
-    # result = np.zeros_like(NIR, dtype=np.float32)
 
-    # result[mask] = (NIR[mask] - SWIR1[mask]) / (NIR[mask] + SWIR1[mask])
+    den = test_for_zero(den)
+
     result = (NIR - SWIR1) / den
 
     return result
@@ -143,10 +124,9 @@ def nbr(NIR, SWIR2):
     :return:
     """
     den = NIR + SWIR2
-    den = test_for_zero(den)
-    # result = np.zeros_like(NIR, dtype=np.float32)
 
-    # result[mask] = (NIR[mask] - SWIR2[mask]) / (NIR[mask] + SWIR2[mask])
+    den = test_for_zero(den)
+
     result = (NIR - SWIR2) / den
 
     return result
@@ -161,10 +141,9 @@ def nbr2(SWIR1, SWIR2):
     :return:
     """
     den = SWIR1 + SWIR2
-    den = test_for_zero(den)
-    # result = np.zeros_like(SWIR1, dtype=np.float32)
 
-    # result[mask] = (SWIR1[mask] - SWIR2[mask]) / (SWIR1[mask] + SWIR2[mask])
+    den = test_for_zero(den)
+
     result = (SWIR1 - SWIR2) / den
 
     return result
