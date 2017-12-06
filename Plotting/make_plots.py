@@ -72,14 +72,18 @@ def draw_figure(data, items, model_on, masked_on):
     # artist_map.key[1] contains the y-series
     artist_map = {}
 
+    # legends = []
+
+    lines_map = {}
+
     # squeeze=False allows for plt.subplots to have a single subplot, must specify the column index as well
     # when calling a subplot e.g. axes[num, 0] for plot number 'num' and column 1
     fig, axes = plt.subplots(nrows=len(plot_data), ncols=1, figsize=(18, len(plot_data) * 6), dpi=65, squeeze=False)
 
     for num, b in enumerate(plot_data.keys()):
-        # print("Working on plot ", b)
+        end_lines, break_lines, start_lines, match_lines, model_lines, date_lines = [], [], [], [], [], []
 
-        # Observed values within the PyCCD time range
+        #### Observed values within the PyCCD time range ####
         points1 = axes[num, 0].scatter(x=data.dates_in[total_mask],
                                        y=plot_data[b][0][data.date_mask][total_mask], s=44, c="green", marker="o",
                                        edgecolors="black", label="Observations used by PyCCD",
@@ -87,7 +91,7 @@ def draw_figure(data, items, model_on, masked_on):
 
         artist_map[points1] = [data.dates_in[total_mask], plot_data[b][0][data.date_mask][total_mask]]
 
-        # Observed values outside of the PyCCD time range
+        #### Observed values outside of the PyCCD time range ####
         points2 = axes[num, 0].scatter(x=data.dates_out[data.fill_out],
                                        y=plot_data[b][0][~data.date_mask][data.fill_out], s=21, color="red", marker="o",
                                        edgecolors="black", label="Observations outside model termination",
@@ -95,7 +99,7 @@ def draw_figure(data, items, model_on, masked_on):
 
         artist_map[points2] = [data.dates_out[data.fill_out], plot_data[b][0][~data.date_mask][data.fill_out]]
 
-        # Plot the observed values masked out by PyCCD
+        #### Plot the observed values masked out by PyCCD ####
         if masked_on is True:
 
             # Remove the 0-value masked observations for the index plots
@@ -118,48 +122,70 @@ def draw_figure(data, items, model_on, masked_on):
         # Give each subplot a title
         axes[num, 0].set_title(f'{b}')
 
-        # plot the model start, end, and break dates
+        #### plot the model start, end, and break dates ####
         if model_on is True:
+            # ☻ I have no idea what keystroke mistakenly created this, just leaving it.
+
             match_dates = [b for b in data.break_dates for s in data.start_dates if b == s]
 
             for ind, e in enumerate(data.end_dates):
                 if ind == 0:
-                    axes[num, 0].axvline(e, color="maroon", linewidth=1.5, label="End dates")
+                    lines1 = axes[num, 0].axvline(e, color="maroon", linewidth=1.5, label="End dates")
+
+                    end_lines.append(lines1)
 
                 else:
                     # Plot without a label to remove duplicates in the legend
-                    axes[num, 0].axvline(e, color="maroon", linewidth=1.5)
+                    lines1 = axes[num, 0].axvline(e, color="maroon", linewidth=1.5)
+
+                    end_lines.append(lines1)
 
             for ind, br in enumerate(data.break_dates):
                 if ind == 0:
-                    axes[num, 0].axvline(br, color='r', linewidth=1.5, label="Break dates")
+                    lines2 = axes[num, 0].axvline(br, color='r', linewidth=1.5, label="Break dates")
+
+                    break_lines.append(lines2)
 
                 else:
-                    axes[num, 0].axvline(br, color='r', linewidth=1.5)
+                    lines2 = axes[num, 0].axvline(br, color='r', linewidth=1.5)
+
+                    break_lines.append(lines2)
 
             for ind, s in enumerate(data.start_dates):
                 if ind == 0:
-                    axes[num, 0].axvline(s, color='b', linewidth=1.5, label="Start dates")
+                    lines3 = axes[num, 0].axvline(s, color='b', linewidth=1.5, label="Start dates")
+
+                    start_lines.append(lines3)
 
                 else:
-                    axes[num, 0].axvline(s, color='b')
+                    lines3 = axes[num, 0].axvline(s, color='b')
+
+                    start_lines.append(lines3)
 
             for ind, m in enumerate(match_dates):
                 if ind == 0:
-                    axes[num, 0].axvline(m, color="magenta", linewidth=1.5, label="Break date = Start date")
+                    lines4 = axes[num, 0].axvline(m, color="magenta", linewidth=1.5, label="Break date = Start date")
+
+                    match_lines.append(lines4)
 
                 else:
-                    axes[num, 0].axvline(m, color="magenta", linewidth=1.5)
+                    lines4 = axes[num, 0].axvline(m, color="magenta", linewidth=1.5)
+
+                    match_lines.append(lines4)
 
             #### Draw the predicted curves ####
             for c in range(0, len(data.results["change_models"])):
                 if c == 0:
-                    axes[num, 0].plot(data.prediction_dates[c * len(data.bands)],  plot_data[b][1][c], "orange",
+                    lines5, = axes[num, 0].plot(data.prediction_dates[c * len(data.bands)],  plot_data[b][1][c], "orange",
                                       linewidth=2, alpha=0.8, label="PyCCD model fit")
 
+                    model_lines.append(lines5)
+
                 else:
-                    axes[num, 0].plot(data.prediction_dates[c * len(data.bands)], plot_data[b][1][c], "orange",
+                    lines5, = axes[num, 0].plot(data.prediction_dates[c * len(data.bands)], plot_data[b][1][c], "orange",
                                       alpha=0.8, linewidth=2)
+
+                    model_lines.append(lines5)
 
         # Get ymin and ymax values to constrain the plot window size
         if b in data.index_lookup.keys():
@@ -191,14 +217,33 @@ def draw_figure(data, items, model_on, masked_on):
         axes[num, 0].format_coord = lambda x, y: "({0:f}, ".format(y) +  \
                                                  "{0:%Y-%m-%d})".format(dt.datetime.fromordinal(int(x)))
 
-        # Plot a vertical line at January 1 of each year on the time series
+        #### Plot a vertical line at January 1 of each year on the time series ####
         for y in t_:
-            axes[num, 0].axvline(y, color="dimgray", linewidth=1.5)
+            if y == t_[0]:
+                lines6 = axes[num, 0].axvline(y, color="dimgray", linewidth=1.5, label="Datelines")
+
+                date_lines.append(lines6)
+
+            else:
+                lines6 = axes[num, 0].axvline(y, color="dimgray", linewidth=1.5)
+
+                date_lines.append(lines6)
 
         # Only add a legend to the first subplot to avoid repetition and wasted space
         # Trying legend in all axes right now
         # if b == list(plot_data.keys())[0]:
-        axes[num, 0].legend(ncol=4, loc="upper left", bbox_to_anchor=(0.0, 1.00),
+        leg = axes[num, 0].legend(ncol=4, loc="upper left", bbox_to_anchor=(0.0, 1.00),
                             borderaxespad=0.)
 
-    return fig, artist_map
+        # legends.append(leg)
+
+        # Collect all the lines together in a list of lists
+        lines = [end_lines, break_lines, start_lines, match_lines, model_lines, date_lines]
+
+        # Map the legend lines to the original lines for referencing by the picker
+        for legline, origline in zip(leg.get_lines(), lines):
+            legline.set_picker(5)
+
+            lines_map[legline] = origline
+
+    return fig, artist_map, lines_map

@@ -30,7 +30,7 @@ class MplCanvas(FigureCanvas):
 
 
 class PlotWindow(QtWidgets.QMainWindow):
-    def __init__(self, fig, artist_map, gui, scenes, parent=None):
+    def __init__(self, fig, artist_map, lines_map, gui, scenes, parent=None):
 
         super(PlotWindow, self).__init__(parent)
 
@@ -110,6 +110,39 @@ class PlotWindow(QtWidgets.QMainWindow):
                 # Do this so nothing happens when the other mouse buttons are clicked while over a plot
                 return False, dict()
 
+        # Define a picker method that allows toggling lines on/off by clicking the legend
+        def leg_pick(event):
+            """
+
+            :param event:
+            :return:
+            """
+            try:
+                legline = event.artist
+
+                # The origlines is a list of lines mapped to the legline for that particular subplot
+                origlines = lines_map[legline]
+
+                for l in origlines:
+
+                    vis = not l.get_visible()
+
+                    l.set_visible(vis)
+
+                    # Change the transparency of the picked object in the legend so the user can see explicitly
+                    # which items are turned on/off
+                    if vis:
+                        legline.set_alpha(1.0)
+
+                    else:
+                        legline.set_alpha(0.2)
+
+                self.canvas.draw()
+
+            except KeyError:
+                return False, dict()
+
+
         self.nav = NavigationToolbar(self.canvas, self.widget)
 
         self.widget.layout().addWidget(self.nav)
@@ -126,5 +159,7 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.canvas.fig.tight_layout(h_pad=6.0)
 
         self.canvas.mpl_connect("pick_event", point_pick)
+
+        self.canvas.mpl_connect("pick_event", leg_pick)
 
         self.show()

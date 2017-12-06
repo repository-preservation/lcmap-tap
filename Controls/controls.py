@@ -237,7 +237,9 @@ class PlotControls(QMainWindow):
 
         # Make the matplotlib figure object containing all of the artists(axes, points, lines, legends, labels, etc.)
         # The artist_map is a dict mapping each specific PathCollection artist to it's underlying dataset
-        fig, artist_map = make_plots.draw_figure(data=extracted_data, items=self.item_list, model_on=model_on, masked_on=masked_on)
+        # The lines_map is a dict mapping artist lines to the legend lines
+        fig, artist_map, lines_map = make_plots.draw_figure(data=extracted_data, items=self.item_list,
+                                                            model_on=model_on, masked_on=masked_on)
 
         # These strings are used in naming the output .png file
         addmaskstr, addmodelstr = "MASKEDOFF", "_MODELOFF"
@@ -261,7 +263,8 @@ class PlotControls(QMainWindow):
             self.get_shp(extracted_data.H, extracted_data.V, extracted_data.coord, extracted_data.output_dir)
 
         # Show the figure in an interactive window
-        self.p = PlotWindow(fig=fig, artist_map=artist_map, gui=self, scenes=extracted_data.image_ids)
+        self.p = PlotWindow(fig=fig, artist_map=artist_map, lines_map=lines_map, gui=self,
+                            scenes=extracted_data.image_ids)
 
         return None
 
