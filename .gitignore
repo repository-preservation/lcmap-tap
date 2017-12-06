@@ -49,6 +49,7 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 
-# JetBrains
+# JetBrains and Notebooks
 .idea/
 .ipynb_checkpoints/
+Scratch.ipynb
