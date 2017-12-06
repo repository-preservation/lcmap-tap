@@ -30,7 +30,7 @@ class MplCanvas(FigureCanvas):
 
 
 class PlotWindow(QtWidgets.QMainWindow):
-    def __init__(self, fig, artist_map, gui, parent = None):
+    def __init__(self, fig, artist_map, gui, scenes, parent=None):
 
         super(PlotWindow, self).__init__(parent)
 
@@ -62,8 +62,7 @@ class PlotWindow(QtWidgets.QMainWindow):
 
             # Only works using left-click (event.mouseevent.button==1)
             # and on any of the scatter point series (PathCollection artists)
-
-            if isinstance(artist, PathCollection) and mouseevent.button==1:
+            if isinstance(artist, PathCollection) and mouseevent.button == 1:
                 # Return the index value of the artist (i.e. which data point in the series was hit)
                 ind = event.ind
 
@@ -89,14 +88,18 @@ class PlotWindow(QtWidgets.QMainWindow):
 
                     self.value_holder["temp"] = [point_clicked, artist_data]
 
-                    # gui.ui.plainTextEdit_click.appendPlainText(f"{self.value_holder['temp'][1][0]}, "
-                    #                                           f"{self.value_holder['temp'][1][1]}")
+                    test_str = "{:%Y%m%d}".format(self.value_holder["temp"][1][0])
+
+                    for id in scenes:
+                        if test_str in id:
+                            self.value_holder["temp"].append(id)
+
+                            gui.ui.plainTextEdit_click.appendPlainText("Scene ID: {}".format(id))
 
                     # Show the picked information in a text box on the GUI
                     gui.ui.plainTextEdit_click.appendPlainText(
-                        "Obs. Date: {:%Y-%b-%d} | {}\n".format(self.value_holder['temp'][1][0],
-                                                               self.value_holder['temp'][1][1]))
-
+                        "Obs. Date: {:%Y-%b-%d} \nY-Value: {}\n".format(self.value_holder['temp'][1][0],
+                                                               self.value_holder['temp'][1][1][0]))
 
                 # I think the TypeError might occur when more than a single data point is returned with one click,
                 # but need to investigate further.
@@ -104,15 +107,8 @@ class PlotWindow(QtWidgets.QMainWindow):
                     pass
 
             else:
-                # Do this so nothing happens when the other mouse buttons are clicked
+                # Do this so nothing happens when the other mouse buttons are clicked while over a plot
                 return False, dict()
-
-
-
-
-
-
-
 
         self.nav = NavigationToolbar(self.canvas, self.widget)
 
@@ -130,7 +126,5 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.canvas.fig.tight_layout(h_pad=6.0)
 
         self.canvas.mpl_connect("pick_event", point_pick)
-
-
 
         self.show()

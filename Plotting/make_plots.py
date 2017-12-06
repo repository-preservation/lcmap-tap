@@ -90,7 +90,7 @@ def draw_figure(data, items, model_on, masked_on):
         # Observed values outside of the PyCCD time range
         points2 = axes[num, 0].scatter(x=data.dates_out[data.fill_out],
                                        y=plot_data[b][0][~data.date_mask][data.fill_out], s=21, color="red", marker="o",
-                                       edgecolors="black", label="Observations not used by PyCCD",
+                                       edgecolors="black", label="Observations outside model termination",
                                        picker=5)
 
         artist_map[points2] = [data.dates_out[data.fill_out], plot_data[b][0][~data.date_mask][data.fill_out]]
@@ -103,14 +103,14 @@ def draw_figure(data, items, model_on, masked_on):
                 index_plot = plot_data[b][0][data.date_mask][~data.ccd_mask]
 
                 points3 = axes[num, 0].scatter(x=data.dates_in[~data.ccd_mask][index_plot != 0],
-                                               y=index_plot[index_plot != 0], color="0.65", marker="o",
+                                               y=index_plot[index_plot != 0], s=21, color="0.65", marker="o",
                                                label="Masked Observations", picker=5)
 
                 artist_map[points3] = [data.dates_in[~data.ccd_mask][index_plot != 0], index_plot[index_plot != 0]]
 
             else:
                 points3 = axes[num, 0].scatter(x=data.dates_in[~data.ccd_mask],
-                                               y=plot_data[b][0][data.date_mask][~data.ccd_mask], color="0.65",
+                                               y=plot_data[b][0][data.date_mask][~data.ccd_mask], s=21, color="0.65",
                                                marker="o", label="Masked Observations", picker=5)
 
                 artist_map[points3] = [data.dates_in[~data.ccd_mask], plot_data[b][0][data.date_mask][~data.ccd_mask]]
@@ -151,7 +151,7 @@ def draw_figure(data, items, model_on, masked_on):
                 else:
                     axes[num, 0].axvline(m, color="magenta", linewidth=1.5)
 
-            # Predicted curves
+            #### Draw the predicted curves ####
             for c in range(0, len(data.results["change_models"])):
                 if c == 0:
                     axes[num, 0].plot(data.prediction_dates[c * len(data.bands)],  plot_data[b][1][c], "orange",
@@ -163,23 +163,31 @@ def draw_figure(data, items, model_on, masked_on):
 
         # Get ymin and ymax values to constrain the plot window size
         if b in data.index_lookup.keys():
-            ymin = min(plot_data[b][0][data.date_mask][total_mask]) - 0.15
-            ymax = max(plot_data[b][0][data.date_mask][total_mask]) + 0.1
+            # ymin = min(plot_data[b][0][data.date_mask][total_mask]) - 0.15
+            # ymax = max(plot_data[b][0][data.date_mask][total_mask]) + 0.1
+            ymin = -1.01
+            ymax = 1.01
+
+        elif b == "Thermal":
+            ymin = -2500
+            ymax = 6500
 
         else:
-            ymin = min(plot_data[b][0][data.date_mask][total_mask]) - 700
-            ymax = max(plot_data[b][0][data.date_mask][total_mask]) + 500
+            # ymin = min(plot_data[b][0][data.date_mask][total_mask]) - 700
+            # ymax = max(plot_data[b][0][data.date_mask][total_mask]) + 500
+            ymin = -100
+            ymax = 6500
 
         axes[num, 0].set_ylim([ymin, ymax])
 
-        # Add x-ticks and x-tick_labels
+        #### Add x-ticks and x-tick_labels ####
         # I think that commenting this out is for the best.  Letting the backend handle the tick labeling allows for
         # auto-rescaling as far as I can tell.
         # axes[num, 0].set_xticks(ord_time)
 
         # axes[num, 0].set_xticklabels(x_labels, rotation=70, horizontalalignment="right")
 
-        # Display the x and y values where the cursor is placed on a subplot
+        #### Display the x and y values where the cursor is placed on a subplot ####
         axes[num, 0].format_coord = lambda x, y: "({0:f}, ".format(y) +  \
                                                  "{0:%Y-%m-%d})".format(dt.datetime.fromordinal(int(x)))
 
