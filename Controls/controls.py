@@ -5,6 +5,7 @@ import datetime as dt
 
 import matplotlib
 
+# Tell matplotlib to use the QT5Agg Backend
 matplotlib.use('Qt5Agg')
 
 from PyQt5.QtWidgets import QMainWindow, QFileDialog
@@ -15,7 +16,7 @@ from Controls.ui_main import Ui_PyCCDPlottingTool
 # Import the CCDReader class which retrieves json and cache data
 from retrieve_data import CCDReader
 
-# Import the PlotWindow display built in QT Designer
+# Import the PlotWindow class defined in the plotwindow.py module
 from PlotFrame.plotwindow import PlotWindow
 
 from Plotting import make_plots
@@ -29,17 +30,17 @@ WKT = 'PROJCS["Albers",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",637814
       'PARAMETER["standard_parallel_2",45.5],PARAMETER["latitude_of_center",23],PARAMETER["longitude_of_center",-96],' \
       'PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]]]'
 
-# TODO need to add a separate plainTextEdit area on the GUI to show the clicked values
 class PlotControls(QMainWindow):
     def __init__(self):
 
         super(PlotControls, self).__init__()
 
+        # This is an instance of the user-interface file created in QT Designer and compiled with pyuic5
         self.ui = Ui_PyCCDPlottingTool()
 
         self.ui.setupUi(self)
 
-        # some temporary default values to make testing easier
+        #### some temporary default values to make testing easier ####
         # self.ui.browseoutputline.setText(r"D:\Plot_Outputs\test_10.12.2017")
         # self.ui.browsejsonline.setText(r"Z:\sites\sd\pyccd-results\H13V05\2017.08.18\json")
         # self.ui.browsecacheline.setText(r"Z:\sites\sd\ARD\h13v05\cache")
@@ -47,7 +48,7 @@ class PlotControls(QMainWindow):
         # self.ui.hline.setText(r"13")
         # self.ui.vline.setText(r"5")
 
-        # Connect the various widgets to the methods they interact with
+        #### Connect the various widgets to the methods they interact with ####
         self.ui.browsecachebutton.clicked.connect(self.browsecache)
 
         self.ui.browsejsonbutton.clicked.connect(self.browsejson)
@@ -65,8 +66,6 @@ class PlotControls(QMainWindow):
         self.ui.vline.textChanged.connect(self.check_if_values)
 
         self.ui.browseoutputline.textChanged.connect(self.check_if_values)
-
-        # self.ui.radiomasked.clicked.connect(self.updateplot)
 
         self.check_if_values()
 
@@ -91,7 +90,6 @@ class PlotControls(QMainWindow):
         # A list of 'switches' to identify whether a particular field has been populated
         c, j, h, v, o, a = 0, 0, 0, 0, 0, 0
 
-        # TODO check that the entered values are valid before accepting them and turning switch on
         if str(self.ui.browsecacheline.text()) == "":
             self.ui.plotbutton.setEnabled(False)
         else:
@@ -163,6 +161,8 @@ class PlotControls(QMainWindow):
         """
         self.ui.plainTextEdit_results.clear()
 
+        self.ui.plainTextEdit_click.clear()
+
         self.ui.plainTextEdit_results.appendPlainText("Begin Date: {}".format(begin_date))
 
         self.ui.plainTextEdit_results.appendPlainText("End Date: {}\n".format(end_date))
@@ -187,15 +187,22 @@ class PlotControls(QMainWindow):
 
     def plot(self):
         """
-        Generate the plots
+        Instantiate the CCDReader class that retrieves the plotting data and generate the plots
         :return:
         """
+        #### Check to see which options the user has selected ####
+        # If True, generate a point shapefile for the entered coordinates
         shp_on = self.ui.radioshp.isChecked()
 
+        # If True, draw the PyCCD model fit
         model_on = self.ui.radiomodelfit.isChecked()
 
+        # If True, draw the masked observations
         masked_on = self.ui.radiomasked.isChecked()
 
+        # Instantiating the CCDReader class in a try-except negates the need to check that the parameters passed
+        # by the GUI are correct.  If there is a problem with any of the parameters, the first erroneous parameter
+        # will cause an exception to occur, which will be displayed in the GUI for the user, and the tool won't close.
         try:
             extracted_data = CCDReader(model_on=self.ui.radiomodelfit.isChecked(),
                                        masked_on=self.ui.radiomasked.isChecked(),
@@ -206,9 +213,14 @@ class PlotControls(QMainWindow):
                                        arc_coords=str(self.ui.arccoordsline.text()),
                                        output_dir=str(self.ui.browseoutputline.text()))
 
+        # I left the exception clause bare because there are at least 2 different exception types that can occur
+        # if any of the parameters passed with the GUI are incorrect.  There might be a better way to handles this
+        # as it seems having a bare exception clause is frowned upon.
         except:
+            # Clear the results window
             self.ui.plainTextEdit_results.clear()
 
+            # Show which exception was raised
             self.ui.plainTextEdit_results.appendPlainText(f"***Plotting Error***"
                                                           f"\n\nType of Exception: {sys.exc_info()[0]}"
                                                           f"\nException Value: {sys.exc_info()[1]}"
@@ -216,35 +228,40 @@ class PlotControls(QMainWindow):
 
             return None
 
-        # self.show_results(data=extracted_data)
+        # Display change model information for the entered coordinates
         self.show_results(begin_date=extracted_data.BEGIN_DATE, end_date=extracted_data.END_DATE,
                           results=extracted_data.results["change_models"])
 
+        # Retrieve the bands and/or indices selected for plotting
         self.item_list = [str(i.text()) for i in self.ui.listitems.selectedItems()]
 
+        # Make the matplotlib figure object containing all of the artists(axes, points, lines, legends, labels, etc.)
+        # The artist_map is a dict mapping each specific PathCollection artist to it's underlying dataset
         fig, artist_map = make_plots.draw_figure(data=extracted_data, items=self.item_list, model_on=model_on, masked_on=masked_on)
 
+        # These strings are used in naming the output .png file
         addmaskstr, addmodelstr = "MASKEDOFF", "_MODELOFF"
 
         # Generate the output .png filename
         fname = f"{extracted_data.output_dir}{os.sep}h{extracted_data.H}v{extracted_data.V}_" \
                 f"{extracted_data.coord}_{addmaskstr}{addmodelstr}{self.item_list}.png"
 
-        # Save figure to .png and show figure in QWidget
+        # Overwrite the .png if it already exists
         if os.path.exists(fname):
             os.remove(fname)
 
         fig.tight_layout(h_pad=8.0)
 
-        # plt.savefig(fname, figuresize=(16, 38), bbox_inches="tight", dpi=150)
+        # Save the .png
         plt.savefig(fname, bbox_inches="tight", dpi=150)
         print("\nplt object saved to file {}\n".format(fname))
 
+        # Generate the ESRI point shapefile
         if shp_on is True:
             self.get_shp(extracted_data.H, extracted_data.V, extracted_data.coord, extracted_data.output_dir)
 
-        global p
-        p = PlotWindow(fig=fig, artist_map=artist_map, gui=self)
+        # Show the figure in an interactive window
+        self.p = PlotWindow(fig=fig, artist_map=artist_map, gui=self, scenes=extracted_data.image_ids)
 
         return None
 
@@ -258,7 +275,10 @@ class PlotControls(QMainWindow):
         :param output_dir:
         :return:
         """
-        # GeoCoordinate(x=(float value), y=(float value), reference coords.x and coords.y to access x and y values
+        ###########################################################
+        # GeoCoordinate(x=(float value), y=(float value)
+        # References coords.x and coords.y to access x and y values
+        ###########################################################
         layer_name = "H" + str(h) + "_V" + str(v) + "_" + str(coords.x) + "_" + str(coords.y)
 
         out_shp = output_dir + os.sep + layer_name + ".shp"
@@ -268,6 +288,8 @@ class PlotControls(QMainWindow):
 
         except ImportError:
             import ogr, osr
+
+            print("GDAL not found, can't generate point shapefile.")
 
             return None
 

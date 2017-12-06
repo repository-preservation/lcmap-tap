@@ -78,9 +78,9 @@ class CCDReader:
 
         self.ccd_mask = np.array(self.results['processing_mask'], dtype=bool)
 
-        self.qa = self.data[-1]
-
         self.test_data()
+
+        self.qa = self.data[-1]
 
         self.fill_mask = np.ones_like(self.qa, dtype=np.bool)
         self.fill_mask[self.qa == 1] = False
@@ -199,8 +199,7 @@ class CCDReader:
 
     def geospatial_hv(self, loc):
         """
-        :param h:
-        :param v:
+
         :param loc:
         :return:
         """
@@ -363,23 +362,27 @@ class CCDReader:
 
     def test_data(self):
         """
-        Test the dates for the presence of duplicates, and compare both with and without duplicate counts to the number
-        of observations in the PyCCD internal processing mask.  One possible source of duplicates is equal date
-        observations from Landsat 7 and 8.  During Landsat 8's ascension into orbit there was a brief period of time
-        where the two sensors 'overlapped' to allow instrument calibration, so duplicate acquisitions are possible but
-        shouldn't be present because these particular Landsat 8 observations should have been removed from the ARD
-        source directory.
+        Test the dates for the presence of duplicates, and compare dates with and without duplicate counts to the number
+        of elements in the PyCCD internal processing mask.
+
+        One possible source of duplicates is equal date observations from Landsat 7 and 8.  During Landsat 8's
+        ascension into orbit there was a brief period of time where the two sensors 'overlapped' to allow instrument
+        calibration, so duplicate acquisitions are possible but shouldn't be present because these particular Landsat 8
+        observations should have been removed from the ARD source directory.
+
         Another potential source of duplicate observations (i.e. dates) is when the ARD is re-ingested, it's scene ID
-        may contain a different access date.  For example:
+        may contain a different access date.
+
+        For example:
         LE07_CU_013005_20041223_20170731_C01_V01
         LE07_CU_013005_20041223_20170801_C01_V01
+
         These folders contain the same Landsat 7 observation acquired on 2004-12-23 but they have different accessed
-        dates which is why one didn't overwrite the other.
+        dates.
 
         :return:
         """
         # TODO return either the second or first of duplicate pairs, need to figure out which (does it matter?)
-
         if len(self.dates_in) == len(self.ccd_mask):
 
             print("The number of observations is consistent with the length of the PyCCD internal processing mask.\n"
@@ -392,14 +395,17 @@ class CCDReader:
             print("There is a duplicate date occurrence in observations.  Removing duplicate occurrences makes the "
                   "number of observations consistent with the length of the PyCCD internal processing mask.")
 
+            # Make a list of the duplicate occurrences
             dupes = [item for item, count in Counter(self.dates).items() if count > 1]
 
             self.dates, ind, counts = np.unique(self.dates, return_index=True, return_counts=True)
 
             print(f"Duplicate dates: \n\t{[dt.datetime.fromordinal(d) for d in dupes]}")
 
+            # Slice out the duplicate observation from each band
             self.data = self.data[:, ind]
 
+            # Regenerate the date_masks
             self.date_mask = self.mask_daterange(self.dates)
 
             self.dates_in = self.dates[self.date_mask]
@@ -411,25 +417,28 @@ class CCDReader:
         if len(self.dates_in) != len(self.ccd_mask) and len(np.unique(self.dates_in)) != len(self.ccd_mask):
 
             # TODO Must check the date mask range, some tiles are inclusive of the end date
+            # Sometimes PyCCD uses a different end date which might cause the inconsistency in mask lengths
             self.END_DATE = dt.date(year=2016, month=1, day=1)
 
+            # Regenerate the date_masks
             self.date_mask = self.mask_daterange(self.dates)
 
             self.dates_in = self.dates[self.date_mask]
+
             self.dates_out = self.dates[~self.date_mask]
 
             # Try using the inclusive date mask
             if len(self.dates_in) == len(self.ccd_mask):
-                print(
-                    "The number of observations is consistent with the length of the PyCCD internal processing mask.\n"
-                    "No changes to the input observations are necessary.")
+                print("The number of observations is consistent with the length of the PyCCD internal processing mask\n"
+                    "if the END DATE is changed to 2016-01-01.\nNo other changes are necessary.")
 
                 return None
 
             # If the inclusive date mask doesn't match the processing mask, then resort to using the PIXELQA
             else:
-                print("There is an inconsistency with the length of the processing mask, therefore it will not be used."
-                    "  PIXELQA band will be used to filter observations.")
+                print("There is an unresolved inconsistency with the length of the processing mask, therefore it will "
+                      "not be used.\nThe PIXELQA band will solely be used to filter observations.")
+
                 self.ccd_mask = self.get_pqa_mask()
 
                 return None
