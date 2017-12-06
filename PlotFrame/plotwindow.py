@@ -117,29 +117,37 @@ class PlotWindow(QtWidgets.QMainWindow):
             :param event:
             :return:
             """
-            try:
-                legline = event.artist
+            mouseevent = event.mouseevent
 
-                # The origlines is a list of lines mapped to the legline for that particular subplot
-                origlines = lines_map[legline]
+            # Only want this to work if the left mouse button is clicked
+            if mouseevent.button == 1:
 
-                for l in origlines:
+                try:
+                    legline = event.artist
 
-                    vis = not l.get_visible()
+                    # The origlines is a list of lines mapped to the legline for that particular subplot
+                    origlines = lines_map[legline]
 
-                    l.set_visible(vis)
+                    for l in origlines:
 
-                    # Change the transparency of the picked object in the legend so the user can see explicitly
-                    # which items are turned on/off
-                    if vis:
-                        legline.set_alpha(1.0)
+                        vis = not l.get_visible()
 
-                    else:
-                        legline.set_alpha(0.2)
+                        l.set_visible(vis)
 
-                self.canvas.draw()
+                        # Change the transparency of the picked object in the legend so the user can see explicitly
+                        # which items are turned on/off
+                        if vis:
+                            legline.set_alpha(1.0)
 
-            except KeyError:
+                        else:
+                            legline.set_alpha(0.2)
+
+                    self.canvas.draw()
+
+                except KeyError:
+                    return False, dict()
+
+            else:
                 return False, dict()
 
 

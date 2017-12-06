@@ -71,6 +71,8 @@ class PlotControls(QMainWindow):
 
         self.ui.plotbutton.clicked.connect(self.plot)
 
+        self.ui.clearpushButton.clicked.connect(self.clear)
+
         self.ui.exitbutton.clicked.connect(self.exit_plot)
 
         self.init_ui()
@@ -81,6 +83,13 @@ class PlotControls(QMainWindow):
         :return:
         """
         self.show()
+
+    def clear(self):
+        """
+        Clear the observations window:
+        :return:
+        """
+        self.ui.plainTextEdit_click.clear()
 
     def check_if_values(self):
         """
@@ -195,18 +204,16 @@ class PlotControls(QMainWindow):
         shp_on = self.ui.radioshp.isChecked()
 
         # If True, draw the PyCCD model fit
-        model_on = self.ui.radiomodelfit.isChecked()
+        # model_on = self.ui.radiomodelfit.isChecked()
 
         # If True, draw the masked observations
-        masked_on = self.ui.radiomasked.isChecked()
+        # masked_on = self.ui.radiomasked.isChecked()
 
         # Instantiating the CCDReader class in a try-except negates the need to check that the parameters passed
         # by the GUI are correct.  If there is a problem with any of the parameters, the first erroneous parameter
         # will cause an exception to occur, which will be displayed in the GUI for the user, and the tool won't close.
         try:
-            extracted_data = CCDReader(model_on=self.ui.radiomodelfit.isChecked(),
-                                       masked_on=self.ui.radiomasked.isChecked(),
-                                       h=int(self.ui.hline.text()),
+            extracted_data = CCDReader(h=int(self.ui.hline.text()),
                                        v=int(self.ui.vline.text()),
                                        cache_dir=str(self.ui.browsecacheline.text()),
                                        json_dir=str(self.ui.browsejsonline.text()),
@@ -238,8 +245,7 @@ class PlotControls(QMainWindow):
         # Make the matplotlib figure object containing all of the artists(axes, points, lines, legends, labels, etc.)
         # The artist_map is a dict mapping each specific PathCollection artist to it's underlying dataset
         # The lines_map is a dict mapping artist lines to the legend lines
-        fig, artist_map, lines_map = make_plots.draw_figure(data=extracted_data, items=self.item_list,
-                                                            model_on=model_on, masked_on=masked_on)
+        fig, artist_map, lines_map = make_plots.draw_figure(data=extracted_data, items=self.item_list)
 
         # These strings are used in naming the output .png file
         addmaskstr, addmodelstr = "MASKEDOFF", "_MODELOFF"
