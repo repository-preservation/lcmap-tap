@@ -41,12 +41,12 @@ class PlotControls(QMainWindow):
         self.ui.setupUi(self)
 
         #### some temporary default values to make testing easier ####
-        # self.ui.browseoutputline.setText(r"D:\Plot_Outputs\test_10.12.2017")
-        # self.ui.browsejsonline.setText(r"Z:\sites\sd\pyccd-results\H13V05\2017.08.18\json")
-        # self.ui.browsecacheline.setText(r"Z:\sites\sd\ARD\h13v05\cache")
-        # self.ui.arccoordsline.setText(r"-608,699.743  2,437,196.249 Meters")
-        # self.ui.hline.setText(r"13")
-        # self.ui.vline.setText(r"5")
+        self.ui.browseoutputline.setText(r"D:\Plot_Outputs\12.7.17")
+        self.ui.browsejsonline.setText(r"Z:\sites\sd\pyccd-results\H13V05\2017.08.18\json")
+        self.ui.browsecacheline.setText(r"Z:\sites\sd\ARD\h13v05\cache")
+        self.ui.arccoordsline.setText(r"-608,699.743  2,437,196.249 Meters")
+        self.ui.hline.setText(r"13")
+        self.ui.vline.setText(r"5")
 
         #### Connect the various widgets to the methods they interact with ####
         self.ui.browsecachebutton.clicked.connect(self.browsecache)
@@ -73,6 +73,8 @@ class PlotControls(QMainWindow):
 
         self.ui.clearpushButton.clicked.connect(self.clear)
 
+        self.ui.savefigpushButton.clicked.connect(self.savefig)
+
         self.ui.exitbutton.clicked.connect(self.exit_plot)
 
         self.init_ui()
@@ -91,46 +93,98 @@ class PlotControls(QMainWindow):
         """
         self.ui.plainTextEdit_click.clear()
 
+    def savefig(self):
+        """
+        Save the current figure to a PNG file
+        :return:
+        """
+        outdir = self.ui.browseoutputline.text()
+
+        if not os.path.exists(outdir):
+            os.makedirs(outdir)
+
+        coord = CCDReader.arcpaste_to_coord(self.ui.arccoordsline.text())
+
+        # Generate the output .png filename
+        self.fname = f"{outdir}{os.sep}H{self.ui.hline.text()}V{self.ui.vline.text()}_{coord.x}_{coord.y}.png"
+
+        # Overwrite the .png if it already exists
+        if os.path.exists(self.fname):
+             os.remove(self.fname)
+
+        # self.fig.tight_layout(h_pad=8.0)
+        self.fig.tight_layout()
+
+        # Save the .png
+        plt.savefig(self.fname, bbox_inches="tight", dpi=150)
+        print("\nplt object saved to file {}\n".format(self.fname))
+
     def check_if_values(self):
         """
         Check to make sure all of the required parameters have been entered before enabling the plot button
         :return: None
         """
         # A list of 'switches' to identify whether a particular field has been populated
-        c, j, h, v, o, a = 0, 0, 0, 0, 0, 0
+        # c, j, h, v, o, a = 0, 0, 0, 0, 0, 0
+        counter = 0
 
+        lookups = [self.ui.browsecacheline.text(), self.ui.browsejsonline.text(), self.ui.hline.text(),
+                   self.ui.vline.text(), self.ui.browseoutputline.text(), self.ui.arccoordsline.text()]
+
+        for look in lookups:
+            if look == "":
+                self.ui.plotbutton.setEnabled(False)
+                self.ui.clearpushButton.setEnabled(False)
+                self.ui.savefigpushButton.setEnabled(False)
+            else:
+                counter += 1
+        """
         if str(self.ui.browsecacheline.text()) == "":
             self.ui.plotbutton.setEnabled(False)
+            self.ui.clearpushButton.setEnabled(False)
+            self.ui.savefigpushButton.setEnabled(False)
         else:
             c = 1
 
         if str(self.ui.browsejsonline.text()) == "":
             self.ui.plotbutton.setEnabled(False)
+            self.ui.clearpushButton.setEnabled(False)
+            self.ui.savefigpushButton.setEnabled(False)
         else:
             j = 1
 
         if str(self.ui.hline.text()) == "":
             self.ui.plotbutton.setEnabled(False)
+            self.ui.clearpushButton.setEnabled(False)
+            self.ui.savefigpushButton.setEnabled(False)
         else:
             h = 1
 
         if str(self.ui.vline.text()) == "":
             self.ui.plotbutton.setEnabled(False)
+            self.ui.clearpushButton.setEnabled(False)
+            self.ui.savefigpushButton.setEnabled(False)
         else:
             v = 1
 
         if str(self.ui.browseoutputline.text()) == "":
             self.ui.plotbutton.setEnabled(False)
+            self.ui.clearpushButton.setEnabled(False)
+            self.ui.savefigpushButton.setEnabled(False)
         else:
             o = 1
 
         if str(self.ui.arccoordsline.text()) == "":
             self.ui.plotbutton.setEnabled(False)
+            self.ui.clearpushButton.setEnabled(False)
+            self.ui.savefigpushButton.setEnabled(False)
         else:
             a = 1
+        """
 
         # If all switches are turned on, their sum should be 6
-        if c + j + h + v + o + a == 6:
+        #if c + j + h + v + o + a == 6:
+        if counter == 6:
             self.ui.plotbutton.setEnabled(True)
 
     def browsecache(self):
@@ -170,14 +224,12 @@ class PlotControls(QMainWindow):
         """
         self.ui.plainTextEdit_results.clear()
 
-        self.ui.plainTextEdit_click.clear()
-
         self.ui.plainTextEdit_results.appendPlainText("Begin Date: {}".format(begin_date))
 
         self.ui.plainTextEdit_results.appendPlainText("End Date: {}\n".format(end_date))
 
         for num, result in enumerate(results):
-            self.ui.plainTextEdit_results.appendPlainText("Result: {}".format(num))
+            self.ui.plainTextEdit_results.appendPlainText("Result: {}".format(num + 1))
 
             self.ui.plainTextEdit_results.appendPlainText(
                 "Start Date: {}".format(dt.datetime.fromordinal(result["start_day"])))
@@ -203,11 +255,12 @@ class PlotControls(QMainWindow):
         # If True, generate a point shapefile for the entered coordinates
         shp_on = self.ui.radioshp.isChecked()
 
-        # If True, draw the PyCCD model fit
-        # model_on = self.ui.radiomodelfit.isChecked()
-
-        # If True, draw the masked observations
-        # masked_on = self.ui.radiomasked.isChecked()
+        # Close the previous plot window if still open
+        try:
+            self.p.close()
+        # Will raise AttributeError if this is the first plot because "p" doesn't exist yet
+        except AttributeError:
+            pass
 
         # Instantiating the CCDReader class in a try-except negates the need to check that the parameters passed
         # by the GUI are correct.  If there is a problem with any of the parameters, the first erroneous parameter
@@ -217,8 +270,7 @@ class PlotControls(QMainWindow):
                                        v=int(self.ui.vline.text()),
                                        cache_dir=str(self.ui.browsecacheline.text()),
                                        json_dir=str(self.ui.browsejsonline.text()),
-                                       arc_coords=str(self.ui.arccoordsline.text()),
-                                       output_dir=str(self.ui.browseoutputline.text()))
+                                       arc_coords=str(self.ui.arccoordsline.text()))
 
         # I left the exception clause bare because there are at least 2 different exception types that can occur
         # if any of the parameters passed with the GUI are incorrect.  There might be a better way to handles this
@@ -245,32 +297,24 @@ class PlotControls(QMainWindow):
         # Make the matplotlib figure object containing all of the artists(axes, points, lines, legends, labels, etc.)
         # The artist_map is a dict mapping each specific PathCollection artist to it's underlying dataset
         # The lines_map is a dict mapping artist lines to the legend lines
-        fig, artist_map, lines_map = make_plots.draw_figure(data=extracted_data, items=self.item_list)
+        self.fig, artist_map, lines_map = make_plots.draw_figure(data=extracted_data, items=self.item_list)
 
-        # These strings are used in naming the output .png file
-        addmaskstr, addmodelstr = "MASKEDOFF", "_MODELOFF"
+        # self.fig.tight_layout(h_pad=8.0)
 
-        # Generate the output .png filename
-        fname = f"{extracted_data.output_dir}{os.sep}h{extracted_data.H}v{extracted_data.V}_" \
-                f"{extracted_data.coord}_{addmaskstr}{addmodelstr}{self.item_list}.png"
-
-        # Overwrite the .png if it already exists
-        if os.path.exists(fname):
-            os.remove(fname)
-
-        fig.tight_layout(h_pad=8.0)
-
-        # Save the .png
-        plt.savefig(fname, bbox_inches="tight", dpi=150)
-        print("\nplt object saved to file {}\n".format(fname))
+        if not os.path.exists(self.ui.browseoutputline.text()):
+            os.makedirs(self.ui.browseoutputline.text())
 
         # Generate the ESRI point shapefile
         if shp_on is True:
-            self.get_shp(extracted_data.H, extracted_data.V, extracted_data.coord, extracted_data.output_dir)
+            self.get_shp(extracted_data.H, extracted_data.V, extracted_data.coord, self.ui.browseoutputline.text())
 
         # Show the figure in an interactive window
-        self.p = PlotWindow(fig=fig, artist_map=artist_map, lines_map=lines_map, gui=self,
+        self.p = PlotWindow(fig=self.fig, artist_map=artist_map, lines_map=lines_map, gui=self,
                             scenes=extracted_data.image_ids)
+
+        # Make these buttons available once a figure has been created
+        self.ui.clearpushButton.setEnabled(True)
+        self.ui.savefigpushButton.setEnabled(True)
 
         return None
 

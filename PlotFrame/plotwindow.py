@@ -19,7 +19,7 @@ class MplCanvas(FigureCanvas):
 
         FigureCanvas.__init__(self, self.fig)
 
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.MinimumExpanding)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Minimum)
 
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -69,6 +69,7 @@ class PlotWindow(QtWidgets.QMainWindow):
                 # Retrieve the appropriate data series based on the clicked artist
                 x = artist_map[artist][0]
                 y = artist_map[artist][1]
+                b = artist_map[artist][2]
 
                 try:
                     # Grab the date value at the clicked point
@@ -84,12 +85,14 @@ class PlotWindow(QtWidgets.QMainWindow):
                     artist_data = [nearest_x, nearest_y]
 
                     print(f"point clicked: {point_clicked}\n"
-                          f"nearest artist: {self.value_holder}")
+                          f"nearest artist: {self.value_holder}\n"
+                          f"subplot: {b}")
 
                     self.value_holder["temp"] = [point_clicked, artist_data]
 
                     test_str = "{:%Y%m%d}".format(self.value_holder["temp"][1][0])
 
+                    # Look through the scene IDs to find which one corresponds to the selected obs. date
                     for id in scenes:
                         if test_str in id:
                             self.value_holder["temp"].append(id)
@@ -98,8 +101,9 @@ class PlotWindow(QtWidgets.QMainWindow):
 
                     # Show the picked information in a text box on the GUI
                     gui.ui.plainTextEdit_click.appendPlainText(
-                        "Obs. Date: {:%Y-%b-%d} \nY-Value: {}\n".format(self.value_holder['temp'][1][0],
-                                                               self.value_holder['temp'][1][1][0]))
+                        "Obs. Date: {:%Y-%b-%d} \n{}-Value: {}\n".format(self.value_holder['temp'][1][0],
+                                                                         b,
+                                                                         self.value_holder['temp'][1][1][0]))
 
                 # I think the TypeError might occur when more than a single data point is returned with one click,
                 # but need to investigate further.
@@ -150,7 +154,6 @@ class PlotWindow(QtWidgets.QMainWindow):
             else:
                 return False, dict()
 
-
         self.nav = NavigationToolbar(self.canvas, self.widget)
 
         self.widget.layout().addWidget(self.nav)
@@ -164,7 +167,8 @@ class PlotWindow(QtWidgets.QMainWindow):
 
         self.widget.layout().addWidget(self.scroll)
 
-        self.canvas.fig.tight_layout(h_pad=6.0)
+        # self.canvas.fig.tight_layout(h_pad=6.0)
+        self.canvas.fig.tight_layout()
 
         self.canvas.mpl_connect("pick_event", point_pick)
 
