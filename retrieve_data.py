@@ -23,8 +23,7 @@ CONUS_EXTENT = GeoExtent(x_min=-2565585,
 
 
 class CCDReader:
-    def __init__(self, h, v, arc_coords, cache_dir, json_dir, output_dir, masked_on=True, model_on=True):
-
+    def __init__(self, h, v, arc_coords, cache_dir, json_dir):
         """
 
         :param h:
@@ -32,20 +31,10 @@ class CCDReader:
         :param arc_coords:
         :param cache_dir:
         :param json_dir:
-        :param output_dir:
-        :param masked_on:
-        :param model_on:
         """
-
         # ****Setup file locations****
-
-        self.output_dir = output_dir
-
         self.H = h
         self.V = v
-
-        if not os.path.exists(self.output_dir):
-            os.makedirs(self.output_dir)
 
         self.CACHE_INV = [os.path.join(cache_dir, f) for f in os.listdir(cache_dir)]
 
@@ -107,27 +96,24 @@ class CCDReader:
         self.end_dates = []
 
         for num, result in enumerate(self.results['change_models']):
-
             days = np.arange(result['start_day'], result['end_day'] + 1)
 
             self.break_dates.append(result['break_day'])
+
             self.start_dates.append(result['start_day'])
+
             self.end_dates.append(result['end_day'])
 
             for b in self.bands:
                 self.band_info[b]['inter'] = result[b]['intercept']
+
                 self.band_info[b]['coefs'] = result[b]['coefficients']
+
                 self.band_info[b]['pred'] = self.predicts(days, result[b]['coefficients'], result[b]['intercept'])
 
-                # intercept = result[b]['intercept']
-                # coef = result[b]['coefficients']
-
                 self.prediction_dates.append(days)
+
                 self.predicted_values.append(self.band_info[b]['pred'])
-
-        self.model_on = model_on
-
-        self.masked_on = masked_on
 
         # Calculate indices from observed values
         self.EVI = plot_functions.evi(B=self.data[0].astype(np.float), NIR=self.data[3].astype(np.float),
@@ -415,8 +401,6 @@ class CCDReader:
             return None
 
         if len(self.dates_in) != len(self.ccd_mask) and len(np.unique(self.dates_in)) != len(self.ccd_mask):
-
-            # TODO Must check the date mask range, some tiles are inclusive of the end date
             # Sometimes PyCCD uses a different end date which might cause the inconsistency in mask lengths
             self.END_DATE = dt.date(year=2016, month=1, day=1)
 
@@ -461,7 +445,6 @@ class CCDReader:
     def get_pqa_mask(self):
         """
         Generate a mask from the Pixel QA
-        :param qa:
         :return:
         """
         clr_vals = [66, 68, 322, 324]
