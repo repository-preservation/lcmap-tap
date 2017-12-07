@@ -35,9 +35,10 @@ class PlotControls(QMainWindow):
 
         super(PlotControls, self).__init__()
 
-        # This is an instance of the user-interface file created in QT Designer and compiled with pyuic5
+        # Create an instance of a class that builds the user-interface, created in QT Designer and compiled with pyuic5
         self.ui = Ui_PyCCDPlottingTool()
 
+        # Call the method that adds all of the widgets to the GUI
         self.ui.setupUi(self)
 
         #### some temporary default values to make testing easier ####
@@ -67,8 +68,6 @@ class PlotControls(QMainWindow):
 
         self.ui.browseoutputline.textChanged.connect(self.check_if_values)
 
-        self.check_if_values()
-
         self.ui.plotbutton.clicked.connect(self.plot)
 
         self.ui.clearpushButton.clicked.connect(self.clear)
@@ -88,7 +87,7 @@ class PlotControls(QMainWindow):
 
     def clear(self):
         """
-        Clear the observations window:
+        Clear the observations window
         :return:
         """
         self.ui.plainTextEdit_click.clear()
@@ -103,6 +102,7 @@ class PlotControls(QMainWindow):
         if not os.path.exists(outdir):
             os.makedirs(outdir)
 
+        # Pull the coordinate so it can be a part of the .PNG filename
         coord = CCDReader.arcpaste_to_coord(self.ui.arccoordsline.text())
 
         # Generate the output .png filename
@@ -111,9 +111,6 @@ class PlotControls(QMainWindow):
         # Overwrite the .png if it already exists
         if os.path.exists(self.fname):
              os.remove(self.fname)
-
-        # self.fig.tight_layout(h_pad=8.0)
-        self.fig.tight_layout()
 
         # Save the .png
         plt.savefig(self.fname, bbox_inches="tight", dpi=150)
@@ -124,66 +121,20 @@ class PlotControls(QMainWindow):
         Check to make sure all of the required parameters have been entered before enabling the plot button
         :return: None
         """
-        # A list of 'switches' to identify whether a particular field has been populated
-        # c, j, h, v, o, a = 0, 0, 0, 0, 0, 0
         counter = 0
 
-        lookups = [self.ui.browsecacheline.text(), self.ui.browsejsonline.text(), self.ui.hline.text(),
+        checks = [self.ui.browsecacheline.text(), self.ui.browsejsonline.text(), self.ui.hline.text(),
                    self.ui.vline.text(), self.ui.browseoutputline.text(), self.ui.arccoordsline.text()]
 
-        for look in lookups:
-            if look == "":
+        for check in checks:
+            if check == "":
                 self.ui.plotbutton.setEnabled(False)
                 self.ui.clearpushButton.setEnabled(False)
                 self.ui.savefigpushButton.setEnabled(False)
             else:
                 counter += 1
-        """
-        if str(self.ui.browsecacheline.text()) == "":
-            self.ui.plotbutton.setEnabled(False)
-            self.ui.clearpushButton.setEnabled(False)
-            self.ui.savefigpushButton.setEnabled(False)
-        else:
-            c = 1
 
-        if str(self.ui.browsejsonline.text()) == "":
-            self.ui.plotbutton.setEnabled(False)
-            self.ui.clearpushButton.setEnabled(False)
-            self.ui.savefigpushButton.setEnabled(False)
-        else:
-            j = 1
-
-        if str(self.ui.hline.text()) == "":
-            self.ui.plotbutton.setEnabled(False)
-            self.ui.clearpushButton.setEnabled(False)
-            self.ui.savefigpushButton.setEnabled(False)
-        else:
-            h = 1
-
-        if str(self.ui.vline.text()) == "":
-            self.ui.plotbutton.setEnabled(False)
-            self.ui.clearpushButton.setEnabled(False)
-            self.ui.savefigpushButton.setEnabled(False)
-        else:
-            v = 1
-
-        if str(self.ui.browseoutputline.text()) == "":
-            self.ui.plotbutton.setEnabled(False)
-            self.ui.clearpushButton.setEnabled(False)
-            self.ui.savefigpushButton.setEnabled(False)
-        else:
-            o = 1
-
-        if str(self.ui.arccoordsline.text()) == "":
-            self.ui.plotbutton.setEnabled(False)
-            self.ui.clearpushButton.setEnabled(False)
-            self.ui.savefigpushButton.setEnabled(False)
-        else:
-            a = 1
-        """
-
-        # If all switches are turned on, their sum should be 6
-        #if c + j + h + v + o + a == 6:
+        # If all parameters are entered, then the sum will be 6
         if counter == 6:
             self.ui.plotbutton.setEnabled(True)
 
@@ -251,7 +202,8 @@ class PlotControls(QMainWindow):
         Instantiate the CCDReader class that retrieves the plotting data and generate the plots
         :return:
         """
-        #### Check to see which options the user has selected ####
+
+
         # If True, generate a point shapefile for the entered coordinates
         shp_on = self.ui.radioshp.isChecked()
 
@@ -264,7 +216,7 @@ class PlotControls(QMainWindow):
 
         # Instantiating the CCDReader class in a try-except negates the need to check that the parameters passed
         # by the GUI are correct.  If there is a problem with any of the parameters, the first erroneous parameter
-        # will cause an exception to occur, which will be displayed in the GUI for the user, and the tool won't close.
+        # will cause an exception to occur which will be displayed in the GUI for the user, and the tool won't close.
         try:
             extracted_data = CCDReader(h=int(self.ui.hline.text()),
                                        v=int(self.ui.vline.text()),
@@ -296,10 +248,8 @@ class PlotControls(QMainWindow):
 
         # Make the matplotlib figure object containing all of the artists(axes, points, lines, legends, labels, etc.)
         # The artist_map is a dict mapping each specific PathCollection artist to it's underlying dataset
-        # The lines_map is a dict mapping artist lines to the legend lines
+        # The lines_map is a dict mapping artist lines and points to the legend lines
         self.fig, artist_map, lines_map = make_plots.draw_figure(data=extracted_data, items=self.item_list)
-
-        # self.fig.tight_layout(h_pad=8.0)
 
         if not os.path.exists(self.ui.browseoutputline.text()):
             os.makedirs(self.ui.browseoutputline.text())

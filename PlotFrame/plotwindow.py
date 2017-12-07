@@ -137,18 +137,21 @@ class PlotWindow(QtWidgets.QMainWindow):
 
                     for l in origlines:
 
+                        # Reference the opposite of the line's current visibility
                         vis = not l.get_visible()
 
+                        # Make it so
                         l.set_visible(vis)
 
                         # Change the transparency of the picked object in the legend so the user can see explicitly
-                        # which items are turned on/off
+                        # which items are turned on/off.  This doesn't work for the points in the legend currently.
                         if vis:
                             legline.set_alpha(1.0)
 
                         else:
                             legline.set_alpha(0.2)
 
+                    # Redraw the canvas with the line or points turned on/off
                     self.canvas.draw()
 
                 except KeyError:
@@ -169,9 +172,6 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.scroll.setWidget(self.canvas)
 
         self.widget.layout().addWidget(self.scroll)
-
-        # self.canvas.fig.tight_layout(h_pad=6.0)
-        self.canvas.fig.tight_layout()
 
         self.canvas.mpl_connect("pick_event", point_pick)
 
