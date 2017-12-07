@@ -19,7 +19,10 @@ class MplCanvas(FigureCanvas):
 
         FigureCanvas.__init__(self, self.fig)
 
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Minimum)
+        if len(fig.axes) >= 3:
+            sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Minimum)
+        else:
+            sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Ignored)
 
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)

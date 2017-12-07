@@ -253,7 +253,7 @@ def draw_figure(data, items, model_on=True, masked_on=True):
 
         #### Generate the legend for the current subplot ####
         leg = axes[num, 0].legend(ncol=4, loc="upper left", bbox_to_anchor=(0.0, 1.00),
-                            borderaxespad=0., alpha=0.0)
+                            borderaxespad=0.)
 
         # Collect all of the plot artists together in a list of lists
         lines = [obs_points, out_points, mask_points, end_lines, break_lines, start_lines, match_lines,
