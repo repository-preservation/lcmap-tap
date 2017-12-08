@@ -4,6 +4,7 @@ setup(
     name='PyCCD-Plotting-Tool',
     version='1.0.0',
     packages=['Controls', 'PlotFrame', 'Plotting', 'RetrieveData'],
+    py_modules=['main.py'],
     url='https://github.com/danzelenak-usgs/PyCCD-Plotting-Tool',
     license='',
     author='Daniel Zelenak',
