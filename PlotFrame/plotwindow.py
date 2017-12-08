@@ -1,10 +1,10 @@
 
-import numpy as np
 import datetime as dt
 
+import matplotlib
+import numpy as np
 from PyQt5 import QtWidgets
 
-import matplotlib
 matplotlib.use("Qt5Agg")
 
 from matplotlib.collections import PathCollection

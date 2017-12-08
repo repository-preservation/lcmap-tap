@@ -1,20 +1,20 @@
+import datetime as dt
+import os
 import sys
 import traceback
-import os
-import datetime as dt
 
 import matplotlib
 
 # Tell matplotlib to use the QT5Agg Backend
 matplotlib.use('Qt5Agg')
 
-from PyQt5.QtWidgets import QMainWindow, QFileDialog
+from PyQt5.QtWidgets import QMainWindow, QFileDialog, QApplication
 
 # Import the main GUI built in QTDesigner, compiled into python with pyuic5.bat
-from Controls.ui_main import Ui_PyCCDPlottingTool
+from UserInterface.ui_main import Ui_PyCCDPlottingTool
 
 # Import the CCDReader class which retrieves json and cache data
-from retrieve_data import CCDReader
+from RetrieveData.retrieve_data import CCDReader
 
 # Import the PlotWindow class defined in the plotwindow.py module
 from PlotFrame.plotwindow import PlotWindow
@@ -29,6 +29,7 @@ WKT = 'PROJCS["Albers",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",637814
       '"4326"]],PROJECTION["Albers_Conic_Equal_Area"],PARAMETER["standard_parallel_1",29.5],' \
       'PARAMETER["standard_parallel_2",45.5],PARAMETER["latitude_of_center",23],PARAMETER["longitude_of_center",-96],' \
       'PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]]]'
+
 
 class PlotControls(QMainWindow):
     def __init__(self):
@@ -110,7 +111,7 @@ class PlotControls(QMainWindow):
 
         # Overwrite the .png if it already exists
         if os.path.exists(self.fname):
-             os.remove(self.fname)
+            os.remove(self.fname)
 
         # Save the .png
         plt.savefig(self.fname, bbox_inches="tight", dpi=150)
@@ -124,7 +125,7 @@ class PlotControls(QMainWindow):
         counter = 0
 
         checks = [self.ui.browsecacheline.text(), self.ui.browsejsonline.text(), self.ui.hline.text(),
-                   self.ui.vline.text(), self.ui.browseoutputline.text(), self.ui.arccoordsline.text()]
+                  self.ui.vline.text(), self.ui.browseoutputline.text(), self.ui.arccoordsline.text()]
 
         for check in checks:
             if check == "":
@@ -202,7 +203,6 @@ class PlotControls(QMainWindow):
         Instantiate the CCDReader class that retrieves the plotting data and generate the plots
         :return:
         """
-
 
         # If True, generate a point shapefile for the entered coordinates
         shp_on = self.ui.radioshp.isChecked()
@@ -346,3 +346,14 @@ class PlotControls(QMainWindow):
         self.close()
 
         sys.exit(0)
+
+
+def main():
+    app = QApplication(sys.argv)
+
+    control_window = PlotControls()
+
+    sys.exit(app.exec_())
+
+if __name__ == "__main__":
+    main()
