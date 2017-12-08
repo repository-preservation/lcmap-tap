@@ -346,14 +346,3 @@ class PlotControls(QMainWindow):
         self.close()
 
         sys.exit(0)
-
-
-def main():
-    app = QApplication(sys.argv)
-
-    control_window = PlotControls()
-
-    sys.exit(app.exec_())
-
-if __name__ == "__main__":
-    main()
