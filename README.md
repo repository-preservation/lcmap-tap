@@ -17,8 +17,8 @@ sizes, and saving the current figure.  For each subplot the x-axis
 represents the dates of the time series, and the y-axis represents
 that subplot’s band values.  Both axes are rescaled and relabeled
 on zoom events allowing for finer resolution at smaller scales.
-Each subplot also has interactive picking within the plotting area,
-and within the subplots legend.  Left-clicking on observation points
+Each subplot has interactive picking within the plotting area
+and within the legend.  Left-clicking on observation points
 in the subplot displays the information associated with that
 observation in a window on the GUI.  Left-clicking on items in the
 legend turns on/off those items in the subplot.  Button controls on
