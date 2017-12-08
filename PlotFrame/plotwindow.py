@@ -87,9 +87,9 @@ class PlotWindow(QtWidgets.QMainWindow):
 
                     artist_data = [nearest_x, nearest_y]
 
-                    print(f"point clicked: {point_clicked}\n"
-                          f"nearest artist: {self.value_holder}\n"
-                          f"subplot: {b}")
+                    print("point clicked: {}\n\
+                          nearest artist: {}\n\
+                          subplot: {}".format(point_clicked, self.value_holder, b))
 
                     self.value_holder["temp"] = [point_clicked, artist_data]
 

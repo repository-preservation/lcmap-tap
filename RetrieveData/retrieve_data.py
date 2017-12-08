@@ -6,6 +6,7 @@ import re
 import sys
 from collections import namedtuple
 from collections import Counter
+from collections import OrderedDict
 import numpy as np
 
 from Plotting import plot_functions
@@ -163,24 +164,29 @@ class CCDReader:
                                           SWIR2=self.predicted_values[m * len(self.bands) + 5])
                       for m in range(len(self.results["change_models"]))]
 
-        self.index_lookup = {"NDVI": (self.NDVI, self.NDVI_),
-                             "MSAVI": (self.MSAVI, self.MSAVI_),
-                             "EVI": (self.EVI, self.EVI_),
-                             "SAVI": (self.SAVI, self.SAVI_),
-                             "NDMI": (self.NDMI, self.NDMI_),
-                             "NBR": (self.NBR, self.NBR_),
-                             "NBR-2": (self.NBR2, self.NBR2_)}
+        self.index_lookup = [("NDVI", (self.NDVI, self.NDVI_)),
+                             ("MSAVI", (self.MSAVI, self.MSAVI_)),
+                             ("EVI", (self.EVI, self.EVI_)),
+                             ("SAVI", (self.SAVI, self.SAVI_)),
+                             ("NDMI", (self.NDMI, self.NDMI_)),
+                             ("NBR", (self.NBR, self.NBR_)),
+                             ("NBR-2", (self.NBR2, self.NBR2_))]
 
-        self.band_lookup = {"Blue": (self.data[0], self.get_predicts(0)),
-                            "Green": (self.data[1], self.get_predicts(1)),
-                            "Red": (self.data[2], self.get_predicts(2)),
-                            "NIR": (self.data[3], self.get_predicts(3)),
-                            "SWIR-1": (self.data[4], self.get_predicts(4)),
-                            "SWIR-2": (self.data[5], self.get_predicts(5)),
-                            "Thermal": (self.data[6], self.get_predicts(6))}
+        self.index_lookup = OrderedDict(self.index_lookup)
+
+        self.band_lookup = [("Blue", (self.data[0], self.get_predicts(0))),
+                            ("Green", (self.data[1], self.get_predicts(1))),
+                            ("Red", (self.data[2], self.get_predicts(2))),
+                            ("NIR", (self.data[3], self.get_predicts(3))),
+                            ("SWIR-1", (self.data[4], self.get_predicts(4))),
+                            ("SWIR-2", (self.data[5], self.get_predicts(5))),
+                            ("Thermal", (self.data[6], self.get_predicts(6)))]
+
+        self.band_lookup = OrderedDict(self.band_lookup)
 
         # Combine these two dictionaries
-        self.all_lookup = {**self.band_lookup, **self.index_lookup}
+        # self.all_lookup = {**self.band_lookup, **self.index_lookup}
+        self.all_lookup = plot_functions.merge_dicts(self.band_lookup, self.index_lookup)
 
 
     def geospatial_hv(self, loc):
@@ -298,7 +304,7 @@ class CCDReader:
         """
         rowcol = self.geo_to_rowcol(self.PIXEL_AFFINE, coord)
 
-        data, image_ids = self.load_cache(self.find_file(self.CACHE_INV, f"r{rowcol.row}"))
+        data, image_ids = self.load_cache(self.find_file(self.CACHE_INV, "r{}".format(rowcol.row)))
 
         dates = self.imageid_date(image_ids)
 
@@ -386,7 +392,7 @@ class CCDReader:
 
             self.dates, ind, counts = np.unique(self.dates, return_index=True, return_counts=True)
 
-            print(f"Duplicate dates: \n\t{[dt.datetime.fromordinal(d) for d in dupes]}")
+            print("Duplicate dates: \n\t{}".format([dt.datetime.fromordinal(d) for d in dupes]))
 
             # Slice out the duplicate observation from each band
             self.data = self.data[:, ind]

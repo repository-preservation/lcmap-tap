@@ -107,7 +107,8 @@ class PlotControls(QMainWindow):
         coord = CCDReader.arcpaste_to_coord(self.ui.arccoordsline.text())
 
         # Generate the output .png filename
-        self.fname = f"{outdir}{os.sep}H{self.ui.hline.text()}V{self.ui.vline.text()}_{coord.x}_{coord.y}.png"
+        self.fname = "{outdir}{sep}H{h}V{v}_{x}_{y}.png".format(outdir=outdir, sep=os.sep, h=self.ui.hline.text(),
+                                                                v=self.ui.vline.text(), x=coord.x, y=coord.y)
 
         # Overwrite the .png if it already exists
         if os.path.exists(self.fname):
@@ -232,10 +233,12 @@ class PlotControls(QMainWindow):
             self.ui.plainTextEdit_results.clear()
 
             # Show which exception was raised
-            self.ui.plainTextEdit_results.appendPlainText(f"***Plotting Error***"
-                                                          f"\n\nType of Exception: {sys.exc_info()[0]}"
-                                                          f"\nException Value: {sys.exc_info()[1]}"
-                                                          f"\nTraceback Info: {traceback.print_tb(sys.exc_info()[2])}")
+            self.ui.plainTextEdit_results.appendPlainText("***Plotting Error***\
+                                                          \n\nType of Exception: {}\
+                                                          \nException Value: {}\
+                                                          \nTraceback Info: {}".format(sys.exc_info()[0],
+                                                                                sys.exc_info()[1],
+                                                                                traceback.print_tb(sys.exc_info()[2])))
 
             return None
 
