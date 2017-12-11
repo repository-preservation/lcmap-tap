@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 
 setup(
     name='PyCCD-Plotting-Tool',
@@ -14,6 +14,6 @@ setup(
             'matplotlib>=2',
             'PyQt==5.6.0',
             'numpy>=1.11',
-            'gdal>=2.1',
+            'gdal>=2.1'
     ]
 )
