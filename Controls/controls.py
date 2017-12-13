@@ -43,12 +43,12 @@ class PlotControls(QMainWindow):
         self.ui.setupUi(self)
 
         #### some temporary default values to make testing easier ####
-        self.ui.browseoutputline.setText(r"D:\Plot_Outputs\12.7.17")
-        self.ui.browsejsonline.setText(r"Z:\sites\sd\pyccd-results\H13V05\2017.08.18\json")
-        self.ui.browsecacheline.setText(r"Z:\sites\sd\ARD\h13v05\cache")
-        self.ui.arccoordsline.setText(r"-608,699.743  2,437,196.249 Meters")
-        self.ui.hline.setText(r"13")
-        self.ui.vline.setText(r"5")
+        # self.ui.browseoutputline.setText(r"D:\Plot_Outputs\12.7.17")
+        # self.ui.browsejsonline.setText(r"Z:\sites\sd\pyccd-results\H13V05\2017.08.18\json")
+        # self.ui.browsecacheline.setText(r"Z:\sites\sd\ARD\h13v05\cache")
+        # self.ui.arccoordsline.setText(r"-608,699.743  2,437,196.249 Meters")
+        # self.ui.hline.setText(r"13")
+        # self.ui.vline.setText(r"5")
 
         #### Connect the various widgets to the methods they interact with ####
         self.ui.browsecachebutton.clicked.connect(self.browsecache)
