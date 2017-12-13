@@ -1,4 +1,4 @@
-"""Retrieve data, make it accessible via parameters of the CCDReader class"""
+"""Retrieve data, make it accessible via attributes of the CCDReader class"""
 import datetime as dt
 import json
 import os
@@ -46,17 +46,17 @@ class CCDReader:
         self.EXTENT, self.PIXEL_AFFINE = self.geospatial_hv(CONUS_EXTENT)
 
         self.CHIP_AFFINE = GeoAffine(ul_x=self.PIXEL_AFFINE.ul_x,
-                                          x_res=3000,
-                                          rot_1=0,
-                                          ul_y=self.PIXEL_AFFINE.ul_y,
-                                          rot_2=0,
-                                          y_res=-3000)
+                                     x_res=3000,
+                                     rot_1=0,
+                                     ul_y=self.PIXEL_AFFINE.ul_y,
+                                     rot_2=0,
+                                     y_res=-3000)
 
         self.coord = self.arcpaste_to_coord(arc_coords)
 
         self.results = self.extract_jsoncurve(self.coord)
 
-        self.data, self.dates, self.image_ids= self.extract_cachepoint(self.coord)
+        self.data, self.dates, self.image_ids = self.extract_cachepoint(self.coord)
 
         self.BEGIN_DATE = dt.date(year=1982, month=1, day=1)
         self.END_DATE = dt.date(year=2015, month=12, day=31)
@@ -116,7 +116,7 @@ class CCDReader:
 
                 self.predicted_values.append(self.band_info[b]['pred'])
 
-        # Calculate indices from observed values
+        #### Calculate indices from observed values ####
         self.EVI = plot_functions.evi(B=self.data[0].astype(np.float), NIR=self.data[3].astype(np.float),
                                       R=self.data[2].astype(np.float))
 
@@ -132,7 +132,8 @@ class CCDReader:
 
         self.NBR2 = plot_functions.nbr2(SWIR1=self.data[4].astype(np.float), SWIR2=self.data[5].astype(np.float))
 
-        # Calculate indices from the results' change models.  The change models are stored by order of model, then
+        #### Calculate indices from the results' change models. ####
+        # The change models are stored by order of model, then
         # band number.  For example, the band values for the first change model are represented by indices 0-5,
         # the second model by indices 6-11, and so on.
         self.NDVI_ = [plot_functions.ndvi(NIR=self.predicted_values[m * len(self.bands) + 3],
@@ -164,6 +165,8 @@ class CCDReader:
                                           SWIR2=self.predicted_values[m * len(self.bands) + 5])
                       for m in range(len(self.results["change_models"]))]
 
+        # Use a list of tuples for passing to OrderedDict so the order of element insertion is preserved
+        # The dictionaries are used to map selections from the GUI to the corresponding plot data
         self.index_lookup = [("NDVI", (self.NDVI, self.NDVI_)),
                              ("MSAVI", (self.MSAVI, self.MSAVI_)),
                              ("EVI", (self.EVI, self.EVI_)),
@@ -187,7 +190,6 @@ class CCDReader:
         # Combine these two dictionaries
         # self.all_lookup = {**self.band_lookup, **self.index_lookup}
         self.all_lookup = plot_functions.merge_dicts(self.band_lookup, self.index_lookup)
-
 
     def geospatial_hv(self, loc):
         """
@@ -350,7 +352,7 @@ class CCDReader:
         pieces = string.split()
 
         return GeoCoordinate(x=float(re.sub(",", "", pieces[0])),
-                                  y=float(re.sub(",", "", pieces[1])))
+                             y=float(re.sub(",", "", pieces[1])))
 
     def test_data(self):
         """
@@ -374,16 +376,13 @@ class CCDReader:
 
         :return:
         """
-        # TODO return either the second or first of duplicate pairs, need to figure out which (does it matter?)
         if len(self.dates_in) == len(self.ccd_mask):
-
             print("The number of observations is consistent with the length of the PyCCD internal processing mask.\n"
                   "No changes to the input observations are necessary.")
 
             return None
 
         if len(np.unique(self.dates_in)) != len(self.dates_in) and len(np.unique(self.dates_in)) == len(self.ccd_mask):
-
             print("There is a duplicate date occurrence in observations.  Removing duplicate occurrences makes the "
                   "number of observations consistent with the length of the PyCCD internal processing mask.")
 
@@ -420,7 +419,7 @@ class CCDReader:
             # Try using the inclusive date mask
             if len(self.dates_in) == len(self.ccd_mask):
                 print("The number of observations is consistent with the length of the PyCCD internal processing mask\n"
-                    "if the END DATE is changed to 2016-01-01.\nNo other changes are necessary.")
+                      "if the END DATE is changed to 2016-01-01.\nNo other changes are necessary.")
 
                 return None
 
