@@ -8,8 +8,8 @@ def merge_dicts(*dict_args):
     """
     Make shallow copies and merge dicts into a new dict
     Backwards compatible method of doing this compared to the {**dict1, **dict2} available >= python 3.5
-    :param dict_args:
-    :return:
+    :param dict_args: any number of dictionaries to combine
+    :return result: dict
     """
     result = OrderedDict()
     for dictionary in dict_args:
@@ -21,7 +21,7 @@ def test_for_zero(num):
     """
     Test input for 0 values
     :param num: <numpy.ndarray>
-    :return mask: <numpy.ndarray> A boolean-type mask, 1 for valid, 0 for ignore
+    :return num: <numpy.ndarray> Any 0 values are replaced with 0.001
     """
     num[num == 0.0] = 0.001
 
