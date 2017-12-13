@@ -1,20 +1,20 @@
+import datetime as dt
+import os
 import sys
 import traceback
-import os
-import datetime as dt
 
 import matplotlib
 
 # Tell matplotlib to use the QT5Agg Backend
 matplotlib.use('Qt5Agg')
 
-from PyQt5.QtWidgets import QMainWindow, QFileDialog
+from PyQt5.QtWidgets import QMainWindow, QFileDialog, QApplication
 
 # Import the main GUI built in QTDesigner, compiled into python with pyuic5.bat
-from Controls.ui_main import Ui_PyCCDPlottingTool
+from UserInterface.ui_main import Ui_PyCCDPlottingTool
 
 # Import the CCDReader class which retrieves json and cache data
-from retrieve_data import CCDReader
+from RetrieveData.retrieve_data import CCDReader
 
 # Import the PlotWindow class defined in the plotwindow.py module
 from PlotFrame.plotwindow import PlotWindow
@@ -30,6 +30,7 @@ WKT = 'PROJCS["Albers",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",637814
       'PARAMETER["standard_parallel_2",45.5],PARAMETER["latitude_of_center",23],PARAMETER["longitude_of_center",-96],' \
       'PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]]]'
 
+
 class PlotControls(QMainWindow):
     def __init__(self):
 
@@ -42,12 +43,12 @@ class PlotControls(QMainWindow):
         self.ui.setupUi(self)
 
         #### some temporary default values to make testing easier ####
-        self.ui.browseoutputline.setText(r"D:\Plot_Outputs\12.7.17")
-        self.ui.browsejsonline.setText(r"Z:\sites\sd\pyccd-results\H13V05\2017.08.18\json")
-        self.ui.browsecacheline.setText(r"Z:\sites\sd\ARD\h13v05\cache")
-        self.ui.arccoordsline.setText(r"-608,699.743  2,437,196.249 Meters")
-        self.ui.hline.setText(r"13")
-        self.ui.vline.setText(r"5")
+        # self.ui.browseoutputline.setText(r"D:\Plot_Outputs\12.7.17")
+        # self.ui.browsejsonline.setText(r"Z:\sites\sd\pyccd-results\H13V05\2017.08.18\json")
+        # self.ui.browsecacheline.setText(r"Z:\sites\sd\ARD\h13v05\cache")
+        # self.ui.arccoordsline.setText(r"-608,699.743  2,437,196.249 Meters")
+        # self.ui.hline.setText(r"13")
+        # self.ui.vline.setText(r"5")
 
         #### Connect the various widgets to the methods they interact with ####
         self.ui.browsecachebutton.clicked.connect(self.browsecache)
@@ -106,11 +107,12 @@ class PlotControls(QMainWindow):
         coord = CCDReader.arcpaste_to_coord(self.ui.arccoordsline.text())
 
         # Generate the output .png filename
-        self.fname = f"{outdir}{os.sep}H{self.ui.hline.text()}V{self.ui.vline.text()}_{coord.x}_{coord.y}.png"
+        self.fname = "{outdir}{sep}H{h}V{v}_{x}_{y}.png".format(outdir=outdir, sep=os.sep, h=self.ui.hline.text(),
+                                                                v=self.ui.vline.text(), x=coord.x, y=coord.y)
 
         # Overwrite the .png if it already exists
         if os.path.exists(self.fname):
-             os.remove(self.fname)
+            os.remove(self.fname)
 
         # Save the .png
         plt.savefig(self.fname, bbox_inches="tight", dpi=150)
@@ -124,7 +126,7 @@ class PlotControls(QMainWindow):
         counter = 0
 
         checks = [self.ui.browsecacheline.text(), self.ui.browsejsonline.text(), self.ui.hline.text(),
-                   self.ui.vline.text(), self.ui.browseoutputline.text(), self.ui.arccoordsline.text()]
+                  self.ui.vline.text(), self.ui.browseoutputline.text(), self.ui.arccoordsline.text()]
 
         for check in checks:
             if check == "":
@@ -203,7 +205,6 @@ class PlotControls(QMainWindow):
         :return:
         """
 
-
         # If True, generate a point shapefile for the entered coordinates
         shp_on = self.ui.radioshp.isChecked()
 
@@ -232,10 +233,12 @@ class PlotControls(QMainWindow):
             self.ui.plainTextEdit_results.clear()
 
             # Show which exception was raised
-            self.ui.plainTextEdit_results.appendPlainText(f"***Plotting Error***"
-                                                          f"\n\nType of Exception: {sys.exc_info()[0]}"
-                                                          f"\nException Value: {sys.exc_info()[1]}"
-                                                          f"\nTraceback Info: {traceback.print_tb(sys.exc_info()[2])}")
+            self.ui.plainTextEdit_results.appendPlainText("***Plotting Error***\
+                                                          \n\nType of Exception: {}\
+                                                          \nException Value: {}\
+                                                          \nTraceback Info: {}".format(sys.exc_info()[0],
+                                                                                sys.exc_info()[1],
+                                                                                traceback.print_tb(sys.exc_info()[2])))
 
             return None
 

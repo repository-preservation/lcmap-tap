@@ -1,6 +1,7 @@
 
 import datetime as dt
 from matplotlib import pyplot as plt
+from .plot_functions import merge_dicts
 
 
 def get_plot_items(data, items):
@@ -19,7 +20,8 @@ def get_plot_items(data, items):
         for a in set_lists.keys():
             if a in items:
                 # Update the dictionary to include the user-specified items
-                temp_dict =  {**temp_dict, **set_lists[a]}
+                # temp_dict = {**temp_dict, **set_lists[a]}
+                temp_dict = merge_dicts(temp_dict, set_lists[a])
 
         return temp_dict
 
@@ -122,7 +124,7 @@ def draw_figure(data, items):
                                       plot_data[b][0][data.date_mask][~data.ccd_mask], b]
 
         # Give each subplot a title
-        axes[num, 0].set_title(f'{b}')
+        axes[num, 0].set_title('{}'.format(b))
 
         #### plot the model start, end, and break dates ####
         match_dates = [b for b in data.break_dates for s in data.start_dates if b == s]

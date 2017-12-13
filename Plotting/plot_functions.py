@@ -1,6 +1,21 @@
 
 """Define various functions to make life easier (ideally)"""
 import numpy as np
+from collections import OrderedDict
+
+
+def merge_dicts(*dict_args):
+    """
+    Make shallow copies and merge dicts into a new dict
+    Backwards compatible method of doing this compared to the {**dict1, **dict2} available >= python 3.5
+    :param dict_args:
+    :return:
+    """
+    result = OrderedDict()
+    for dictionary in dict_args:
+        result.update(dictionary)
+
+    return result
 
 def test_for_zero(num):
     """
