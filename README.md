@@ -30,13 +30,9 @@ to a .PNG image file, and exiting out of the tool.
 
 Clone or download the GitHub repository
 
-'''
 $cd \<working-dir>
-'''
 
-'''
 $git clone https://github.com/danzelenak-usgs/PyCCD-Plotting-Tool.git
-'''
 
 If git isn't installed:
 
@@ -53,15 +49,13 @@ Download link: https://www.anaconda.com/download/
 
 ##### Option A
 
-Create a virtual environment from the provided spec-file.txt
-if on a win-64 system.
+##### Create a virtual environment from the provided spec-file.txt if on a win-64 system.
 
 $conda create -n \<env-name> --file file-spec.txt
 
 ##### Option B
 
-Manually create a virtual environment with the following
-commands:
+##### Manually create a virtual environment with the following commands:
 
 $conda create -n \<env-name> python=3.6
 
