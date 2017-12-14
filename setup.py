@@ -12,7 +12,7 @@ setup(
         'gdal>=2.0.0',
         'libgdal>=2.0.0'
     ],
-    dependency_links='git https://github.com/conda-forge/gdal-feedstock',
+    dependency_links=['git https://github.com/conda-forge/gdal-feedstock'],
     python_requires='>=3.4',
     author='Daniel Zelenak',
     author_email='daniel.zelenak.ctr@usgs.gov',
