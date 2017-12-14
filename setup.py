@@ -1,19 +1,19 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='PyCCD-Plotting-Tool',
     version='1.0.0',
-    packages=['Controls', 'PlotFrame', 'Plotting', 'RetrieveData', 'UserInterface'],
+    packages=find_packages(),
     scripts=['main.py'],
-    url='https://github.com/danzelenak-usgs/PyCCD-Plotting-Tool',
-    license='',
+    install_requires=[
+        'matplotlib>=2',
+        'PyQt>=5.6.0',
+        'numpy>=1.11',
+        'gdal>=2.1'],
+    python_requires='>=3.4',
     author='Daniel Zelenak',
     author_email='daniel.zelenak.ctr@usgs.gov',
-    description='Plotting tool for PyCCD results and ARD observations',
-    install_requires=[
-            'matplotlib>=2',
-            'PyQt==5.6.0',
-            'numpy>=1.11',
-            'gdal>=2.1'
-    ]
+    description='Plotting tool for displaying PyCCD time-series model results and Landsat-ARD observations',
+    license='',
+    url='https://github.com/danzelenak-usgs/PyCCD-Plotting-Tool'
 )
