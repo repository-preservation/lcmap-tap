@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='PyCCD-Plotting-Tool',
+    name='pyccdardplot',
     version='1.0.0',
     packages=find_packages(),
     scripts=['main.py'],
@@ -9,7 +9,10 @@ setup(
         'matplotlib>=2',
         'PyQt>=5.6.0',
         'numpy>=1.11',
-        'gdal>=2.1'],
+        'gdal>=2.0.0',
+        'libgdal>=2.0.0'
+    ],
+    dependency_links='git https://github.com/conda-forge/gdal-feedstock',
     python_requires='>=3.4',
     author='Daniel Zelenak',
     author_email='daniel.zelenak.ctr@usgs.gov',
