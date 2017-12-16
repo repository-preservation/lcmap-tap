@@ -1,7 +1,7 @@
 
 import datetime as dt
 from matplotlib import pyplot as plt
-from .plot_functions import merge_dicts
+from pyccd_plotter.Plotting import plot_functions
 
 
 def get_plot_items(data, items):
@@ -21,7 +21,7 @@ def get_plot_items(data, items):
             if a in items:
                 # Update the dictionary to include the user-specified items
                 # temp_dict = {**temp_dict, **set_lists[a]}
-                temp_dict = merge_dicts(temp_dict, set_lists[a])
+                temp_dict = plot_functions.merge_dicts(temp_dict, set_lists[a])
 
         return temp_dict
 

@@ -7,10 +7,10 @@ setup(
     scripts=['main.py'],
     install_requires=[
         'matplotlib>=2',
-        'PyQt>=5.6.0',
+        # 'qt>=5',
         'numpy>=1.11',
         'gdal>=2.0.0',
-        'libgdal>=2.0.0'
+        # 'libgdal>=2.0.0'
     ],
     dependency_links=['git https://github.com/conda-forge/gdal-feedstock'],
     python_requires='>=3.4',

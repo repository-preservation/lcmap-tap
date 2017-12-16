@@ -2,7 +2,8 @@
 import sys
 
 from PyQt5.QtWidgets import QApplication
-from Controls.controls import PlotControls
+
+from pyccd_plotter.Controls.controls import PlotControls
 
 if sys.version_info[0] < 3:
     raise Exception("Python 3.* is required")
