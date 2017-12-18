@@ -1,7 +1,7 @@
 
 import datetime as dt
 from matplotlib import pyplot as plt
-from pyccd_plotter.Plotting import plot_functions
+from Plotting import plot_functions
 
 
 def get_plot_items(data, items):
