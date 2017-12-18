@@ -1,19 +1,21 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='pyccdardplot',
+    name='pyccd_plotter',
     version='1.0.0',
     packages=find_packages(),
-    scripts=['main.py'],
+    # scripts=['main.py'],
     install_requires=[
-        'matplotlib>=2',
-        # 'qt>=5',
-        'numpy>=1.11',
-        'gdal>=2.0.0',
-        # 'libgdal>=2.0.0'
+        'matplotlib',
+        'pyqt',
+        'numpy',
+        'gdal'
     ],
     dependency_links=['git https://github.com/conda-forge/gdal-feedstock'],
     python_requires='>=3.4',
+    entry_point={
+        'gui_scripts': ['run=pyccd-plotter.main']
+    },
     author='Daniel Zelenak',
     author_email='daniel.zelenak.ctr@usgs.gov',
     description='Plotting tool for displaying PyCCD time-series model results and Landsat-ARD observations',
