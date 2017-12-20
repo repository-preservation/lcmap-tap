@@ -77,18 +77,18 @@ def draw_figure(data, items):
     lines_map = {}
 
     # squeeze=False allows for plt.subplots to have a single subplot, must specify the column index as well
-    # when calling a subplot e.g. axes[num, 0] for plot number 'num' and column 1
+    # when calling a subplot e.g. axes[num, 0] for plot number 'num' and column 0
     fig, axes = plt.subplots(nrows=len(plot_data), ncols=1, figsize=(18, len(plot_data) * 5),
                              dpi=65, squeeze=False)
 
     for num, b in enumerate(plot_data.keys()):
-        #### Make lists to contain references to the specific artist objects for the current subplot.
-        #### These lists are reset with each iteration, but they're current items are stored in the artist_map and
-        #### lines_map dictionaries at the end of the for-loop.
+        """Make lists to contain references to the specific artist objects for the current subplot.
+        These lists are reset with each iteration, but they're current items are stored in the artist_map and
+        lines_map dictionaries at the end of the for-loop."""
         end_lines, break_lines, start_lines, match_lines, model_lines, date_lines = [], [], [], [], [], []
         obs_points, out_points, mask_points = [], [], []
 
-        #### Plot the observed values within the PyCCD time range ####
+        # ---- Plot the observed values within the PyCCD time range ----
         obs_points.append(axes[num, 0].scatter(x=data.dates_in[total_mask],
                                        y=plot_data[b][0][data.date_mask][total_mask], s=44, c="green", marker="o",
                                        edgecolors="black", picker=3))
@@ -101,7 +101,7 @@ def draw_figure(data, items):
         # the 2D Lines because those are lists too.  See the plotwindow.py module.
         artist_map[obs_points[0]] = [data.dates_in[total_mask], plot_data[b][0][data.date_mask][total_mask], b]
 
-        #### Observed values outside of the PyCCD time range ####
+        # ---- Observed values outside of the PyCCD time range ----
         out_points.append(axes[num, 0].scatter(x=data.dates_out[data.fill_out],
                                        y=plot_data[b][0][~data.date_mask][data.fill_out], s=21, color="red", marker="o",
                                        edgecolors="black", picker=3))
@@ -112,7 +112,7 @@ def draw_figure(data, items):
 
         artist_map[out_points[0]] = [data.dates_out[data.fill_out], plot_data[b][0][~data.date_mask][data.fill_out], b]
 
-        #### Plot the observed values masked out by PyCCD ####
+        # ---- Plot the observed values masked out by PyCCD ----
         mask_points.append(axes[num, 0].scatter(x=data.dates_in[~data.ccd_mask],
                                        y=plot_data[b][0][data.date_mask][~data.ccd_mask], s=21, color="0.65",
                                        marker="o", picker=5))
@@ -126,7 +126,7 @@ def draw_figure(data, items):
         # Give each subplot a title
         axes[num, 0].set_title('{}'.format(b))
 
-        #### plot the model start, end, and break dates ####
+        # ---- plot the model start, end, and break dates ----
         match_dates = [b for b in data.break_dates for s in data.start_dates if b == s]
 
         for ind, e in enumerate(data.end_dates):
@@ -137,6 +137,7 @@ def draw_figure(data, items):
 
             else:
                 # Plot without a label to remove duplicates in the legend
+                # TODO is there a more efficient way of doing this?
                 lines1 = axes[num, 0].axvline(e, color="maroon", linewidth=1.5)
 
                 end_lines.append(lines1)
@@ -174,7 +175,7 @@ def draw_figure(data, items):
 
                 match_lines.append(lines4)
 
-        #### Draw the predicted curves ####
+        # ---- Draw the predicted curves ----
         for c in range(0, len(data.results["change_models"])):
             if c == 0:
                 lines5, = axes[num, 0].plot(data.prediction_dates[c * len(data.bands)],  plot_data[b][1][c], "orange",
@@ -188,10 +189,13 @@ def draw_figure(data, items):
 
                 model_lines.append(lines5)
 
-        # Determine which values to use for the y-axis limits
+        # Set values for the y-axis limits
         if b in data.index_lookup.keys():
+            # Potential dynamic range values
             # ymin = min(plot_data[b][0][data.date_mask][total_mask]) - 0.15
             # ymax = max(plot_data[b][0][data.date_mask][total_mask]) + 0.1
+
+            # Preferred static range values
             ymin = -1.01
             ymax = 1.01
 
@@ -200,27 +204,30 @@ def draw_figure(data, items):
             ymax = 6500
 
         else:
+            # Potential dynamic range values
             # ymin = min(plot_data[b][0][data.date_mask][total_mask]) - 700
             # ymax = max(plot_data[b][0][data.date_mask][total_mask]) + 500
+
+            # Preferred static range values
             ymin = -100
             ymax = 6500
 
         # Set the y-axis limits
         axes[num, 0].set_ylim([ymin, ymax])
 
-        #### Add x-ticks and x-tick_labels ####
-        # I think that commenting this out is for the best.  By not specificying x-labels and x-ticks, the plot will
-        # generate them automatically which allows for rescaling and relabeling automatically when zooming in.
+        # ---- Add x-ticks and x-tick_labels ----
+        """I think that commenting this out is for the best.  By not specifying x-labels and x-ticks, the plot will
+        generate them automatically which allows for rescaling and relabeling automatically when zooming in."""
 
         # axes[num, 0].set_xticks(ord_time)
 
         # axes[num, 0].set_xticklabels(x_labels, rotation=70, horizontalalignment="right")
 
-        #### Display the x and y values where the cursor is placed on a subplot ####
+        # ---- Display the x and y values where the cursor is placed on a subplot ----
         axes[num, 0].format_coord = lambda x, y: "({0:f}, ".format(y) +  \
                                                  "{0:%Y-%m-%d})".format(dt.datetime.fromordinal(int(x)))
 
-        #### Plot a vertical line at January 1 of each year on the time series ####
+        # ---- Plot a vertical line at January 1 of each year on the time series ----
         for y in t_:
             if y == t_[0]:
                 lines6 = axes[num, 0].axvline(y, color="dimgray", linewidth=1.5, label="Datelines")
@@ -232,7 +239,7 @@ def draw_figure(data, items):
 
                 date_lines.append(lines6)
 
-        #### Generate the legend for the current subplot ####
+        # ---- Generate the legend for the current subplot ----
         leg = axes[num, 0].legend(ncol=1, loc="upper left", bbox_to_anchor=(1.00, 1.00),
                             borderaxespad=0.)
 
