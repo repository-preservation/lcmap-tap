@@ -11,15 +11,15 @@ matplotlib.use('Qt5Agg')
 from PyQt5.QtWidgets import QMainWindow, QFileDialog
 
 # Import the main GUI built in QTDesigner, compiled into python with pyuic5.bat
-from UserInterface import ui_main
+from pyccd_plotter.UserInterface import ui_main
 
 # Import the CCDReader class which retrieves json and cache data
-from RetrieveData.retrieve_data import CCDReader
+from pyccd_plotter.RetrieveData.retrieve_data import CCDReader
 
 # Import the PlotWindow class defined in the plotwindow.py module
-from PlotFrame.plotwindow import PlotWindow
+from pyccd_plotter.PlotFrame.plotwindow import PlotWindow
 
-from Plotting import make_plots
+from pyccd_plotter.Plotting import make_plots
 
 import matplotlib.pyplot as plt
 

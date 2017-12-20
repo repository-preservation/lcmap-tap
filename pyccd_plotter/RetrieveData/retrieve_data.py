@@ -9,7 +9,7 @@ from collections import namedtuple
 
 import numpy as np
 
-from Plotting import plot_functions
+from pyccd_plotter.Plotting import plot_functions
 
 # Define some helper methods and data structures
 GeoExtent = namedtuple("GeoExtent", ["x_min", "y_max", "x_max", "y_min"])

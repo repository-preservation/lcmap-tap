@@ -1,27 +1,41 @@
-"""I'm still working on figuring out exactly how to use setuptools to make the plotting tool more portable.
-Under 'install_requires I have pyqt commented out because I kept getting an error that the version couldn't
-be satisfied.  I also keep going back and forth between having an entry_point and a script (main.py).  I'm still
-not sure exactly how this works.  The way the project is structured makes me believe that defining the script is
-the way to go..."""
+"""This plotting tool is being developed to provide visualization and analysis support of LCMAP products generated with
+PyCCD.  Multispectral time-series models and calculated indices at a specified point location are available for
+plotting.  The plots by default include all ARD observations, PyCCD time-segment model-fits, time-segment attributes
+including start, end, and break dates, and datelines representing annual increments on day 1 of each year.  The tool
+generates an interactive Matplotlib figure that displays plots for bands and indices selected by the user via the GUI.
+"""
 
 from setuptools import setup, find_packages
 
 setup(
     name='pyccd_plotter',
-    version='1.0.0',
+
+    version='0.1.0',
+
     packages=find_packages(),
-    # scripts=['pyccd_plotter/main'],
+
     install_requires=[
         'matplotlib',
         # 'pyqt',
         'numpy',
         'gdal'
     ],
-    dependency_links=['git https://github.com/conda-forge/gdal-feedstock'],
+
+    entry_points={'gui_scripts': ['pyccd_plotter = pyccd_plotter.__main__:main']},
+
+    dependency_links=['https://github.com/conda-forge/gdal-feedstock'],
+
     python_requires='>=3.4',
+
     author='Daniel Zelenak',
+
     author_email='daniel.zelenak.ctr@usgs.gov',
-    description='Plotting tool for displaying PyCCD time-series model results and Landsat-ARD observations',
-    license='',
+
+    long_description=__doc__,
+
+    description='A plotting tool for displaying PyCCD time-series model results and Landsat-ARD observations',
+
+    license='Public Domain',
+
     url='https://github.com/danzelenak-usgs/PyCCD-Plotting-Tool'
 )
