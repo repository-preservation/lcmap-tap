@@ -68,10 +68,9 @@ It is recommended to use conda for installing gdal
 
 ## Run the Tool
 
-* Activate the conda environment if not already
-
 * Option A - From the console
     ```bash
+    $activate <env-name>
     (env-name)$pyccd_plotter
     ```
 * Option B - Use the pyccd_plotter.exe
