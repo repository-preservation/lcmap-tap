@@ -27,58 +27,50 @@ the GUI allow for generating and displaying the plot, clearing the
 list of clicked observations, saving the figure in its current state
 to a .PNG image file, and exiting out of the tool.
 
-#### Installation
+## Installing
 
-Clone or download the GitHub repository
+System Requirements:
 
-$cd \<working-dir>
+pyccd_plotter is known to work on Win32 and Win64 systems
+##### Note:
+It is recommended to use conda for installing gdal
 
-$git clone https://github.com/danzelenak-usgs/PyCCD-Plotting-Tool.git
+* Install Anaconda or Miniconda
+  * Download link: https://www.anaconda.com/download/
+* Create a virtual environment with python 3.5 and install matplotlib
+    ```bash
+    $conda create -n <env-name> python=3.5 matplotlib
+    ```
+    * Alternatively, you can use the spec-file.txt if on Win-64
+    ```bash
+    $conda create -n <env-name> --file spec-file.txt
+* Activate the virtual environment and install gdal from conda-forge
+    ```bash
+    $activate <env-name>
+    (env-name)$conda install gdal -c conda-forge
+    ```
+* Clone or download the GitHub repository
+    ```bash
+    $cd \<working-dir>
+    $git clone https://github.com/danzelenak-usgs/PyCCD-Plotting-Tool.git
+    $cd PyCCD-Plotting-Tool\
+    ```
+* Install the plotting tool using setup.py with the virtual env activated
+    ```bash
+    $activate <env-name>
+    (env-name)$ python setup.py install
+    ```
 
-If git isn't installed:
 
-Go to https://github.com/danzelenak-usgs/PyCCD-Plotting-Tool
+## Run the Tool
 
-Click "Clone or Download", then click "Download Zip"
+* Activate the conda environment if not already
 
-Navigate to the downloaded archive,  un-package it and move the folder
-to a desired working location.
+* Option A - From the console
+    ```bash
+    (env-name)$pyccd_plotter
+    ```
+* Option B - Use the pyccd_plotter.exe
+    * located in <python_path>/Scripts/pyccd_plotter.exe
 
-Install Anaconda or Miniconda and create a virtual environment
-
-Download link: https://www.anaconda.com/download/
-
-##### Option A
-
-##### Create a virtual environment from the provided spec-file.txt if on a win-64 system.
-
-$conda create -n \<env-name> --file file-spec.txt
-
-##### Option B
-
-##### Manually create a virtual environment with the following commands:
-
-$conda create -n \<env-name> python=3.6
-
-$activate \<env-name>
-
-$conda install gdal -c conda-forge
-
-$conda install matplotlib
-
-Installing these packages will get the other requirements of Numpy and
-PyQt installed automatically.
-
-#### Run the Tool
-
-Activate the conda environment if not already
-
-$activate \<env-name>
-
-Navigate to the tool's base directory (it should contain the modules
-i.e. subfolders and main.py)
-
-$cd \<some-location>
-
-$python main.py
 
