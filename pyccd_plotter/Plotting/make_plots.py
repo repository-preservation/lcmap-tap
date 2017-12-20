@@ -1,4 +1,3 @@
-
 import datetime as dt
 from matplotlib import pyplot as plt
 from pyccd_plotter.Plotting import plot_functions
@@ -85,16 +84,17 @@ def draw_figure(data, items):
         """Make lists to contain references to the specific artist objects for the current subplot.
         These lists are reset with each iteration, but they're current items are stored in the artist_map and
         lines_map dictionaries at the end of the for-loop."""
-
+        print('plotting.....')
         end_lines, break_lines, start_lines, match_lines, model_lines, date_lines = [], [], [], [], [], []
         obs_points, out_points, mask_points = [], [], []
 
         # ---- Plot the observed values within the PyCCD time range ----
         obs_points.append(axes[num, 0].scatter(x=data.dates_in[total_mask],
-                                       y=plot_data[b][0][data.date_mask][total_mask], s=44, c="green", marker="o",
-                                       edgecolors="black", picker=3))
+                                               y=plot_data[b][0][data.date_mask][total_mask], s=44, c="green",
+                                               marker="o",
+                                               edgecolors="black", picker=3))
 
-        # Generate legend line for the observations used by pyccd
+        # Generate legend line for the observations used by pyccd; faux1 contains the line-artist but isn't used
         faux1 = axes[num, 0].plot([], [], marker="o", ms=8, color="green", mec="k", mew=0.3,
                                   linewidth=0, label="Clear")
 
@@ -104,10 +104,11 @@ def draw_figure(data, items):
 
         # ---- Observed values outside of the PyCCD time range ----
         out_points.append(axes[num, 0].scatter(x=data.dates_out[data.fill_out],
-                                       y=plot_data[b][0][~data.date_mask][data.fill_out], s=21, color="red", marker="o",
-                                       edgecolors="black", picker=3))
+                                               y=plot_data[b][0][~data.date_mask][data.fill_out], s=21, color="red",
+                                               marker="o",
+                                               edgecolors="black", picker=3))
 
-        # Generate legend line for the obs. outside time range
+        # Generate legend line for the obs. outside time range; faux2 contains the line-artist but isn't used
         faux2 = axes[num, 0].plot([], [], marker="o", ms=4, color="red", mec="black", mew=0.3, linewidth=0,
                                   label="Unused")
 
@@ -115,9 +116,9 @@ def draw_figure(data, items):
 
         # ---- Plot the observed values masked out by PyCCD ----
         mask_points.append(axes[num, 0].scatter(x=data.dates_in[~data.ccd_mask],
-                                       y=plot_data[b][0][data.date_mask][~data.ccd_mask], s=21, color="0.65",
-                                       marker="o", picker=5))
-        # Generate legend line for the masked observations
+                                                y=plot_data[b][0][data.date_mask][~data.ccd_mask], s=21, color="0.65",
+                                                marker="o", picker=5))
+        # Generate legend line for the masked observations; faux3 contains the line-artist but isn't used
         faux3 = axes[num, 0].plot([], [], marker="o", ms=4, color="0.65", linewidth=0,
                                   label="Masked")
 
@@ -128,6 +129,7 @@ def draw_figure(data, items):
         axes[num, 0].set_title('{}'.format(b))
 
         # ---- plot the model start, end, and break dates ----
+        # TODO potentially remove plotting of match_dates
         match_dates = [b for b in data.break_dates for s in data.start_dates if b == s]
 
         for ind, e in enumerate(data.end_dates):
@@ -179,14 +181,14 @@ def draw_figure(data, items):
         # ---- Draw the predicted curves ----
         for c in range(0, len(data.results["change_models"])):
             if c == 0:
-                lines5, = axes[num, 0].plot(data.prediction_dates[c * len(data.bands)],  plot_data[b][1][c], "orange",
-                                  linewidth=3, alpha=0.8, label="Model Fit")
+                lines5, = axes[num, 0].plot(data.prediction_dates[c * len(data.bands)], plot_data[b][1][c], "orange",
+                                            linewidth=3, alpha=0.8, label="Model Fit")
 
                 model_lines.append(lines5)
 
             else:
                 lines5, = axes[num, 0].plot(data.prediction_dates[c * len(data.bands)], plot_data[b][1][c], "orange",
-                                  alpha=0.8, linewidth=3)
+                                            alpha=0.8, linewidth=3)
 
                 model_lines.append(lines5)
 
@@ -225,8 +227,8 @@ def draw_figure(data, items):
         # axes[num, 0].set_xticklabels(x_labels, rotation=70, horizontalalignment="right")
 
         # ---- Display the x and y values where the cursor is placed on a subplot ----
-        axes[num, 0].format_coord = lambda x, y: "({0:f}, ".format(y) +  \
-                                                 "{0:%Y-%m-%d})".format(dt.datetime.fromordinal(int(x)))
+        axes[num, 0].format_coord = lambda xcoord, ycoord: "({0:f}, ".format(ycoord) + \
+                                                           "{0:%Y-%m-%d})".format(dt.datetime.fromordinal(int(xcoord)))
 
         # ---- Plot a vertical line at January 1 of each year on the time series ----
         for y in t_:
@@ -242,11 +244,20 @@ def draw_figure(data, items):
 
         # ---- Generate the legend for the current subplot ----
         leg = axes[num, 0].legend(ncol=1, loc="upper left", bbox_to_anchor=(1.00, 1.00),
-                            borderaxespad=0.)
+                                  borderaxespad=0.)
 
         # Collect all of the plot artists together in a list of lists
-        lines = [obs_points, out_points, mask_points, end_lines, break_lines, start_lines, match_lines,
-                 model_lines, date_lines]
+        # lines = [obs_points, out_points, mask_points, end_lines, break_lines, start_lines, match_lines,
+        #          model_lines, date_lines]
+
+        """Have to check for the possibility that match_lines is empty...might be worth considering not plotting this
+        at all"""
+        if len(match_lines) == 0:
+            lines = [obs_points, out_points, mask_points, end_lines, break_lines, start_lines,
+                     model_lines, date_lines]
+        else:
+            lines = [obs_points, out_points, mask_points, end_lines, break_lines, start_lines, match_lines,
+                     model_lines, date_lines]
 
         # Map the legend lines to their original artists so the event picker can interact with them
         for legline, origline in zip(leg.get_lines(), lines):
