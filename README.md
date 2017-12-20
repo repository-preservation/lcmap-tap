@@ -2,9 +2,10 @@
 
 #### Abstract:
 
-This plotting tool was built to aid in the analysis of LCMAP products
-generated with PyCCD.  Multispectral time series models and calculated
-indices at a specified point location are available for plotting.  The
+This plotting tool is being developed to provide visualization and
+analysis support of LCMAP products generated with PyCCD.  Multispectral
+time-series models and calculated indices at a specified point location
+are available for plotting.  The
 plots by default include all ARD observations, PyCCD time-segment
 model-fits, time-segment attributes including start, end, and break
 dates, and datelines representing annual increments on day 1 of each
@@ -80,3 +81,4 @@ i.e. subfolders and main.py)
 $cd \<some-location>
 
 $python main.py
+
