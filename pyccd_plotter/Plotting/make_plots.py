@@ -1,5 +1,6 @@
 import datetime as dt
 from matplotlib import pyplot as plt
+from collections import OrderedDict
 from pyccd_plotter.Plotting import plot_functions
 
 
@@ -10,11 +11,21 @@ def get_plot_items(data, items):
     :items: <dict>
     :return: <dict>
     """
-    set_lists = {"All Bands and Indices": data.all_lookup, "All Bands": data.band_lookup,
-                 "All Indices": data.index_lookup}
+    # set_lists = {"All Bands and Indices": data.all_lookup, "All Bands": data.band_lookup,
+    #              "All Indices": data.index_lookup}
+
+    # Use OrderedDict
+    set_lists = [("All Bands and Indices", data.all_lookup),
+                 ("All Bands", data.band_lookup),
+                 ("All Indices", data.index_lookup)]
+
+    set_lists = OrderedDict(set_lists)
 
     if len(items) > 0:
-        temp_dict = {i: data.all_lookup[i] for i in items if i in data.all_lookup.keys()}
+        # temp_dict = {i: data.all_lookup[i] for i in items if i in data.all_lookup.keys()}
+        # Use OrderedDict
+        temp_dict = [(i, data.all_lookup[i]) for i in items if i in data.all_lookup.keys()]
+        temp_dict = OrderedDict(temp_dict)
 
         for a in set_lists.keys():
             if a in items:
@@ -22,6 +33,7 @@ def get_plot_items(data, items):
                 # temp_dict = {**temp_dict, **set_lists[a]}
                 temp_dict = plot_functions.merge_dicts(temp_dict, set_lists[a])
 
+        # print(temp_dict.keys())
         return temp_dict
 
     else:
@@ -84,7 +96,7 @@ def draw_figure(data, items):
         """Make lists to contain references to the specific artist objects for the current subplot.
         These lists are reset with each iteration, but they're current items are stored in the artist_map and
         lines_map dictionaries at the end of the for-loop."""
-        print('plotting.....')
+        # print('plotting.....')
         end_lines, break_lines, start_lines, match_lines, model_lines, date_lines = [], [], [], [], [], []
         obs_points, out_points, mask_points = [], [], []
 
