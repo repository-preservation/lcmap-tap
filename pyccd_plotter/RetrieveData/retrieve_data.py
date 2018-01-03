@@ -380,18 +380,27 @@ class CCDReader:
             print("The number of observations is consistent with the length of the PyCCD internal processing mask.\n"
                   "No changes to the input observations are necessary.")
 
+            self.message = "The number of observations is consistent with the length of the PyCCD internal processing" \
+                        " mask.  No changes to the input observations are necessary."
+
             return None
 
         if len(np.unique(self.dates_in)) != len(self.dates_in) and len(np.unique(self.dates_in)) == len(self.ccd_mask):
             print("There is a duplicate date occurrence in observations.  Removing duplicate occurrences makes the "
                   "number of observations consistent with the length of the PyCCD internal processing mask.")
 
+            self.message = "There is a duplicate date occurrence in observations.  Removing duplicate occurrences " \
+                           "makes the number of observations consistent with the length of the PyCCD internal " \
+                           "processing mask."
+
             # Make a list of the duplicate occurrences
-            dupes = [item for item, count in Counter(self.dates).items() if count > 1]
+            self.dupes = [item for item, count in Counter(self.dates).items() if count > 1]
 
             self.dates, ind, counts = np.unique(self.dates, return_index=True, return_counts=True)
 
-            print("Duplicate dates: \n\t{}".format([dt.datetime.fromordinal(d) for d in dupes]))
+            print("Duplicate dates: \n\t{}".format([dt.datetime.fromordinal(d) for d in self.dupes]))
+
+            self.dupes = [dt.date.fromordinal(d) for d in self.dupes]
 
             # Slice out the duplicate observation from each band
             self.data = self.data[:, ind]
@@ -421,12 +430,20 @@ class CCDReader:
                 print("The number of observations is consistent with the length of the PyCCD internal processing mask\n"
                       "if the END DATE is changed to 2016-01-01.\nNo other changes are necessary.")
 
+                self.message = "The number of observations is consistent with the length of the PyCCD internal " \
+                               "processing mask if the END DATE is changed to 2016-01-01.  No other changes are " \
+                               "necessary."
+
                 return None
 
             # If the inclusive date mask doesn't match the processing mask, then resort to using the PIXELQA
             else:
                 print("There is an unresolved inconsistency with the length of the processing mask, therefore it will "
                       "not be used.\nThe PIXELQA band will solely be used to filter observations.")
+
+                self.message = "There is an unresolved inconsistency with the length of the processing mask, " \
+                               "therefore it will not be used.  The PIXELQA band will solely be used to flag " \
+                               "observations as being potentially masked-out by PyCCD."
 
                 self.ccd_mask = self.get_pqa_mask()
 

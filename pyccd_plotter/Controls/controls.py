@@ -164,7 +164,7 @@ class PlotControls(QMainWindow):
 
         return None
 
-    def show_results(self, begin_date, end_date, results):
+    def show_results(self, data):
         """
         Print the model results out to the GUI QPlainTextEdit widget
         :param begin_date: Time series begin date
@@ -177,11 +177,19 @@ class PlotControls(QMainWindow):
         """
         self.ui.plainTextEdit_results.clear()
 
-        self.ui.plainTextEdit_results.appendPlainText("Begin Date: {}".format(begin_date))
+        self.ui.plainTextEdit_results.appendPlainText(data.message)
 
-        self.ui.plainTextEdit_results.appendPlainText("End Date: {}\n".format(end_date))
+        try:
+            self.ui.plainTextEdit_results.appendPlainText("\n***Duplicate dates***\n{}".format(data.dupes))
 
-        for num, result in enumerate(results):
+        except AttributeError:
+            pass
+
+        self.ui.plainTextEdit_results.appendPlainText("\n\nBegin Date: {}".format(data.BEGIN_DATE))
+
+        self.ui.plainTextEdit_results.appendPlainText("End Date: {}\n".format(data.END_DATE))
+
+        for num, result in enumerate(data.results["change_models"]):
             self.ui.plainTextEdit_results.appendPlainText("Result: {}".format(num + 1))
 
             self.ui.plainTextEdit_results.appendPlainText(
@@ -228,7 +236,7 @@ class PlotControls(QMainWindow):
         # I left the exception clause bare because there are at least 2 different exception types that can occur
         # if any of the parameters passed with the GUI are incorrect.  There might be a better way to handles this
         # as it seems having a bare exception clause is frowned upon.
-        except:
+        except (IndexError, AttributeError, TypeError, ValueError):
             # Clear the results window
             self.ui.plainTextEdit_results.clear()
 
@@ -243,8 +251,7 @@ class PlotControls(QMainWindow):
             return None
 
         # Display change model information for the entered coordinates
-        self.show_results(begin_date=extracted_data.BEGIN_DATE, end_date=extracted_data.END_DATE,
-                          results=extracted_data.results["change_models"])
+        self.show_results(data=extracted_data)
 
         # Retrieve the bands and/or indices selected for plotting
         self.item_list = [str(i.text()) for i in self.ui.listitems.selectedItems()]
