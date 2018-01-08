@@ -37,6 +37,7 @@ def get_plot_items(data, items):
         return temp_dict
 
     else:
+        # Do this by default if the user hasn't selected anything from the list
         return data.all_lookup
 
 
