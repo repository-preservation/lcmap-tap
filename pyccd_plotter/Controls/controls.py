@@ -2,7 +2,7 @@ import datetime as dt
 import os
 import sys
 import traceback
-
+import glob
 import matplotlib
 
 # Tell matplotlib to use the QT5Agg Backend
@@ -20,6 +20,10 @@ from pyccd_plotter.RetrieveData.retrieve_data import CCDReader
 from pyccd_plotter.PlotFrame.plotwindow import PlotWindow
 
 from pyccd_plotter.Plotting import make_plots
+
+from pyccd_plotter.Visualization import display_ard
+
+from pyccd_plotter.Visualization.ard_viewer import ARDViewer
 
 import matplotlib.pyplot as plt
 
@@ -352,17 +356,26 @@ class PlotControls(QMainWindow):
         :param item:
         :return:
         """
-        # self.ui.plainTextEdit_results.appendPlainText(item.text())
-        scene = item.text()
+        try:
+            self.ard.close()
+            # self.ui.plainTextEdit_results.appendPlainText(item.text())
+            scene = item.text()
 
-        # print(scene[10:50])
+            # print(scene[10:50])
 
-        ARD_dir = self.ui.browsecacheline.text()[:-6]
+            ARD_dir = self.ui.browsecacheline.text()[:-6]
 
-        scene_dir = ARD_dir + os.sep + scene[10:50]
+            scene_dir = ARD_dir + os.sep + scene[10:50]
 
-        print(scene_dir)
+            scene_file = glob.glob(scene_dir + os.sep + ".tif")[0]
 
+            print(scene_dir)
+
+            ard_fig = display_ard.make_figure(self, scene_file)
+
+            self.ard = ARDViewer(fig=ard_fig)
+        except AttributeError:
+            pass
 
 
     def exit_plot(self):
