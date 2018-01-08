@@ -8,7 +8,7 @@ from osgeo import gdal
 
 from pyccd_plotter.Visualization.rescale import Rescale
 
-def make_rgb(infile, bands, gui):
+def make_rgb(infile, gui, bands):
     """
 
     :param infile:
@@ -38,3 +38,23 @@ def make_rgb(infile, bands, gui):
 
     return RGB
 
+def make_figure(infile, gui, bands=(3,2,1)):
+    """
+
+    :param rgb:
+    :return:
+    """
+    rgb = make_rgb(infile, gui, bands)
+
+    # fig, ax = plt.subplots(figsize=(18,18), dpi=200, squeeze=False)
+    fig = plt.figure(figsize=(18,18), dpi=200)
+
+    ax = plt.Axes(fig, [0.,0.,1.,1.])
+
+    ax.set_axis_off()
+
+    fig.add_axes(ax)
+
+    ax.imshow(rgb)
+
+    return fig
