@@ -1,6 +1,5 @@
-"""Open a stacked image, access the individual bands, perform a percent clip and rescale to np.uint8 from np.int16,
-store newly created data arrays as pickles for accessing later.  Name the pickles in such a way that they can be
-easily found and removed afterwards."""
+"""Clip and rescale a passed numpy array"""
+
 
 import os
 import numpy as np
