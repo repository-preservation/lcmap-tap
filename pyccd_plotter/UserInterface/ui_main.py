@@ -11,7 +11,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_PyCCDPlottingTool(object):
     def setupUi(self, PyCCDPlottingTool):
         PyCCDPlottingTool.setObjectName("PyCCDPlottingTool")
-        PyCCDPlottingTool.resize(775, 549)
+        PyCCDPlottingTool.resize(746, 605)
         PyCCDPlottingTool.setUnifiedTitleAndToolBarOnMac(False)
         self.centralwidget = QtWidgets.QWidget(PyCCDPlottingTool)
         self.centralwidget.setObjectName("centralwidget")
@@ -183,10 +183,10 @@ class Ui_PyCCDPlottingTool(object):
         self.clickresultsLabel = QtWidgets.QLabel(self.centralwidget)
         self.clickresultsLabel.setObjectName("clickresultsLabel")
         self.outputverticalLayout.addWidget(self.clickresultsLabel)
-        self.plainTextEdit_click = QtWidgets.QPlainTextEdit(self.centralwidget)
-        self.plainTextEdit_click.setReadOnly(True)
-        self.plainTextEdit_click.setObjectName("plainTextEdit_click")
-        self.outputverticalLayout.addWidget(self.plainTextEdit_click)
+        self.clicked_listWidget = QtWidgets.QListWidget(self.centralwidget)
+        self.clicked_listWidget.setAlternatingRowColors(True)
+        self.clicked_listWidget.setObjectName("clicked_listWidget")
+        self.outputverticalLayout.addWidget(self.clicked_listWidget)
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.clearpushButton = QtWidgets.QPushButton(self.centralwidget)
@@ -214,7 +214,7 @@ class Ui_PyCCDPlottingTool(object):
         self.gridLayout.addLayout(self.outputverticalLayout, 0, 1, 1, 1)
         PyCCDPlottingTool.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(PyCCDPlottingTool)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 775, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 746, 21))
         self.menubar.setObjectName("menubar")
         PyCCDPlottingTool.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(PyCCDPlottingTool)
@@ -236,8 +236,7 @@ class Ui_PyCCDPlottingTool(object):
         PyCCDPlottingTool.setTabOrder(self.listitems, self.plotbutton)
         PyCCDPlottingTool.setTabOrder(self.plotbutton, self.savefigpushButton)
         PyCCDPlottingTool.setTabOrder(self.savefigpushButton, self.plainTextEdit_results)
-        PyCCDPlottingTool.setTabOrder(self.plainTextEdit_results, self.plainTextEdit_click)
-        PyCCDPlottingTool.setTabOrder(self.plainTextEdit_click, self.clearpushButton)
+        PyCCDPlottingTool.setTabOrder(self.plainTextEdit_results, self.clearpushButton)
         PyCCDPlottingTool.setTabOrder(self.clearpushButton, self.exitbutton)
 
     def retranslateUi(self, PyCCDPlottingTool):

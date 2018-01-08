@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>775</width>
-    <height>549</height>
+    <width>746</width>
+    <height>605</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -444,8 +444,8 @@
        </widget>
       </item>
       <item>
-       <widget class="QPlainTextEdit" name="plainTextEdit_click">
-        <property name="readOnly">
+       <widget class="QListWidget" name="clicked_listWidget">
+        <property name="alternatingRowColors">
          <bool>true</bool>
         </property>
        </widget>
@@ -516,7 +516,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>775</width>
+     <width>746</width>
      <height>21</height>
     </rect>
    </property>
@@ -538,7 +538,6 @@
   <tabstop>plotbutton</tabstop>
   <tabstop>savefigpushButton</tabstop>
   <tabstop>plainTextEdit_results</tabstop>
-  <tabstop>plainTextEdit_click</tabstop>
   <tabstop>clearpushButton</tabstop>
   <tabstop>exitbutton</tabstop>
  </tabstops>
