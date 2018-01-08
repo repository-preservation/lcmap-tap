@@ -100,13 +100,18 @@ class PlotWindow(QtWidgets.QMainWindow):
                         if test_str in id:
                             self.value_holder["temp"].append(id)
 
-                            gui.ui.plainTextEdit_click.appendPlainText("Scene ID: {}".format(id))
+                            gui.ui.clicked_listWidget.addItem("Scene ID: {}\nObs. Date: {:%Y-%b-%d}\n"
+                                                              "{}-Value: {}".format(id,
+                                                                                    self.value_holder['temp'][1][0],
+                                                                                    b,
+                                                                                    self.value_holder['temp'][1][1][0]))
+                            break
 
                     # Show the picked information in a text box on the GUI
-                    gui.ui.plainTextEdit_click.appendPlainText(
-                        "Obs. Date: {:%Y-%b-%d} \n{}-Value: {}\n".format(self.value_holder['temp'][1][0],
-                                                                         b,
-                                                                         self.value_holder['temp'][1][1][0]))
+                    # gui.ui.clicked_listWidget.addItem(
+                    #     "Obs. Date: {:%Y-%b-%d} \n{}-Value: {}\n".format(self.value_holder['temp'][1][0],
+                    #                                                      b,
+                    #                                                      self.value_holder['temp'][1][1][0]))
 
                 # I think the TypeError might occur when more than a single data point is returned with one click,
                 # but need to investigate further.
