@@ -77,6 +77,8 @@ class PlotControls(QMainWindow):
 
         self.ui.exitbutton.clicked.connect(self.exit_plot)
 
+        self.ui.clicked_listWidget.itemClicked.connect(self.show_ard)
+
         self.init_ui()
 
     def init_ui(self):
@@ -91,7 +93,8 @@ class PlotControls(QMainWindow):
         Clear the observations window
         :return:
         """
-        self.ui.plainTextEdit_click.clear()
+        # self.ui.plainTextEdit_click.clear()
+        self.ui.clicked_listWidget.clear()
 
     def savefig(self):
         """
@@ -167,12 +170,7 @@ class PlotControls(QMainWindow):
     def show_results(self, data):
         """
         Print the model results out to the GUI QPlainTextEdit widget
-        :param begin_date: Time series begin date
-        :type begin_date: datetime.date
-        :param end_date: Time series end date
-        :type end_date: datetime.date
-        :param results: list of the PyCCD results
-        :type results: list[dict]
+        :param data:
         :return:
         """
         self.ui.plainTextEdit_results.clear()
@@ -347,6 +345,25 @@ class PlotControls(QMainWindow):
         feature, point, layer = None, None, None
 
         return None
+
+    def show_ard(self, item):
+        """
+
+        :param item:
+        :return:
+        """
+        # self.ui.plainTextEdit_results.appendPlainText(item.text())
+        scene = item.text()
+
+        # print(scene[10:50])
+
+        ARD_dir = self.ui.browsecacheline.text()[:-6]
+
+        scene_dir = ARD_dir + os.sep + scene[10:50]
+
+        print(scene_dir)
+
+
 
     def exit_plot(self):
         """
