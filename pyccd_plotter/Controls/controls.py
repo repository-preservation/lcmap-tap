@@ -230,14 +230,11 @@ class PlotControls(QMainWindow):
         # will cause an exception to occur which will be displayed in the GUI for the user, and the tool won't close.
         try:
             self.extracted_data = CCDReader(h=int(self.ui.hline.text()),
-                                       v=int(self.ui.vline.text()),
-                                       cache_dir=str(self.ui.browsecacheline.text()),
-                                       json_dir=str(self.ui.browsejsonline.text()),
-                                       arc_coords=str(self.ui.arccoordsline.text()))
+                                            v=int(self.ui.vline.text()),
+                                            cache_dir=str(self.ui.browsecacheline.text()),
+                                            json_dir=str(self.ui.browsejsonline.text()),
+                                            arc_coords=str(self.ui.arccoordsline.text()))
 
-        # I left the exception clause bare because there are at least 2 different exception types that can occur
-        # if any of the parameters passed with the GUI are incorrect.  There might be a better way to handles this
-        # as it seems having a bare exception clause is frowned upon.
         except (IndexError, AttributeError, TypeError, ValueError):
             # Clear the results window
             self.ui.plainTextEdit_results.clear()
@@ -247,8 +244,9 @@ class PlotControls(QMainWindow):
                                                           \n\nType of Exception: {}\
                                                           \nException Value: {}\
                                                           \nTraceback Info: {}".format(sys.exc_info()[0],
-                                                                                sys.exc_info()[1],
-                                                                                traceback.print_tb(sys.exc_info()[2])))
+                                                                                       sys.exc_info()[1],
+                                                                                       traceback.print_tb(
+                                                                                           sys.exc_info()[2])))
 
             return None
 
@@ -279,7 +277,6 @@ class PlotControls(QMainWindow):
         self.ui.savefigpushButton.setEnabled(True)
 
         return None
-
 
     def get_shp(self):
         """
