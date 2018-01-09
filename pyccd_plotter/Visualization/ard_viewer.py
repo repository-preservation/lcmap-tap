@@ -1,6 +1,4 @@
 
-import datetime as dt
-
 import matplotlib
 import numpy as np
 from PyQt5 import QtWidgets
@@ -19,11 +17,10 @@ class MplCanvas(FigureCanvas):
 
         FigureCanvas.__init__(self, self.fig)
 
-
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Minimum)
-
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Ignored)
 
         sizePolicy.setHorizontalStretch(0)
+
         sizePolicy.setVerticalStretch(0)
 
         FigureCanvas.setSizePolicy(self, sizePolicy)
@@ -38,6 +35,7 @@ class ARDViewer(QtWidgets.QMainWindow):
 
         self.widget = QtWidgets.QWidget()
         self.setCentralWidget(self.widget)
+
         self.widget.setLayout(QtWidgets.QVBoxLayout())
         self.widget.layout().setContentsMargins(0, 0, 0, 0)
         self.widget.layout().setSpacing(0)
@@ -45,7 +43,6 @@ class ARDViewer(QtWidgets.QMainWindow):
         self.fig = fig
         self.canvas = MplCanvas(fig=self.fig)
         self.canvas.draw()
-
 
         self.nav = NavigationToolbar(self.canvas, self.widget)
 

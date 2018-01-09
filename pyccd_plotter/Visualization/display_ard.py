@@ -10,8 +10,6 @@ from osgeo import gdal
 
 from pyccd_plotter.Visualization.rescale import Rescale
 
-from pyccd_plotter.RetrieveData import retrieve_data
-
 
 def read_data(gui, src_file, ul_rowcol, bands, extent):
     """
@@ -28,7 +26,12 @@ def read_data(gui, src_file, ul_rowcol, bands, extent):
     g = src.GetRasterBand(bands[1]).ReadAsArray()
     b = src.GetRasterBand(bands[2]).ReadAsArray()
 
-    qa = src.GetRasterBand(7).ReadAsArray()
+    band_count = src.RasterCount
+
+    if band_count == 7:
+        qa = src.GetRasterBand(7).ReadAsArray()
+    elif band_count == 8:
+        qa = src.GetRasterBand(8).ReadAsArray()
 
     r = r[ul_rowcol.row: ul_rowcol.row + extent, ul_rowcol.column: ul_rowcol.column + extent]
     g = g[ul_rowcol.row: ul_rowcol.row + extent, ul_rowcol.column: ul_rowcol.column + extent]
@@ -64,6 +67,7 @@ def make_rgb(infile, r, g, b, qa, extent):
 
     return rgb
 
+
 def make_figure(gui, infile, data, bands=(3,2,1), extent=500):
     """
 
@@ -79,7 +83,7 @@ def make_figure(gui, infile, data, bands=(3,2,1), extent=500):
 
     rgb = make_rgb(infile=infile, r=r, g=g, b=b, qa=qa, extent=extent)
 
-    fig, ax = plt.subplots(figsize=(9,9), dpi=100, squeeze=False)
+    fig, ax = plt.subplots(figsize=(9,9), facecolor="k", dpi=100, squeeze=False)
 
     ax[0,0].set_xticks([])
     ax[0,0].set_yticks([])
