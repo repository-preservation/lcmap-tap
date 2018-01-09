@@ -1,4 +1,6 @@
-"""Open the ARD image selected in the GUI and display it in a new QWidget using matplotlib"""
+"""Read in the image data for a selected ARD scene, clip to an extent with the given coordinate at the center
+point, clip the data values to a lower and upper percentile, and rescale the results to 8-bit unsigned int.
+Return a matplotlib figure showing the (n x n x 3) array representing RGB"""
 
 import os
 from matplotlib import pyplot as plt
@@ -8,53 +10,84 @@ from osgeo import gdal
 
 from pyccd_plotter.Visualization.rescale import Rescale
 
-def make_rgb(infile, gui, bands):
+from pyccd_plotter.RetrieveData import retrieve_data
+
+
+def read_data(gui, src_file, ul_rowcol, bands, extent):
+    """
+
+    :param src_file:
+    :return:
+    """
+    src = gdal.Open(src_file, gdal.GA_ReadOnly)
+
+    if src is None:
+        gui.ui.plainTextEdit_results.appendPlainText("Could not open {}".format(src_file))
+
+    r = src.GetRasterBand(bands[0]).ReadAsArray()
+    g = src.GetRasterBand(bands[1]).ReadAsArray()
+    b = src.GetRasterBand(bands[2]).ReadAsArray()
+
+    qa = src.GetRasterBand(7).ReadAsArray()
+
+    r = r[ul_rowcol.row: ul_rowcol.row + extent, ul_rowcol.column: ul_rowcol.column + extent]
+    g = g[ul_rowcol.row: ul_rowcol.row + extent, ul_rowcol.column: ul_rowcol.column + extent]
+    b = b[ul_rowcol.row: ul_rowcol.row + extent, ul_rowcol.column: ul_rowcol.column + extent]
+    qa = qa[ul_rowcol.row: ul_rowcol.row + extent, ul_rowcol.column: ul_rowcol.column + extent]
+
+    src = None
+
+    return r, g, b, qa
+
+
+def make_rgb(infile, r, g, b, qa, extent):
     """
 
     :param infile:
+    :param r:
+    :param g:
+    :param b:
+    :param qa:
+    :param extent:
     :return:
     """
 
-    src = gdal.Open(infile, gdal.GA_ReadOnly)
+    rgb = np.zeros((extent, extent, 3), dtype=np.uint8)
 
-    if src is None:
-        gui.ui.plainTextEdit_results.appendPlainText("Could not open {}".format(infile))
+    r_rescale = Rescale(src_file=infile, array=r, qa=qa)
+    g_rescale = Rescale(src_file=infile, array=g, qa=qa)
+    b_rescale = Rescale(src_file=infile, array=b, qa=qa)
 
-    R = src.GetRasterBand(bands[0]).ReadAsArray()
-    G = src.GetRasterBand(bands[1]).ReadAsArray()
-    B = src.GetRasterBand(bands[2]).ReadAsArray()
+    rgb[:,:,0] = b_rescale.rescaled
+    rgb[:,:,1] = g_rescale.rescaled
+    rgb[:,:,2] = r_rescale.rescaled
 
-    QA = src.GetRasterBand(7).ReadAsArray()
+    return rgb
 
-    RGB = np.zeros((5000, 5000, 3), dtype=np.uint8)
-
-    R_rescale = Rescale(src_file=infile, array=R, qa=QA)
-    G_rescale = Rescale(src_file=infile, array=G, qa=QA)
-    B_rescale = Rescale(src_file=infile, array=B, qa=QA)
-
-    RGB[:,:,0] = B_rescale.rescaled
-    RGB[:,:,1] = G_rescale.rescaled
-    RGB[:,:,2] = R_rescale.rescaled
-
-    return RGB
-
-def make_figure(infile, gui, bands=(3,2,1)):
+def make_figure(gui, infile, data, bands=(3,2,1), extent=500):
     """
 
     :param rgb:
     :return:
     """
-    rgb = make_rgb(infile, gui, bands)
+    pixel_rowcol = data.geo_to_rowcol(affine=data.PIXEL_AFFINE, coord=data.coord)
 
-    # fig, ax = plt.subplots(figsize=(18,18), dpi=200, squeeze=False)
-    fig = plt.figure(figsize=(18,18), dpi=200)
+    ul_rowcol = data.RowColumn(row=pixel_rowcol.row - int(extent / 2.),
+                               column = pixel_rowcol.column - int(extent / 2.))
 
-    ax = plt.Axes(fig, [0.,0.,1.,1.])
+    r, g, b, qa = read_data(gui=gui, src_file=infile, ul_rowcol=ul_rowcol, extent=extent, bands=bands)
 
-    ax.set_axis_off()
+    rgb = make_rgb(infile=infile, r=r, g=g, b=b, qa=qa, extent=extent)
 
-    fig.add_axes(ax)
+    fig, ax = plt.subplots(figsize=(9,9), dpi=100, squeeze=False)
 
-    ax.imshow(rgb)
+    ax[0,0].set_xticks([])
+    ax[0,0].set_yticks([])
+
+    ax[0,0].scatter(x=int(extent / 2), y=int(extent / 2), marker='x', s=24, c='white', alpha=0.5)
+
+    ax[0,0].imshow(rgb)
+
+    fig.tight_layout()
 
     return fig

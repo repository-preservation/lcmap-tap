@@ -1,12 +1,11 @@
 """Clip and rescale a passed numpy array"""
 
-
 import os
 import numpy as np
 
 
 class Rescale:
-    def __init__(self, src_file, array, qa, lower_percentile=5, upper_percentile=95):
+    def __init__(self, src_file, array, qa, lower_percentile=1, upper_percentile=99):
         self.lower_percentile = lower_percentile
 
         self.upper_percentile = upper_percentile
@@ -93,7 +92,8 @@ class Rescale:
         """
         out_data = np.zeros_like(self.clipped, dtype=np.int32)
 
-        out_data[self.mask_fill] = ((self.clipped[self.mask_fill] - np.min(self.clipped[self.mask_fill])) *
+        out_data[self.mask_fill] = (
+                                    (self.clipped[self.mask_fill] - np.min(self.clipped[self.mask_fill])) *
                                     (out_max - out_min) / (np.max(self.clipped[self.mask_fill]) -
                                                            np.min(self.clipped[self.mask_fill]))
                                     )

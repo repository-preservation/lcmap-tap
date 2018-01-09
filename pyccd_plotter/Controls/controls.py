@@ -229,7 +229,7 @@ class PlotControls(QMainWindow):
         # by the GUI are correct.  If there is a problem with any of the parameters, the first erroneous parameter
         # will cause an exception to occur which will be displayed in the GUI for the user, and the tool won't close.
         try:
-            extracted_data = CCDReader(h=int(self.ui.hline.text()),
+            self.extracted_data = CCDReader(h=int(self.ui.hline.text()),
                                        v=int(self.ui.vline.text()),
                                        cache_dir=str(self.ui.browsecacheline.text()),
                                        json_dir=str(self.ui.browsejsonline.text()),
@@ -253,7 +253,7 @@ class PlotControls(QMainWindow):
             return None
 
         # Display change model information for the entered coordinates
-        self.show_results(data=extracted_data)
+        self.show_results(data=self.extracted_data)
 
         # Retrieve the bands and/or indices selected for plotting
         self.item_list = [str(i.text()) for i in self.ui.listitems.selectedItems()]
@@ -261,18 +261,18 @@ class PlotControls(QMainWindow):
         # Make the matplotlib figure object containing all of the artists(axes, points, lines, legends, labels, etc.)
         # The artist_map is a dict mapping each specific PathCollection artist to it's underlying dataset
         # The lines_map is a dict mapping artist lines and points to the legend lines
-        self.fig, artist_map, lines_map = make_plots.draw_figure(data=extracted_data, items=self.item_list)
+        self.fig, artist_map, lines_map = make_plots.draw_figure(data=self.extracted_data, items=self.item_list)
 
         if not os.path.exists(self.ui.browseoutputline.text()):
             os.makedirs(self.ui.browseoutputline.text())
 
         # Generate the ESRI point shapefile
         if shp_on is True:
-            self.get_shp(extracted_data.H, extracted_data.V, extracted_data.coord, self.ui.browseoutputline.text())
+            self.get_shp()
 
         # Show the figure in an interactive window
         self.p = PlotWindow(fig=self.fig, artist_map=artist_map, lines_map=lines_map, gui=self,
-                            scenes=extracted_data.image_ids)
+                            scenes=self.extracted_data.image_ids)
 
         # Make these buttons available once a figure has been created
         self.ui.clearpushButton.setEnabled(True)
@@ -280,23 +280,27 @@ class PlotControls(QMainWindow):
 
         return None
 
-    @staticmethod
-    def get_shp(h, v, coords, output_dir):
+
+    def get_shp(self):
         """
         Create a point shapefile from the pair of x, y coordinates entered into the GUI
-        :param h:
-        :param v:
-        :param coords:
-        :param output_dir:
         :return:
         """
         ###########################################################
         # GeoCoordinate(x=(float value), y=(float value)
         # References coords.x and coords.y to access x and y values
         ###########################################################
+        h = self.extracted_data.H
+
+        v = self.extracted_data.V
+
+        coords = self.extracted_data.coord
+
+        out_folder = self.ui.browseoutputline.text()
+
         layer_name = "H" + str(h) + "_V" + str(v) + "_" + str(coords.x) + "_" + str(coords.y)
 
-        out_shp = output_dir + os.sep + layer_name + ".shp"
+        out_shp = out_folder + os.sep + layer_name + ".shp"
 
         try:
             from osgeo import ogr, osr
@@ -353,30 +357,32 @@ class PlotControls(QMainWindow):
     def show_ard(self, item):
         """
 
-        :param item:
+        :param item: Passed automatically by the ItemClicked method of the QListWidget
         :return:
         """
         try:
             self.ard.close()
-            # self.ui.plainTextEdit_results.appendPlainText(item.text())
-            scene = item.text()
 
-            # print(scene[10:50])
+        except AttributeError:
+            pass
+
+        try:
+            scene = item.text()
 
             ARD_dir = self.ui.browsecacheline.text()[:-6]
 
             scene_dir = ARD_dir + os.sep + scene[10:50]
 
-            scene_file = glob.glob(scene_dir + os.sep + ".tif")[0]
+            scene_file = glob.glob(scene_dir + os.sep + "*.tif")[0]
 
-            print(scene_dir)
+            print(scene_file)
 
-            ard_fig = display_ard.make_figure(self, scene_file)
+            ard_fig = display_ard.make_figure(self, scene_file, self.extracted_data)
 
             self.ard = ARDViewer(fig=ard_fig)
-        except AttributeError:
-            pass
 
+        except (AttributeError, IndexError):
+            pass
 
     def exit_plot(self):
         """

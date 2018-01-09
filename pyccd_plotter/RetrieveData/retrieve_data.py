@@ -24,6 +24,17 @@ CONUS_EXTENT = GeoExtent(x_min=-2565585,
 
 
 class CCDReader:
+    # Define some helper methods and data structures
+    GeoExtent = namedtuple("GeoExtent", ["x_min", "y_max", "x_max", "y_min"])
+    GeoAffine = namedtuple("GeoAffine", ["ul_x", "x_res", "rot_1", "ul_y", "rot_2", "y_res"])
+    GeoCoordinate = namedtuple("GeoCoordinate", ["x", "y"])
+    RowColumn = namedtuple("RowColumn", ["row", "column"])
+    RowColumnExtent = namedtuple("RowColumnExtent", ["start_row", "start_col", "end_row", "end_col"])
+    CONUS_EXTENT = GeoExtent(x_min=-2565585,
+                             y_min=14805,
+                             x_max=2384415,
+                             y_max=3314805)
+
     def __init__(self, h, v, arc_coords, cache_dir, json_dir):
         """
 
