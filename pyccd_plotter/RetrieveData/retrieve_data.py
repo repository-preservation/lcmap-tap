@@ -79,9 +79,11 @@ class CCDReader:
 
         self.ccd_mask = np.array(self.results['processing_mask'], dtype=bool)
 
+        self.qa = self.data[-1]
+
         self.test_data()
 
-        self.qa = self.data[-1]
+        # self.qa = self.data[-1]
 
         self.fill_mask = np.ones_like(self.qa, dtype=np.bool)
         self.fill_mask[self.qa == 1] = False
@@ -415,6 +417,7 @@ class CCDReader:
 
             # Slice out the duplicate observation from each band
             self.data = self.data[:, ind]
+            self.qa = self.data[-1]
 
             # Regenerate the date_masks
             self.date_mask = self.mask_daterange(self.dates)
