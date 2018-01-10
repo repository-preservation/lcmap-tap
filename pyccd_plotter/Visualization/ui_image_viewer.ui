@@ -1,0 +1,347 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>624</width>
+    <height>673</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="0">
+     <widget class="QScrollArea" name="scrollArea">
+      <property name="widgetResizable">
+       <bool>true</bool>
+      </property>
+      <widget class="QWidget" name="scrollAreaWidgetContents">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>604</width>
+         <height>581</height>
+        </rect>
+       </property>
+      </widget>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QPushButton" name="fittoscreen_button">
+        <property name="minimumSize">
+         <size>
+          <width>100</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>100</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>FitToScreen</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="zoomin_button">
+        <property name="minimumSize">
+         <size>
+          <width>100</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>100</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Zoom In</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>624</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuImage">
+    <property name="title">
+     <string>Bands</string>
+    </property>
+    <widget class="QMenu" name="menuR">
+     <property name="title">
+      <string>R</string>
+     </property>
+     <addaction name="actionBand_1"/>
+     <addaction name="actionBand_2"/>
+     <addaction name="actionBand_3"/>
+     <addaction name="actionBand_4"/>
+     <addaction name="actionBand_5"/>
+     <addaction name="actionBand_6"/>
+    </widget>
+    <widget class="QMenu" name="menuG">
+     <property name="title">
+      <string>G</string>
+     </property>
+     <addaction name="actionBand_7"/>
+     <addaction name="actionBand_8"/>
+     <addaction name="actionBand_9"/>
+     <addaction name="actionBand_10"/>
+     <addaction name="actionBand_11"/>
+     <addaction name="actionBand_12"/>
+    </widget>
+    <widget class="QMenu" name="menuB">
+     <property name="title">
+      <string>B</string>
+     </property>
+     <addaction name="actionBand_13"/>
+     <addaction name="actionBand_14"/>
+     <addaction name="actionBand_15"/>
+     <addaction name="actionBand_16"/>
+     <addaction name="actionBand_17"/>
+     <addaction name="actionBand_18"/>
+    </widget>
+    <addaction name="menuR"/>
+    <addaction name="menuG"/>
+    <addaction name="menuB"/>
+    <addaction name="actionUpdateBands"/>
+   </widget>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuExtent">
+    <property name="title">
+     <string>Extent</string>
+    </property>
+    <addaction name="action100x100"/>
+    <addaction name="action250x250"/>
+    <addaction name="action500x500"/>
+    <addaction name="action1000x1000"/>
+    <addaction name="actionFull"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuImage"/>
+   <addaction name="menuExtent"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionBand_1">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Band 1</string>
+   </property>
+  </action>
+  <action name="actionBand_2">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Band 2</string>
+   </property>
+  </action>
+  <action name="actionBand_3">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Band 3</string>
+   </property>
+  </action>
+  <action name="actionBand_4">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Band 4</string>
+   </property>
+  </action>
+  <action name="actionBand_5">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Band 5</string>
+   </property>
+  </action>
+  <action name="actionBand_6">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Band 6</string>
+   </property>
+  </action>
+  <action name="actionBand_7">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Band 1</string>
+   </property>
+  </action>
+  <action name="actionBand_8">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Band 2</string>
+   </property>
+  </action>
+  <action name="actionBand_9">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Band 3</string>
+   </property>
+  </action>
+  <action name="actionBand_10">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Band 4</string>
+   </property>
+  </action>
+  <action name="actionBand_11">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Band 5</string>
+   </property>
+  </action>
+  <action name="actionBand_12">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Band 6</string>
+   </property>
+  </action>
+  <action name="actionBand_13">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Band 1</string>
+   </property>
+  </action>
+  <action name="actionBand_14">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Band 2</string>
+   </property>
+  </action>
+  <action name="actionBand_15">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Band 3</string>
+   </property>
+  </action>
+  <action name="actionBand_16">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Band 4</string>
+   </property>
+  </action>
+  <action name="actionBand_17">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Band 5</string>
+   </property>
+  </action>
+  <action name="actionBand_18">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Band 6</string>
+   </property>
+  </action>
+  <action name="actionNDVI">
+   <property name="text">
+    <string>NDVI</string>
+   </property>
+  </action>
+  <action name="action100x100">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>100x100</string>
+   </property>
+  </action>
+  <action name="action250x250">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>250x250</string>
+   </property>
+  </action>
+  <action name="action500x500">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>500x500</string>
+   </property>
+  </action>
+  <action name="action1000x1000">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>1000x1000</string>
+   </property>
+  </action>
+  <action name="actionFull">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Full</string>
+   </property>
+  </action>
+  <action name="actionUpdateBands">
+   <property name="text">
+    <string>Update</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
