@@ -1,8 +1,9 @@
 import datetime as dt
+import glob
 import os
 import sys
 import traceback
-import glob
+
 import matplotlib
 
 # Tell matplotlib to use the QT5Agg Backend
@@ -21,9 +22,6 @@ from pyccd_plotter.PlotFrame.plotwindow import PlotWindow
 
 from pyccd_plotter.Plotting import make_plots
 
-from pyccd_plotter.Visualization import display_ard
-
-from pyccd_plotter.Visualization.ard_viewer_matplotlib import ARDViewer
 from pyccd_plotter.Visualization.ard_viewer_qpixelmap import ARDViewerX
 
 import matplotlib.pyplot as plt
