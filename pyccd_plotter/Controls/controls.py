@@ -23,7 +23,8 @@ from pyccd_plotter.Plotting import make_plots
 
 from pyccd_plotter.Visualization import display_ard
 
-from pyccd_plotter.Visualization.ard_viewer import ARDViewer
+from pyccd_plotter.Visualization.ard_viewer_matplotlib import ARDViewer
+from pyccd_plotter.Visualization.ard_viewer_qpixelmap import ARDViewerX
 
 import matplotlib.pyplot as plt
 
@@ -363,6 +364,27 @@ class PlotControls(QMainWindow):
         except AttributeError:
             pass
 
+        # try:
+        #     sceneID = item.text().split()[2]
+        #
+        #     ARD_dir = os.path.split(self.ui.browsecacheline.text())[0]
+        #
+        #     scene_dir = ARD_dir + os.sep + sceneID
+        #
+        #     scene_file = glob.glob(scene_dir + os.sep + "*.tif")[0]
+        #
+        #     print(scene_file)
+        #
+        #     ard_fig, rgb = display_ard.make_figure(gui=self, infile=scene_file, ccd=self.extracted_data)
+        #
+        #     self.ard = ARDViewer(fig=ard_fig)
+        #
+        # except (AttributeError, IndexError):
+        #     print(sys.exc_info()[0])
+        #     print(sys.exc_info()[1])
+        #     traceback.print_tb(sys.exc_info()[2])
+        #     pass
+
         try:
             sceneID = item.text().split()[2]
 
@@ -374,9 +396,7 @@ class PlotControls(QMainWindow):
 
             print(scene_file)
 
-            ard_fig, rgb = display_ard.make_figure(gui=self, infile=scene_file, ccd=self.extracted_data)
-
-            self.ard = ARDViewer(fig=ard_fig)
+            self.ard = ARDViewerX(ard_file=scene_file, ccd=self.extracted_data, gui=self)
 
         except (AttributeError, IndexError):
             print(sys.exc_info()[0])
