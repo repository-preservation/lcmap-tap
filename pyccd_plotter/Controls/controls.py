@@ -61,17 +61,17 @@ class PlotControls(QMainWindow):
 
         self.ui.browseoutputbutton.clicked.connect(self.browseoutput)
 
-        self.ui.arccoordsline.textChanged.connect(self.check_if_values)
+        self.ui.arccoordsline.textChanged.connect(self.check_values)
 
-        self.ui.browsecacheline.textChanged.connect(self.check_if_values)
+        self.ui.browsecacheline.textChanged.connect(self.check_values)
 
-        self.ui.browsejsonline.textChanged.connect(self.check_if_values)
+        self.ui.browsejsonline.textChanged.connect(self.check_values)
 
-        self.ui.hline.textChanged.connect(self.check_if_values)
+        self.ui.hline.textChanged.connect(self.check_values)
 
-        self.ui.vline.textChanged.connect(self.check_if_values)
+        self.ui.vline.textChanged.connect(self.check_values)
 
-        self.ui.browseoutputline.textChanged.connect(self.check_if_values)
+        self.ui.browseoutputline.textChanged.connect(self.check_values)
 
         self.ui.plotbutton.clicked.connect(self.plot)
 
@@ -125,7 +125,7 @@ class PlotControls(QMainWindow):
         plt.savefig(self.fname, bbox_inches="tight", dpi=150)
         print("\nplt object saved to file {}\n".format(self.fname))
 
-    def check_if_values(self):
+    def check_values(self):
         """
         Check to make sure all of the required parameters have been entered before enabling the plot button
         :return: None
@@ -364,21 +364,24 @@ class PlotControls(QMainWindow):
             pass
 
         try:
-            scene = item.text()
+            sceneID = item.text().split()[2]
 
-            ARD_dir = self.ui.browsecacheline.text()[:-6]
+            ARD_dir = os.path.split(self.ui.browsecacheline.text())[0]
 
-            scene_dir = ARD_dir + os.sep + scene[10:50]
+            scene_dir = ARD_dir + os.sep + sceneID
 
             scene_file = glob.glob(scene_dir + os.sep + "*.tif")[0]
 
             print(scene_file)
 
-            ard_fig = display_ard.make_figure(self, scene_file, self.extracted_data)
+            ard_fig, rgb = display_ard.make_figure(gui=self, infile=scene_file, ccd=self.extracted_data)
 
             self.ard = ARDViewer(fig=ard_fig)
 
         except (AttributeError, IndexError):
+            print(sys.exc_info()[0])
+            print(sys.exc_info()[1])
+            traceback.print_tb(sys.exc_info()[2])
             pass
 
     def exit_plot(self):

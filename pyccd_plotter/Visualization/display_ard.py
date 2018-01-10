@@ -1,5 +1,5 @@
-"""Read in the image data for a selected ARD scene, clip to an extent with the given coordinate at the center
-point, clip the data values to a lower and upper percentile, and rescale the results to 8-bit unsigned int.
+"""Read in the image ccd for a selected ARD scene, clip to an extent with the given coordinate at the center
+point, clip the ccd values to a lower and upper percentile, and rescale the results to 8-bit unsigned int.
 Return a matplotlib figure showing the (n x n x 3) array representing RGB"""
 
 import os
@@ -32,6 +32,10 @@ def read_data(gui, src_file, ul_rowcol, bands, extent):
         qa = src.GetRasterBand(7).ReadAsArray()
     elif band_count == 8:
         qa = src.GetRasterBand(8).ReadAsArray()
+    # TODO error handling if raster count is not 7 or 8
+    else:
+        qa = np.zeros_like(r)
+        qa[r == -9999] = 1
 
     r = r[ul_rowcol.row: ul_rowcol.row + extent, ul_rowcol.column: ul_rowcol.column + extent]
     g = g[ul_rowcol.row: ul_rowcol.row + extent, ul_rowcol.column: ul_rowcol.column + extent]
@@ -68,22 +72,22 @@ def make_rgb(infile, r, g, b, qa, extent):
     return rgb
 
 
-def make_figure(gui, infile, data, bands=(3,2,1), extent=500):
+def make_figure(gui, infile, ccd, bands=(3,2,1), extent=500):
     """
 
     :param rgb:
     :return:
     """
-    pixel_rowcol = data.geo_to_rowcol(affine=data.PIXEL_AFFINE, coord=data.coord)
+    pixel_rowcol = ccd.geo_to_rowcol(affine=ccd.PIXEL_AFFINE, coord=ccd.coord)
 
-    ul_rowcol = data.RowColumn(row=pixel_rowcol.row - int(extent / 2.),
+    ul_rowcol = ccd.RowColumn(row=pixel_rowcol.row - int(extent / 2.),
                                column = pixel_rowcol.column - int(extent / 2.))
 
     r, g, b, qa = read_data(gui=gui, src_file=infile, ul_rowcol=ul_rowcol, extent=extent, bands=bands)
 
     rgb = make_rgb(infile=infile, r=r, g=g, b=b, qa=qa, extent=extent)
 
-    fig, ax = plt.subplots(figsize=(9,9), facecolor="k", dpi=100, squeeze=False)
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(9,9), dpi=100, facecolor="k", squeeze=False)
 
     ax[0,0].set_xticks([])
     ax[0,0].set_yticks([])
@@ -94,4 +98,4 @@ def make_figure(gui, infile, data, bands=(3,2,1), extent=500):
 
     fig.tight_layout()
 
-    return fig
+    return fig, rgb
