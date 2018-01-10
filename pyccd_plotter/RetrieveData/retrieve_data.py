@@ -418,6 +418,7 @@ class CCDReader:
             # Slice out the duplicate observation from each band
             self.data = self.data[:, ind]
             self.qa = self.data[-1]
+            self.image_ids = self.image_ids[:, ind]
 
             # Regenerate the date_masks
             self.date_mask = self.mask_daterange(self.dates)
