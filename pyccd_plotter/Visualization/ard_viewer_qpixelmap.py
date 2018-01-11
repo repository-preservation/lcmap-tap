@@ -9,7 +9,7 @@ from PyQt5 import QtCore
 from PyQt5.QtGui import QPixmap, QImage, QColor
 from PyQt5.QtWidgets import QMainWindow, QSizePolicy, QLabel
 
-from pyccd_plotter.Visualization.ui_image_viewer import Ui_MainWindow
+from pyccd_plotter.Visualization.ui_image_viewer import Ui_ARDViewer
 
 from pyccd_plotter.Visualization.rescale import Rescale
 
@@ -22,7 +22,7 @@ class ARDViewerX(QMainWindow):
         super(ARDViewerX, self).__init__()
 
         # Load the main GUI code that was built in Qt Designer
-        self.ui = Ui_MainWindow()
+        self.ui = Ui_ARDViewer()
 
         # Call the method that builds the GUI window
         self.ui.setupUi(self)
@@ -96,21 +96,13 @@ class ARDViewerX(QMainWindow):
         self.ui.actionBand_17.triggered.connect(lambda: self.get_B(band=5))
         self.ui.actionBand_18.triggered.connect(lambda: self.get_B(band=6))
 
-        # self.ui.actionUpdateBands.triggered.connect(self.set_bands)
-        self.ui.actionUpdateBands.triggered.connect(self.update_image)
-
         self.ui.action100x100.triggered.connect(lambda: self.set_extent(extent=100))
         self.ui.action250x250.triggered.connect(lambda: self.set_extent(extent=250))
         self.ui.action500x500.triggered.connect(lambda: self.set_extent(extent=500))
         self.ui.action1000x1000.triggered.connect(lambda: self.set_extent(extent=1000))
         self.ui.actionFull.triggered.connect(lambda: self.set_extent(extent='full'))
 
-        # If clicked, go to a fit-to-screen zoom level (Currently have to click twice, or click once and resize)
-        # TODO Figure out why you have to click twice or resize to get the fit-to-screen view
-        self.ui.fittoscreen_button.clicked.connect(self.resizeimg)
-
-        # If clicked, go back to the default zoom-level, kind of a psuedo-zooming in
-        self.ui.zoomin_button.clicked.connect(self.display_img)
+        self.ui.update_button.clicked.connect(self.update_image)
 
         # Display the GUI for the user
         self.init_ui()
@@ -136,7 +128,7 @@ class ARDViewerX(QMainWindow):
             self.imgLabel.setSizePolicy(self.sizePolicy)
 
             # Maintain the image native ratio
-            self.imgLabel.setScaledContents(True)
+            self.imgLabel.setScaledContents(False)
 
             # Trial and error found this to be the correct way to assemble the image.  Otherwise you end up
             # with a rotated and/or mirrored image.  This is however incredibly inefficient.  I'm leaving the code
@@ -156,7 +148,11 @@ class ARDViewerX(QMainWindow):
 
             self.pixel_map = QPixmap.fromImage(self.img)
 
-            self.imgLabel.setPixmap(self.pixel_map)
+            # self.imgLabel.setPixmap(self.pixel_map)
+
+            self.imgLabel.setPixmap(self.pixel_map.scaled(self.imgLabel.size(),
+                                                          QtCore.Qt.KeepAspectRatio,
+                                                          transformMode=QtCore.Qt.SmoothTransformation))
 
         except AttributeError:
             pass
@@ -184,9 +180,9 @@ class ARDViewerX(QMainWindow):
         :return:
         """
         try:
-            # sizePolicy = QSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+            sizePolicy = QSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
 
-            # self.imgLabel.setSizePolicy(sizePolicy)
+            self.imgLabel.setSizePolicy(sizePolicy)
 
             self.imgLabel.setPixmap(self.pixel_map.scaled(self.imgLabel.size(),
                                                           QtCore.Qt.KeepAspectRatio,
@@ -306,7 +302,9 @@ class ARDViewerX(QMainWindow):
         else:
             self.extent = extent
 
-        print('Extent: ', self.extent)
+        self.get_rgb()
+
+        self.display_img()
 
     def update_image(self):
         """
@@ -371,7 +369,7 @@ class ARDViewerX(QMainWindow):
 
             self.rgb = self.rescale_rgb(r=self.r, g=self.g, b=self.b, qa=self.qa)
 
-            self.rgb = np.require(self.rgb, np.uint8, 'C')
+            # self.rgb = np.require(self.rgb, np.uint8, 'C')
 
             self.img = QImage(self.rgb.data, self.extent, self.extent, self.rgb.strides[0], QImage.Format_RGB888)
 
@@ -408,7 +406,7 @@ class ARDViewerX(QMainWindow):
 
             self.rgb = self.rescale_rgb(r=r, g=g, b=b, qa=qa)
 
-            self.rgb = np.require(self.rgb, np.uint8, 'C')
+            # self.rgb = np.require(self.rgb, np.uint8, 'C')
 
             self.img = QImage(self.rgb.data, self.extent, self.extent, self.rgb.strides[0], QImage.Format_RGB888)
 

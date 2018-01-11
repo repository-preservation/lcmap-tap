@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>MainWindow</class>
- <widget class="QMainWindow" name="MainWindow">
+ <class>ARDViewer</class>
+ <widget class="QMainWindow" name="ARDViewer">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>ARD Viewer</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
@@ -25,8 +25,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>604</width>
-         <height>581</height>
+         <width>600</width>
+         <height>561</height>
         </rect>
        </property>
       </widget>
@@ -35,7 +35,7 @@
     <item row="1" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
-       <widget class="QPushButton" name="fittoscreen_button">
+       <widget class="QPushButton" name="update_button">
         <property name="minimumSize">
          <size>
           <width>100</width>
@@ -49,26 +49,7 @@
          </size>
         </property>
         <property name="text">
-         <string>FitToScreen</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="zoomin_button">
-        <property name="minimumSize">
-         <size>
-          <width>100</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>100</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Zoom In</string>
+         <string>Update</string>
         </property>
        </widget>
       </item>
@@ -82,7 +63,7 @@
      <x>0</x>
      <y>0</y>
      <width>624</width>
-     <height>21</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuImage">
@@ -125,12 +106,13 @@
     <addaction name="menuR"/>
     <addaction name="menuG"/>
     <addaction name="menuB"/>
-    <addaction name="actionUpdateBands"/>
    </widget>
    <widget class="QMenu" name="menuFile">
     <property name="title">
      <string>File</string>
     </property>
+    <addaction name="actionSave_Image"/>
+    <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuExtent">
     <property name="title">
@@ -339,6 +321,16 @@
   <action name="actionUpdateBands">
    <property name="text">
     <string>Update</string>
+   </property>
+  </action>
+  <action name="actionSave_Image">
+   <property name="text">
+    <string>Save Image</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
    </property>
   </action>
  </widget>
