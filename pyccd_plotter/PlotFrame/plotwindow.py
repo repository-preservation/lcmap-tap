@@ -1,3 +1,5 @@
+"""Generate a matplotlib canvas and add it to a QWidget contained in a QMainWindow.  This will provide the
+display and interactions for the PyCCD plots."""
 
 import datetime as dt
 
