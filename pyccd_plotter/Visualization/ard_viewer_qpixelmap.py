@@ -265,23 +265,6 @@ class ARDViewerX(QMainWindow):
             else:
                 self.b_check = 0
 
-    def set_bands(self):
-        """
-
-        :return:
-        """
-        try:
-            self.bands = self.Bands(R=self.R, G=self.G, B=self.B)
-            self.read_data()
-            # self.get_rgb()
-
-        except AttributeError:
-            self.bands = self.Bands(R=3, G=2, B=1)
-            self.read_data()
-            # self.get_rgb()
-
-        print('Bands: ', self.bands)
-
     def set_extent(self, extent):
         """
 
@@ -430,8 +413,8 @@ class ARDViewerX(QMainWindow):
         g_rescale = Rescale(src_file=self.ard_file, array=g, qa=qa)
         b_rescale = Rescale(src_file=self.ard_file, array=b, qa=qa)
 
-        rgb[:, :, 0] = b_rescale.rescaled
+        rgb[:, :, 0] = r_rescale.rescaled
         rgb[:, :, 1] = g_rescale.rescaled
-        rgb[:, :, 2] = r_rescale.rescaled
+        rgb[:, :, 2] = b_rescale.rescaled
 
         return rgb
