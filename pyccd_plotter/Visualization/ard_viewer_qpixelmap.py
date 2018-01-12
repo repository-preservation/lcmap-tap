@@ -1,3 +1,4 @@
+import os
 import sys
 import traceback
 from collections import namedtuple
@@ -7,7 +8,7 @@ from osgeo import gdal
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QPixmap, QImage, QColor
-from PyQt5.QtWidgets import QMainWindow, QSizePolicy, QLabel
+from PyQt5.QtWidgets import QMainWindow, QSizePolicy, QLabel, QFileDialog
 
 from pyccd_plotter.Visualization.ui_image_viewer import Ui_ARDViewer
 
@@ -104,6 +105,10 @@ class ARDViewerX(QMainWindow):
 
         self.ui.update_button.clicked.connect(self.update_image)
 
+        self.ui.actionSave_Image.triggered.connect(self.save_img)
+
+        self.ui.actionExit.triggered.connect(self.exit)
+
         # Display the GUI for the user
         self.init_ui()
 
@@ -115,6 +120,42 @@ class ARDViewerX(QMainWindow):
         :return:
         """
         self.show()
+
+    def exit(self):
+        """
+
+        :return:
+        """
+        self.close()
+
+    def save_img(self):
+        """
+
+        :return:
+        """
+        fmt = ".png"
+
+        fmts = [".bmp", ".jpg", ".png"]
+
+        try:
+            browse = QFileDialog.getSaveFileName()[0]
+
+            # If no file extension was specified, make it .png
+            if os.path.splitext(browse)[1] == '':
+                browse = browse + fmt
+
+            # If a file extension was specified, make sure it is valid for a QImage
+            elif os.path.splitext(browse)[1] != '':
+                if not any([f == os.path.splitext(browse)[1] for f in fmts]):
+                    # If the file extension isn't valid, set it to .png instead
+                    browse = os.path.splitext(browse)[0] + fmt
+
+            self.img.save(browse, quality=100)
+
+        except:
+            print(sys.exc_info()[0])
+            print(sys.exc_info()[1])
+            traceback.print_tb(sys.exc_info()[2])
 
     def display_img(self):
         """
