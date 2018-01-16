@@ -35,18 +35,22 @@ class CCDReader:
                              x_max=2384415,
                              y_max=3314805)
 
-    def __init__(self, h, v, arc_coords, cache_dir, json_dir):
+    def __init__(self, x, y, cache_dir, json_dir):
         """
 
-        :param h:
-        :param v:
+        :param x:
+        :param y:
         :param arc_coords:
         :param cache_dir:
         :param json_dir:
         """
         # ****Setup file locations****
-        self.H = h
-        self.V = v
+        # self.H = h
+        # self.V = v
+
+        self.coord = self.arcpaste_to_coord(xstring=x, ystring=y)
+
+        self.H, self.V = self.get_hv(x=self.coord.x, y=self.coord.y)
 
         self.CACHE_INV = [os.path.join(cache_dir, f) for f in os.listdir(cache_dir)]
 
@@ -62,8 +66,6 @@ class CCDReader:
                                      ul_y=self.PIXEL_AFFINE.ul_y,
                                      rot_2=0,
                                      y_res=-3000)
-
-        self.coord = self.arcpaste_to_coord(arc_coords)
 
         self.results = self.extract_jsoncurve(self.coord)
 
@@ -203,6 +205,23 @@ class CCDReader:
         # Combine these two dictionaries
         # self.all_lookup = {**self.band_lookup, **self.index_lookup}
         self.all_lookup = plot_functions.merge_dicts(self.band_lookup, self.index_lookup)
+
+    def get_hv(self, x, y, y_max=CONUS_EXTENT.y_max, x_min=CONUS_EXTENT.x_min, base=150000):
+        """
+        Determine the H and V from the entered coordinates
+        :param x:
+        :param y:
+        :param y_max:
+        :param x_min:
+        :param base:
+        :return:
+        """
+        H = int((x - x_min) / base)
+
+        V = int((y_max - y) / base)
+
+        return H, V
+
 
     def geospatial_hv(self, loc):
         """
@@ -356,16 +375,18 @@ class CCDReader:
                 coef[5] * np.cos(days * 3 * 2 * np.pi / 365.25) + coef[6] * np.sin(days * 3 * 2 * np.pi / 365.25))
 
     @staticmethod
-    def arcpaste_to_coord(string):
+    def arcpaste_to_coord(xstring, ystring):
         """
 
-        :param string: 
+        :param xstring:
+        :param ystring:
         :return: 
         """
-        pieces = string.split()
+        xpieces = xstring.split()
+        ypieces = ystring.split()
 
-        return GeoCoordinate(x=float(re.sub(",", "", pieces[0])),
-                             y=float(re.sub(",", "", pieces[1])))
+        return GeoCoordinate(x=float(re.sub(",", "", xpieces[0])),
+                             y=float(re.sub(",", "", ypieces[0])))
 
     def test_data(self):
         """

@@ -185,11 +185,7 @@ class ARDViewerX(QMainWindow):
             #             print(sys.exc_info()[1])
             #             traceback.print_tb(sys.exc_info()[2])
 
-            # self.pixel_map = QPixmap(self.img_file)
-
             self.pixel_map = QPixmap.fromImage(self.img)
-
-            # self.imgLabel.setPixmap(self.pixel_map)
 
             self.imgLabel.setPixmap(self.pixel_map.scaled(self.imgLabel.size(),
                                                           QtCore.Qt.KeepAspectRatio,
