@@ -182,7 +182,7 @@ class PlotControls(QMainWindow):
         self.ui.plainTextEdit_results.appendPlainText(data.message)
 
         try:
-            self.ui.plainTextEdit_results.appendPlainText("\n***Duplicate dates***\n{}".format(data.dupes))
+            self.ui.plainTextEdit_results.appendPlainText("\n***Duplicate dates***\n{}".format(data.duplicates))
 
         except AttributeError:
             pass
@@ -225,8 +225,7 @@ class PlotControls(QMainWindow):
         except AttributeError:
             pass
 
-        # Instantiating the CCDReader class in a try-except negates the need to check that the parameters passed
-        # by the GUI are correct.  If there is a problem with any of the parameters, the first erroneous parameter
+        # If there is a problem with any of the parameters, the first erroneous parameter
         # will cause an exception to occur which will be displayed in the GUI for the user, and the tool won't close.
         try:
             self.extracted_data = CCDReader(x=self.ui.xline.text(),
@@ -361,27 +360,6 @@ class PlotControls(QMainWindow):
 
         except AttributeError:
             pass
-
-        # try:
-        #     sceneID = item.text().split()[2]
-        #
-        #     ARD_dir = os.path.split(self.ui.browsecacheline.text())[0]
-        #
-        #     scene_dir = ARD_dir + os.sep + sceneID
-        #
-        #     scene_file = glob.glob(scene_dir + os.sep + "*.tif")[0]
-        #
-        #     print(scene_file)
-        #
-        #     ard_fig, rgb = display_ard.make_figure(gui=self, infile=scene_file, ccd=self.extracted_data)
-        #
-        #     self.ard = ARDViewer(fig=ard_fig)
-        #
-        # except (AttributeError, IndexError):
-        #     print(sys.exc_info()[0])
-        #     print(sys.exc_info()[1])
-        #     traceback.print_tb(sys.exc_info()[2])
-        #     pass
 
         try:
             sceneID = item.text().split()[2]
