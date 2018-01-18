@@ -11,17 +11,6 @@ import numpy as np
 
 from pyccd_plotter.Plotting import plot_functions
 
-# Define some helper methods and data structures
-GeoExtent = namedtuple("GeoExtent", ["x_min", "y_max", "x_max", "y_min"])
-GeoAffine = namedtuple("GeoAffine", ["ul_x", "x_res", "rot_1", "ul_y", "rot_2", "y_res"])
-GeoCoordinate = namedtuple("GeoCoordinate", ["x", "y"])
-RowColumn = namedtuple("RowColumn", ["row", "column"])
-RowColumnExtent = namedtuple("RowColumnExtent", ["start_row", "start_col", "end_row", "end_col"])
-CONUS_EXTENT = GeoExtent(x_min=-2565585,
-                         y_min=14805,
-                         x_max=2384415,
-                         y_max=3314805)
-
 
 class CCDReader:
     # Define some helper methods and data structures
@@ -35,18 +24,18 @@ class CCDReader:
                              x_max=2384415,
                              y_max=3314805)
 
-    def __init__(self, h, v, arc_coords, cache_dir, json_dir):
+    def __init__(self, x, y, cache_dir, json_dir):
         """
 
-        :param h:
-        :param v:
-        :param arc_coords:
+        :param x:
+        :param y:
         :param cache_dir:
         :param json_dir:
         """
-        # ****Setup file locations****
-        self.H = h
-        self.V = v
+        self.coord = self.arcpaste_to_coord(xstring=x, ystring=y)
+
+        self.H, self.V = self.get_hv(x=self.coord.x, x_min=self.CONUS_EXTENT.x_min,
+                                     y=self.coord.y, y_max=self.CONUS_EXTENT.y_max)
 
         self.CACHE_INV = [os.path.join(cache_dir, f) for f in os.listdir(cache_dir)]
 
@@ -54,16 +43,14 @@ class CCDReader:
 
         # ****Setup geospatial and temporal information****
 
-        self.EXTENT, self.PIXEL_AFFINE = self.geospatial_hv(CONUS_EXTENT)
+        self.EXTENT, self.PIXEL_AFFINE = self.geospatial_hv(self.CONUS_EXTENT)
 
-        self.CHIP_AFFINE = GeoAffine(ul_x=self.PIXEL_AFFINE.ul_x,
-                                     x_res=3000,
-                                     rot_1=0,
-                                     ul_y=self.PIXEL_AFFINE.ul_y,
-                                     rot_2=0,
-                                     y_res=-3000)
-
-        self.coord = self.arcpaste_to_coord(arc_coords)
+        self.CHIP_AFFINE = self.GeoAffine(ul_x=self.PIXEL_AFFINE.ul_x,
+                                          x_res=3000,
+                                          rot_1=0,
+                                          ul_y=self.PIXEL_AFFINE.ul_y,
+                                          rot_2=0,
+                                          y_res=-3000)
 
         self.results = self.extract_jsoncurve(self.coord)
 
@@ -82,8 +69,6 @@ class CCDReader:
         self.qa = self.data[-1]
 
         self.test_data()
-
-        # self.qa = self.data[-1]
 
         self.fill_mask = np.ones_like(self.qa, dtype=np.bool)
         self.fill_mask[self.qa == 1] = False
@@ -129,7 +114,7 @@ class CCDReader:
 
                 self.predicted_values.append(self.band_info[b]['pred'])
 
-        #### Calculate indices from observed values ####
+        # Calculate indices from observed values
         self.EVI = plot_functions.evi(B=self.data[0].astype(np.float), NIR=self.data[3].astype(np.float),
                                       R=self.data[2].astype(np.float))
 
@@ -145,7 +130,7 @@ class CCDReader:
 
         self.NBR2 = plot_functions.nbr2(SWIR1=self.data[4].astype(np.float), SWIR2=self.data[5].astype(np.float))
 
-        #### Calculate indices from the results' change models. ####
+        # Calculate indices from the results' change models
         # The change models are stored by order of model, then
         # band number.  For example, the band values for the first change model are represented by indices 0-5,
         # the second model by indices 6-11, and so on.
@@ -204,6 +189,23 @@ class CCDReader:
         # self.all_lookup = {**self.band_lookup, **self.index_lookup}
         self.all_lookup = plot_functions.merge_dicts(self.band_lookup, self.index_lookup)
 
+    @staticmethod
+    def get_hv(x, x_min, y, y_max, base=150000):
+        """
+        Determine the H and V from the entered coordinates
+        :param x:
+        :param y:
+        :param y_max:
+        :param x_min:
+        :param base:
+        :return:
+        """
+        h = int((x - x_min) / base)
+
+        v = int((y_max - y) / base)
+
+        return h, v
+
     def geospatial_hv(self, loc):
         """
 
@@ -215,11 +217,10 @@ class CCDReader:
         ymax = loc.y_max - self.V * 5000 * 30
         ymin = loc.y_max - self.V * 5000 * 30 - 5000 * 30
 
-        return (GeoExtent(x_min=xmin, x_max=xmax, y_max=ymax, y_min=ymin),
-                GeoAffine(ul_x=xmin, x_res=30, rot_1=0, ul_y=ymax, rot_2=0, y_res=-30))
+        return (self.GeoExtent(x_min=xmin, x_max=xmax, y_max=ymax, y_min=ymin),
+                self.GeoAffine(ul_x=xmin, x_res=30, rot_1=0, ul_y=ymax, rot_2=0, y_res=-30))
 
-    @staticmethod
-    def geo_to_rowcol(affine, coord):
+    def geo_to_rowcol(self, affine, coord):
         """
         Transform geo-coordinate to row/col given a reference affine
 
@@ -234,10 +235,9 @@ class CCDReader:
         row = (coord.y - affine.ul_y - affine.ul_x * affine.rot_2) / affine.y_res
         col = (coord.x - affine.ul_x - affine.ul_y * affine.rot_1) / affine.x_res
 
-        return RowColumn(row=int(row), column=int(col))
+        return self.RowColumn(row=int(row), column=int(col))
 
-    @staticmethod
-    def rowcol_to_geo(affine, rowcol):
+    def rowcol_to_geo(self, affine, rowcol):
         """
         Transform a row/col into a geospatial coordinate given reference affine.
 
@@ -252,7 +252,7 @@ class CCDReader:
         x = affine.ul_x + rowcol.column * affine.x_res + rowcol.row * affine.rot_1
         y = affine.ul_y + rowcol.column * affine.rot_2 + rowcol.row * affine.y_res
 
-        return GeoCoordinate(x=x, y=y)
+        return self.GeoCoordinate(x=x, y=y)
 
     @staticmethod
     def load_cache(file):
@@ -355,17 +355,18 @@ class CCDReader:
                 coef[3] * np.cos(days * 2 * 2 * np.pi / 365.25) + coef[4] * np.sin(days * 2 * 2 * np.pi / 365.25) +
                 coef[5] * np.cos(days * 3 * 2 * np.pi / 365.25) + coef[6] * np.sin(days * 3 * 2 * np.pi / 365.25))
 
-    @staticmethod
-    def arcpaste_to_coord(string):
+    def arcpaste_to_coord(self, xstring, ystring):
         """
 
-        :param string: 
+        :param xstring:
+        :param ystring:
         :return: 
         """
-        pieces = string.split()
+        xpieces = xstring.split()
+        ypieces = ystring.split()
 
-        return GeoCoordinate(x=float(re.sub(",", "", pieces[0])),
-                             y=float(re.sub(",", "", pieces[1])))
+        return self.GeoCoordinate(x=float(re.sub(",", "", xpieces[0])),
+                                  y=float(re.sub(",", "", ypieces[0])))
 
     def test_data(self):
         """
@@ -394,7 +395,7 @@ class CCDReader:
                   "No changes to the input observations are necessary.")
 
             self.message = "The number of observations is consistent with the length of the PyCCD internal processing" \
-                        " mask.  No changes to the input observations are necessary."
+                           " mask.  No changes to the input observations are necessary."
 
             return None
 
@@ -407,19 +408,22 @@ class CCDReader:
                            "processing mask."
 
             # Make a list of the duplicate occurrences
-            self.dupes = [item for item, count in Counter(self.dates).items() if count > 1]
+            self.duplicates = [item for item, count in Counter(self.dates).items() if count > 1]
 
             self.dates, ind, counts = np.unique(self.dates, return_index=True, return_counts=True)
 
-            print("Duplicate dates: \n\t{}".format([dt.datetime.fromordinal(d) for d in self.dupes]))
+            print("Duplicate dates: \n\t{}".format([dt.datetime.fromordinal(d) for d in self.duplicates]))
 
-            self.dupes = [dt.date.fromordinal(d) for d in self.dupes]
+            self.duplicates = [dt.date.fromordinal(d) for d in self.duplicates]
 
             # Slice out the duplicate observation from each band
             self.data = self.data[:, ind]
+
+            # Re-assign the qa band w/o duplicates
             self.qa = self.data[-1]
-            # TODO This produces IndexError, need to figure out if clipping image_ids is needed
-            # self.image_ids = self.image_ids[:, ind]
+
+            # Remove duplicates from the scene IDs
+            self.image_ids = self.image_ids[ind]
 
             # Regenerate the date_masks
             self.date_mask = self.mask_daterange(self.dates)

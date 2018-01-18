@@ -60,15 +60,15 @@ class PlotControls(QMainWindow):
 
         self.ui.browseoutputbutton.clicked.connect(self.browseoutput)
 
-        self.ui.arccoordsline.textChanged.connect(self.check_values)
+        # self.ui.arccoordsline.textChanged.connect(self.check_values)
 
         self.ui.browsecacheline.textChanged.connect(self.check_values)
 
         self.ui.browsejsonline.textChanged.connect(self.check_values)
 
-        self.ui.hline.textChanged.connect(self.check_values)
+        self.ui.xline.textChanged.connect(self.check_values)
 
-        self.ui.vline.textChanged.connect(self.check_values)
+        self.ui.yline.textChanged.connect(self.check_values)
 
         self.ui.browseoutputline.textChanged.connect(self.check_values)
 
@@ -110,11 +110,12 @@ class PlotControls(QMainWindow):
             os.makedirs(outdir)
 
         # Pull the coordinate so it can be a part of the .PNG filename
-        coord = CCDReader.arcpaste_to_coord(self.ui.arccoordsline.text())
+        # coord = CCDReader.arcpaste_to_coord(self.ui.arccoordsline.text())
+        coord = self.ui.xline.text() + "_" + self.ui.yline.text()
 
         # Generate the output .png filename
-        self.fname = "{outdir}{sep}H{h}V{v}_{x}_{y}.png".format(outdir=outdir, sep=os.sep, h=self.ui.hline.text(),
-                                                                v=self.ui.vline.text(), x=coord.x, y=coord.y)
+        self.fname = "{outdir}{sep}H{h}V{v}_{xy}.png".format(outdir=outdir, sep=os.sep, h=self.extracted_data.H,
+                                                                v=self.extracted_data.V, xy=coord)
 
         # Overwrite the .png if it already exists
         if os.path.exists(self.fname):
@@ -131,8 +132,8 @@ class PlotControls(QMainWindow):
         """
         counter = 0
 
-        checks = [self.ui.browsecacheline.text(), self.ui.browsejsonline.text(), self.ui.hline.text(),
-                  self.ui.vline.text(), self.ui.browseoutputline.text(), self.ui.arccoordsline.text()]
+        checks = [self.ui.browsecacheline.text(), self.ui.browsejsonline.text(), self.ui.xline.text(),
+                  self.ui.yline.text(), self.ui.browseoutputline.text()]
 
         for check in checks:
             if check == "":
@@ -143,7 +144,7 @@ class PlotControls(QMainWindow):
                 counter += 1
 
         # If all parameters are entered, then the sum will be 6
-        if counter == 6:
+        if counter == 5:
             self.ui.plotbutton.setEnabled(True)
 
     def browsecache(self):
@@ -181,7 +182,7 @@ class PlotControls(QMainWindow):
         self.ui.plainTextEdit_results.appendPlainText(data.message)
 
         try:
-            self.ui.plainTextEdit_results.appendPlainText("\n***Duplicate dates***\n{}".format(data.dupes))
+            self.ui.plainTextEdit_results.appendPlainText("\n***Duplicate dates***\n{}".format(data.duplicates))
 
         except AttributeError:
             pass
@@ -224,15 +225,13 @@ class PlotControls(QMainWindow):
         except AttributeError:
             pass
 
-        # Instantiating the CCDReader class in a try-except negates the need to check that the parameters passed
-        # by the GUI are correct.  If there is a problem with any of the parameters, the first erroneous parameter
+        # If there is a problem with any of the parameters, the first erroneous parameter
         # will cause an exception to occur which will be displayed in the GUI for the user, and the tool won't close.
         try:
-            self.extracted_data = CCDReader(h=int(self.ui.hline.text()),
-                                            v=int(self.ui.vline.text()),
+            self.extracted_data = CCDReader(x=self.ui.xline.text(),
+                                            y=self.ui.yline.text(),
                                             cache_dir=str(self.ui.browsecacheline.text()),
-                                            json_dir=str(self.ui.browsejsonline.text()),
-                                            arc_coords=str(self.ui.arccoordsline.text()))
+                                            json_dir=str(self.ui.browsejsonline.text()))
 
         except (IndexError, AttributeError, TypeError, ValueError):
             # Clear the results window
@@ -361,27 +360,6 @@ class PlotControls(QMainWindow):
 
         except AttributeError:
             pass
-
-        # try:
-        #     sceneID = item.text().split()[2]
-        #
-        #     ARD_dir = os.path.split(self.ui.browsecacheline.text())[0]
-        #
-        #     scene_dir = ARD_dir + os.sep + sceneID
-        #
-        #     scene_file = glob.glob(scene_dir + os.sep + "*.tif")[0]
-        #
-        #     print(scene_file)
-        #
-        #     ard_fig, rgb = display_ard.make_figure(gui=self, infile=scene_file, ccd=self.extracted_data)
-        #
-        #     self.ard = ARDViewer(fig=ard_fig)
-        #
-        # except (AttributeError, IndexError):
-        #     print(sys.exc_info()[0])
-        #     print(sys.exc_info()[1])
-        #     traceback.print_tb(sys.exc_info()[2])
-        #     pass
 
         try:
             sceneID = item.text().split()[2]

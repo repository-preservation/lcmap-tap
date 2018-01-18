@@ -110,12 +110,6 @@ class PlotWindow(QtWidgets.QMainWindow):
                                                                                     self.value_holder['temp'][1][1][0]))
                             break
 
-                    # Show the picked information in a text box on the GUI
-                    # gui.ui.clicked_listWidget.addItem(
-                    #     "Obs. Date: {:%Y-%b-%d} \n{}-Value: {}\n".format(self.value_holder['temp'][1][0],
-                    #                                                      b,
-                    #                                                      self.value_holder['temp'][1][1][0]))
-
                 # I think the TypeError might occur when more than a single data point is returned with one click,
                 # but need to investigate further.
                 except TypeError:
