@@ -11,7 +11,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_PyCCDPlottingTool(object):
     def setupUi(self, PyCCDPlottingTool):
         PyCCDPlottingTool.setObjectName("PyCCDPlottingTool")
-        PyCCDPlottingTool.resize(795, 480)
+        PyCCDPlottingTool.resize(879, 444)
         PyCCDPlottingTool.setUnifiedTitleAndToolBarOnMac(False)
         self.centralwidget = QtWidgets.QWidget(PyCCDPlottingTool)
         self.centralwidget.setObjectName("centralwidget")
@@ -41,7 +41,7 @@ class Ui_PyCCDPlottingTool(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.savefigpushButton.sizePolicy().hasHeightForWidth())
         self.savefigpushButton.setSizePolicy(sizePolicy)
-        self.savefigpushButton.setMinimumSize(QtCore.QSize(75, 0))
+        self.savefigpushButton.setMinimumSize(QtCore.QSize(85, 0))
         self.savefigpushButton.setMaximumSize(QtCore.QSize(75, 16777215))
         self.savefigpushButton.setObjectName("savefigpushButton")
         self.horizontalLayout_2.addWidget(self.savefigpushButton)
@@ -207,7 +207,7 @@ class Ui_PyCCDPlottingTool(object):
         self.gridLayout.addLayout(self.outputverticalLayout, 0, 1, 1, 1)
         PyCCDPlottingTool.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(PyCCDPlottingTool)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 795, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 879, 21))
         self.menubar.setObjectName("menubar")
         PyCCDPlottingTool.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(PyCCDPlottingTool)
