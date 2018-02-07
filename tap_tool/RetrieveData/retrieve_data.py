@@ -9,7 +9,7 @@ from collections import namedtuple
 
 import numpy as np
 
-from pyccd_plotter.Plotting import plot_functions
+from tap_tool.Plotting import plot_functions
 
 
 class CCDReader:

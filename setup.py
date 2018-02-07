@@ -1,14 +1,15 @@
-"""This plotting tool is being developed to provide visualization and analysis support of LCMAP products generated with
-PyCCD.  Multispectral time-series models and calculated indices at a specified point location are available for
-plotting.  The plots by default include all ARD observations, PyCCD time-segment model-fits, time-segment attributes
-including start, end, and break dates, and datelines representing annual increments on day 1 of each year.  The tool
-generates an interactive Matplotlib figure that displays plots for bands and indices selected by the user via the GUI.
+"""The Time Series Analysis and Plotting (TAP) tool is being developed to provide visualization and analysis support of
+LCMAP products generated with PyCCD.  Multispectral time-series models and calculated indices at a specified point
+location are available for plotting.  The plots by default include all ARD observations, PyCCD time-segment model-fits,
+time-segment attributes including start, end, and break dates, and datelines representing annual increments on day 1 of
+each year.  The tool generates an interactive Matplotlib figure that displays plots for bands and indices selected by
+the user via the GUI.
 """
 
 from setuptools import setup, find_packages
 
 setup(
-    name='pyccd_plotter',
+    name='tap_tool',
 
     version='0.1.0',
 
@@ -21,7 +22,7 @@ setup(
         'gdal'
     ],
 
-    entry_points={'gui_scripts': ['pyccd_plotter = pyccd_plotter.__main__:main']},
+    entry_points={'gui_scripts': ['tap_tool = tap_tool.__main__:main']},
 
     dependency_links=['https://github.com/conda-forge/gdal-feedstock'],
 
@@ -37,5 +38,5 @@ setup(
 
     license='Public Domain',
 
-    url='https://github.com/danzelenak-usgs/PyCCD-Plotting-Tool'
+    url='https://github.com/danzelenak-usgs/TAP_Tool'
 )

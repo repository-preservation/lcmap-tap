@@ -12,17 +12,17 @@ matplotlib.use('Qt5Agg')
 from PyQt5.QtWidgets import QMainWindow, QFileDialog
 
 # Import the main GUI built in QTDesigner, compiled into python with pyuic5.bat
-from pyccd_plotter.UserInterface import ui_main
+from tap_tool.UserInterface import ui_main
 
 # Import the CCDReader class which retrieves json and cache data
-from pyccd_plotter.RetrieveData.retrieve_data import CCDReader
+from tap_tool.RetrieveData.retrieve_data import CCDReader
 
 # Import the PlotWindow class defined in the plotwindow.py module
-from pyccd_plotter.PlotFrame.plotwindow import PlotWindow
+from tap_tool.PlotFrame.plotwindow import PlotWindow
 
-from pyccd_plotter.Plotting import make_plots
+from tap_tool.Plotting import make_plots
 
-from pyccd_plotter.Visualization.ard_viewer_qpixelmap import ARDViewerX
+from tap_tool.Visualization.ard_viewer_qpixelmap import ARDViewerX
 
 import matplotlib.pyplot as plt
 
@@ -40,7 +40,7 @@ class PlotControls(QMainWindow):
         super(PlotControls, self).__init__()
 
         # Create an instance of a class that builds the user-interface, created in QT Designer and compiled with pyuic5
-        self.ui = ui_main.Ui_PyCCDPlottingTool()
+        self.ui = ui_main.Ui_TAP_Tool()
 
         # Call the method that adds all of the widgets to the GUI
         self.ui.setupUi(self)

@@ -1,7 +1,7 @@
 import datetime as dt
 from matplotlib import pyplot as plt
 from collections import OrderedDict
-from pyccd_plotter.Plotting import plot_functions
+from tap_tool.Plotting import plot_functions
 
 
 def get_plot_items(data, items):

@@ -2,7 +2,7 @@ import sys
 
 from PyQt5.QtWidgets import QApplication
 
-from pyccd_plotter.Controls.controls import PlotControls
+from tap_tool.Controls.controls import PlotControls
 
 
 def main():
