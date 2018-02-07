@@ -19,7 +19,7 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
-pyccd_plotter.egg-info/
+*.egg-info/
 
 # Installer logs
 pip-log.txt

@@ -17,14 +17,14 @@ setup(
 
     install_requires=[
         'matplotlib',
-        # 'pyqt',
+        'PyQt5',
         'numpy',
         'gdal'
     ],
 
     entry_points={'gui_scripts': ['tap_tool = tap_tool.__main__:main']},
 
-    dependency_links=['https://github.com/conda-forge/gdal-feedstock'],
+    dependency_links=['https://github.com/conda-forge/gdal-feedstock/'],
 
     python_requires='>=3.4',
 
