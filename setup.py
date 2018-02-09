@@ -9,7 +9,7 @@ the user via the GUI.
 from setuptools import setup, find_packages
 
 setup(
-    name='tap_tool',
+    name='lcmap_tap',
 
     version='0.1.0',
 
@@ -22,7 +22,7 @@ setup(
         'gdal'
     ],
 
-    entry_points={'gui_scripts': ['tap_tool = tap_tool.__main__:main']},
+    entry_points={'gui_scripts': ['lcmap_tap = lcmap_tap.__main__:main']},
 
     dependency_links=['https://github.com/conda-forge/gdal-feedstock/'],
 
@@ -38,5 +38,5 @@ setup(
 
     license='Public Domain',
 
-    url='https://github.com/danzelenak-usgs/TAP_Tool'
+    url='https://github.com/danzelenak-usgs/LCMAP_TAP'
 )

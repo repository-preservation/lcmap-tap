@@ -84,8 +84,6 @@ class Rescale:
     def rescale_array(self, out_min=1.0, out_max=255.0):
         """
 
-        :param array:
-        :param qa:
         :param out_min:
         :param out_max:
         :return:
@@ -93,9 +91,9 @@ class Rescale:
         out_data = np.zeros_like(self.clipped, dtype=np.int32)
 
         out_data[self.mask_fill] = (
-                                    (self.clipped[self.mask_fill] - np.min(self.clipped[self.mask_fill])) *
-                                    (out_max - out_min) / (np.max(self.clipped[self.mask_fill]) -
-                                                           np.min(self.clipped[self.mask_fill]))
-                                    )
+            (self.clipped[self.mask_fill] - np.min(self.clipped[self.mask_fill])) *
+            (out_max - out_min) / (np.max(self.clipped[self.mask_fill]) -
+                                   np.min(self.clipped[self.mask_fill]))
+        )
 
         return out_data

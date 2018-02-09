@@ -12,17 +12,17 @@ matplotlib.use('Qt5Agg')
 from PyQt5.QtWidgets import QMainWindow, QFileDialog
 
 # Import the main GUI built in QTDesigner, compiled into python with pyuic5.bat
-from tap_tool.UserInterface import ui_main
+from lcmap_tap.UserInterface import ui_main
 
 # Import the CCDReader class which retrieves json and cache data
-from tap_tool.RetrieveData.retrieve_data import CCDReader
+from lcmap_tap.RetrieveData.retrieve_data import CCDReader
 
 # Import the PlotWindow class defined in the plotwindow.py module
-from tap_tool.PlotFrame.plotwindow import PlotWindow
+from lcmap_tap.PlotFrame.plotwindow import PlotWindow
 
-from tap_tool.Plotting import make_plots
+from lcmap_tap.Plotting import make_plots
 
-from tap_tool.Visualization.ard_viewer_qpixelmap import ARDViewerX
+from lcmap_tap.Visualization.ard_viewer_qpixelmap import ARDViewerX
 
 import matplotlib.pyplot as plt
 

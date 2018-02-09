@@ -10,9 +10,9 @@ from PyQt5 import QtCore
 from PyQt5.QtGui import QPixmap, QImage, QColor
 from PyQt5.QtWidgets import QMainWindow, QSizePolicy, QLabel, QFileDialog
 
-from tap_tool.Visualization.ui_image_viewer import Ui_ARDViewer
+from lcmap_tap.Visualization.ui_image_viewer import Ui_ARDViewer
 
-from tap_tool.Visualization.rescale import Rescale
+from lcmap_tap.Visualization.rescale import Rescale
 
 
 class ARDViewerX(QMainWindow):
