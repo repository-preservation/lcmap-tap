@@ -76,7 +76,7 @@ repository into this directory
 downloaded repository folder
 
     ```bash
-    $cd TAP_Tool\
+    $cd LCMAP_TAP\
     ```
 * Install the plotting tool using setup.py in the currently active
 virtual env
@@ -100,9 +100,9 @@ dependencies
 * Option A - From the command line, with the virtual environment activated:
     ```bash
     $activate <env-name>
-    (env-name)$tap_tool
+    (env-name)$lcmap_tap
     ```
 * Option B - Use the pyccd_plotter.exe
-    * located in <python_path>/Scripts/pyccd_plotter.exe
+    * located in <python_path>/Scripts/lcmap_tap.exe
 
 
