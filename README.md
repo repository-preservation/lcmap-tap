@@ -70,7 +70,7 @@ GDAL is a requirement and it is easiest to install using conda:
 repository into this directory
     ```bash
     $cd \<working-dir>
-    $git clone https://github.com/danzelenak-usgs/LCMAP_TAP.git
+    $git clone https://github.com/USGS-EROS/LCMAP_TAP.git
     ```
 * Enter into the cloned repository folder, or unzip and enter into the
 downloaded repository folder
