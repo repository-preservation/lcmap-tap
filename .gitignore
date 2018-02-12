@@ -55,3 +55,5 @@ docs/_build/
 .ipynb_checkpoints/
 # *.UI
 Notebooks/Working/
+*.ipynb
+Testing/
