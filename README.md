@@ -102,7 +102,7 @@ dependencies
     $activate <env-name>
     (env-name)$lcmap_tap
     ```
-* Option B - Use the pyccd_plotter.exe
+* Option B - Use the lcmap_tap.exe
     * located in <python_path>/Scripts/lcmap_tap.exe
 
 
