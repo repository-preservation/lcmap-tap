@@ -7,13 +7,12 @@ import datetime
 
 band_specs = {
     "LC08": {
-        "SR": {"1": "SRB1",
-               "2": "SRB2",
-               "3": "SRB3",
-               "4": "SRB4",
-               "5": "SRB5",
-               "6": "SRB6",
-               "7": "SRB7",
+        "SR": {"1": "SRB2",
+               "2": "SRB3",
+               "3": "SRB4",
+               "4": "SRB5",
+               "5": "SRB6",
+               "6": "SRB7",
                "qa": "PIXELQA"},
         "BT": {"10": "BTB10",
                "11": "BTB11"}
@@ -60,9 +59,9 @@ class ARDInfo:
         """
         self.root = root
 
-        self.h = h
+        self.h = str(h)
 
-        self.v = v
+        self.v = str(v)
 
         self.subdir = self.get_subdir()
 
@@ -109,7 +108,8 @@ class ARDInfo:
         :return:
         """
         # return os.path.splitext(os.path.basename(in_file))[0]
-        return re.search(r"\w{2}\d{2}_\w{2}_\d{6}_\d{8}_\d{8}_\w\d\d_\w\d\d", os.path.basename(in_file)).group()
+        # return re.search(r"\w{2}\d{2}_\w{2}_\d{6}_\d{8}_\d{8}_\w\d\d_\w\d\d", os.path.basename(in_file)).group()
+        return re.search(r"\w{2}\d{2}_\w{2}_\d{6}_\d{8}", os.path.basename(in_file)).group()
 
     def get_sceneid_list(self):
         """
@@ -133,7 +133,7 @@ class ARDInfo:
 
                 tarz[scene][prod] = dict()
 
-                tarz[scene][prod] = os.path.split(tar)[0] + os.sep + scene + "_" + prod + ".tar"
+                tarz[scene][prod] = os.path.split(tar)[0] + os.sep + os.path.basename(tar)[:40] + "_" + prod + ".tar"
 
         return tarz
 
@@ -168,7 +168,8 @@ class ARDInfo:
         Return the virtual file path for the tarball
         :return: 
         """
-        return "/vsitar/{}".format(in_tar) + os.sep + scene_id + "_{}.tif".format(band)
+        # return "/vsitar/{}".format(in_tar) + os.sep + scene_id + "_{}.tif".format(band)
+        return "/vsitar/{}".format(in_tar) + os.sep + os.path.basename(in_tar)[:40] + "_{}.tif".format(band)
 
     def get_vsipath_list(self) -> dict:
         """

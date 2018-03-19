@@ -7,7 +7,7 @@ import numpy as np
 from osgeo import gdal
 
 from PyQt5 import QtCore
-from PyQt5.QtGui import QPixmap, QImage, QColor
+from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtWidgets import QMainWindow, QSizePolicy, QLabel, QFileDialog
 
 from lcmap_tap.Visualization.ui_image_viewer import Ui_ARDViewer
@@ -16,10 +16,9 @@ from lcmap_tap.Visualization.rescale import Rescale
 
 
 class ARDViewerX(QMainWindow):
-
     Bands = namedtuple('Bands', ['R', 'G', 'B'])
 
-    def __init__(self, ard_file, ccd, gui):
+    def __init__(self, ard_file, ccd, sensor, gui):
         super(ARDViewerX, self).__init__()
 
         # Load the main GUI code that was built in Qt Designer
@@ -35,6 +34,7 @@ class ARDViewerX(QMainWindow):
         self.ui.scrollArea.setWidget(self.imgLabel)
 
         self.ard_file = ard_file
+        self.sensor = sensor
 
         self.ccd = ccd
 
@@ -42,7 +42,9 @@ class ARDViewerX(QMainWindow):
 
         # Set up some default settings
         self.bands = self.Bands(R=3, G=2, B=1)
+
         self.extent = 500
+
         self.r_check, self.g_check, self.b_check = 0, 0, 0
 
         # Read in the full extent of the raster bands 1, 2, 3, and PIXELQA
@@ -53,13 +55,13 @@ class ARDViewerX(QMainWindow):
         self.band_nums = [1, 2, 3, 4, 5, 6]
 
         self.r_actions = [self.ui.actionBand_1, self.ui.actionBand_2, self.ui.actionBand_3, self.ui.actionBand_4,
-                     self.ui.actionBand_5, self.ui.actionBand_6]
+                          self.ui.actionBand_5, self.ui.actionBand_6]
 
         self.g_actions = [self.ui.actionBand_7, self.ui.actionBand_8, self.ui.actionBand_9, self.ui.actionBand_10,
-                     self.ui.actionBand_11, self.ui.actionBand_12]
+                          self.ui.actionBand_11, self.ui.actionBand_12]
 
         self.b_actions = [self.ui.actionBand_13, self.ui.actionBand_14, self.ui.actionBand_15, self.ui.actionBand_16,
-                     self.ui.actionBand_17, self.ui.actionBand_18]
+                          self.ui.actionBand_17, self.ui.actionBand_18]
 
         self.lookup_r = {b: r_action for b, r_action in zip(self.band_nums, self.r_actions)}
 
@@ -96,6 +98,27 @@ class ARDViewerX(QMainWindow):
         self.ui.actionBand_16.triggered.connect(lambda: self.get_B(band=4))
         self.ui.actionBand_17.triggered.connect(lambda: self.get_B(band=5))
         self.ui.actionBand_18.triggered.connect(lambda: self.get_B(band=6))
+
+        # self.ui.actionBand_1.triggered.connect(lambda: self.get_R(band=0))
+        # self.ui.actionBand_2.triggered.connect(lambda: self.get_R(band=1))
+        # self.ui.actionBand_3.triggered.connect(lambda: self.get_R(band=2))
+        # self.ui.actionBand_4.triggered.connect(lambda: self.get_R(band=3))
+        # self.ui.actionBand_5.triggered.connect(lambda: self.get_R(band=4))
+        # self.ui.actionBand_6.triggered.connect(lambda: self.get_R(band=5))
+        #
+        # self.ui.actionBand_7.triggered.connect(lambda: self.get_G(band=0))
+        # self.ui.actionBand_8.triggered.connect(lambda: self.get_G(band=1))
+        # self.ui.actionBand_9.triggered.connect(lambda: self.get_G(band=2))
+        # self.ui.actionBand_10.triggered.connect(lambda: self.get_G(band=3))
+        # self.ui.actionBand_11.triggered.connect(lambda: self.get_G(band=4))
+        # self.ui.actionBand_12.triggered.connect(lambda: self.get_G(band=5))
+        #
+        # self.ui.actionBand_13.triggered.connect(lambda: self.get_B(band=0))
+        # self.ui.actionBand_14.triggered.connect(lambda: self.get_B(band=1))
+        # self.ui.actionBand_15.triggered.connect(lambda: self.get_B(band=2))
+        # self.ui.actionBand_16.triggered.connect(lambda: self.get_B(band=3))
+        # self.ui.actionBand_17.triggered.connect(lambda: self.get_B(band=4))
+        # self.ui.actionBand_18.triggered.connect(lambda: self.get_B(band=5))
 
         self.ui.action100x100.triggered.connect(lambda: self.set_extent(extent=100))
         self.ui.action250x250.triggered.connect(lambda: self.set_extent(extent=250))
@@ -355,29 +378,39 @@ class ARDViewerX(QMainWindow):
         :param src_file:
         :return:
         """
-        src = gdal.Open(self.ard_file, gdal.GA_ReadOnly)
+        # src = gdal.Open(self.ard_file, gdal.GA_ReadOnly)
+        #
+        # if src is None:
+        #     self.gui.ui.plainTextEdit_results.appendPlainText("Could not open {}".format(self.ard_file))
+        #
+        # self.r = src.GetRasterBand(self.bands.R).ReadAsArray()
+        # self.g = src.GetRasterBand(self.bands.G).ReadAsArray()
+        # self.b = src.GetRasterBand(self.bands.B).ReadAsArray()
+        #
+        # band_count = src.RasterCount
+        #
+        # if band_count == 7:
+        #     self.qa = src.GetRasterBand(7).ReadAsArray()
+        #
+        # elif band_count == 8:
+        #     self.qa = src.GetRasterBand(8).ReadAsArray()
+        # # TODO error handling if raster count is not 7 or 8
+        #
+        # else:
+        #     self.qa = np.zeros_like(self.r)
+        #     self.qa[self.r == -9999] = 1
+        #
+        # src = None
 
-        if src is None:
+        try:
+            self.r = gdal.Open(self.ard_file[self.bands.R - 1]).ReadAsArray()
+            self.g = gdal.Open(self.ard_file[self.bands.G - 1]).ReadAsArray()
+            self.b = gdal.Open(self.ard_file[self.bands.B - 1]).ReadAsArray()
+
+            self.qa = gdal.Open(self.ard_file[-1]).ReadAsArray()
+
+        except AttributeError:
             self.gui.ui.plainTextEdit_results.appendPlainText("Could not open {}".format(self.ard_file))
-
-        self.r = src.GetRasterBand(self.bands.R).ReadAsArray()
-        self.g = src.GetRasterBand(self.bands.G).ReadAsArray()
-        self.b = src.GetRasterBand(self.bands.B).ReadAsArray()
-
-        band_count = src.RasterCount
-
-        if band_count == 7:
-            self.qa = src.GetRasterBand(7).ReadAsArray()
-
-        elif band_count == 8:
-            self.qa = src.GetRasterBand(8).ReadAsArray()
-        # TODO error handling if raster count is not 7 or 8
-
-        else:
-            self.qa = np.zeros_like(self.r)
-            self.qa[self.r == -9999] = 1
-
-        src = None
 
     def get_rgb(self):
         """
@@ -446,9 +479,9 @@ class ARDViewerX(QMainWindow):
 
         rgb = np.zeros((self.extent, self.extent, 3), dtype=np.uint8)
 
-        r_rescale = Rescale(src_file=self.ard_file, array=r, qa=qa)
-        g_rescale = Rescale(src_file=self.ard_file, array=g, qa=qa)
-        b_rescale = Rescale(src_file=self.ard_file, array=b, qa=qa)
+        r_rescale = Rescale(sensor=self.sensor, array=r, qa=qa)
+        g_rescale = Rescale(sensor=self.sensor, array=g, qa=qa)
+        b_rescale = Rescale(sensor=self.sensor, array=b, qa=qa)
 
         rgb[:, :, 0] = r_rescale.rescaled
         rgb[:, :, 1] = g_rescale.rescaled

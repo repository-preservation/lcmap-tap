@@ -1,5 +1,5 @@
 import datetime as dt
-import glob
+import time
 import os
 import sys
 import traceback
@@ -22,16 +22,26 @@ from lcmap_tap.PlotFrame.plotwindow import PlotWindow
 
 from lcmap_tap.Plotting import make_plots
 
+from lcmap_tap.RetrieveData import ard_info
+
 from lcmap_tap.Visualization.ard_viewer_qpixelmap import ARDViewerX
 
 import matplotlib.pyplot as plt
 
-# ARD standard projection
+# TODO Update to the appropriate projection when fix is applied to ARD source data
 WKT = 'PROJCS["Albers",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378140,298.2569999999957,AUTHORITY["EPSG",' \
       '"7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],AUTHORITY["EPSG",' \
       '"4326"]],PROJECTION["Albers_Conic_Equal_Area"],PARAMETER["standard_parallel_1",29.5],' \
       'PARAMETER["standard_parallel_2",45.5],PARAMETER["latitude_of_center",23],PARAMETER["longitude_of_center",-96],' \
       'PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]]]'
+
+
+def get_time():
+    """
+    Return the current time stamp
+    :return:
+    """
+    return time.strftime("%Y%m%d-%I%M%S")
 
 
 class PlotControls(QMainWindow):
@@ -46,12 +56,11 @@ class PlotControls(QMainWindow):
         self.ui.setupUi(self)
 
         #### some temporary default values to make testing easier ####
-        # self.ui.browseoutputline.setText(r"D:\Plot_Outputs\12.7.17")
-        # self.ui.browsejsonline.setText(r"Z:\sites\sd\pyccd-results\H13V05\2017.08.18\json")
-        # self.ui.browsecacheline.setText(r"Z:\sites\sd\ARD\h13v05\cache")
-        # self.ui.arccoordsline.setText(r"-608,699.743  2,437,196.249 Meters")
-        # self.ui.hline.setText(r"13")
-        # self.ui.vline.setText(r"5")
+        self.ui.browseoutputline.setText(r"D:\Plot_Outputs\3.19.2018")
+        self.ui.browsejsonline.setText(r"Z:\tiles\h28v09\change\2017.08.18\json")
+        self.ui.browsecacheline.setText(r"Z:\cache\h28v09")
+        self.ui.xline.setText("1772368")
+        self.ui.yline.setText("1827300")
 
         #### Connect the various widgets to the methods they interact with ####
         self.ui.browsecachebutton.clicked.connect(self.browsecache)
@@ -59,8 +68,6 @@ class PlotControls(QMainWindow):
         self.ui.browsejsonbutton.clicked.connect(self.browsejson)
 
         self.ui.browseoutputbutton.clicked.connect(self.browseoutput)
-
-        # self.ui.arccoordsline.textChanged.connect(self.check_values)
 
         self.ui.browsecacheline.textChanged.connect(self.check_values)
 
@@ -248,6 +255,10 @@ class PlotControls(QMainWindow):
 
             return None
 
+        # TODO Add a source image directory in the GUI
+        self.ard_info = ard_info.ARDInfo(r"Z:\sites\ard_source\production",
+                                         self.extracted_data.H, self.extracted_data.V)
+
         # Display change model information for the entered coordinates
         self.show_results(data=self.extracted_data)
 
@@ -349,10 +360,10 @@ class PlotControls(QMainWindow):
 
         return None
 
-    def show_ard(self, item):
+    def show_ard(self, clicked_item):
         """
 
-        :param item: Passed automatically by the ItemClicked method of the QListWidget
+        :param clicked_item: Passed automatically by the ItemClicked method of the QListWidget
         :return:
         """
         try:
@@ -362,17 +373,14 @@ class PlotControls(QMainWindow):
             pass
 
         try:
-            sceneID = item.text().split()[2]
+            # Don't include the processing date in the scene ID
+            sceneID = clicked_item.text().split()[2][:23]
 
-            ARD_dir = os.path.split(self.ui.browsecacheline.text())[0]
+            scene_files = self.ard_info.vsipaths[sceneID]
 
-            scene_dir = ARD_dir + os.sep + sceneID
+            sensor = self.ard_info.get_sensor(sceneID)
 
-            scene_file = glob.glob(scene_dir + os.sep + "*.tif")[0]
-
-            print(scene_file)
-
-            self.ard = ARDViewerX(ard_file=scene_file, ccd=self.extracted_data, gui=self)
+            self.ard = ARDViewerX(ard_file=scene_files[0:7], ccd=self.extracted_data, sensor=sensor, gui=self)
 
         except (AttributeError, IndexError):
             print(sys.exc_info()[0])
