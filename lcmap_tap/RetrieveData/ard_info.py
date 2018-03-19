@@ -2,6 +2,7 @@
 
 import os
 import re
+import datetime
 
 
 band_specs = {
@@ -67,7 +68,11 @@ class ARDInfo:
 
         self.tarfiles = self.get_filelist()
 
+        self.tarfiles.sort()
+
         self.scene_ids = self.get_sceneid_list()
+
+        self.scene_ids.sort()
 
         self.num_scenes = len(self.scene_ids)
 
@@ -94,7 +99,7 @@ class ARDInfo:
         :param ext: File extension, ".tar" by defalt
         :return:
         """
-        return [os.path.join(self.subdir, f) for f in os.listdir(self.subdir) if f.endswith(ext)]
+        return [os.path.join(self.subdir, f) for f in os.listdir(self.subdir) if f.endswith("_SR{}".format(ext))]
 
     @staticmethod
     def get_sceneid(in_file: str) -> str:
@@ -111,7 +116,7 @@ class ARDInfo:
         Return a list of all the unique scene IDs in the tile sub-folder
         :return:
         """
-        return list(set([self.get_sceneid(f) for f in self.tarfiles]))
+        return [self.get_sceneid(f) for f in self.tarfiles]
 
     def tarfile_lookup(self, prods: tuple=("SR", "BT")):
         """
@@ -120,7 +125,7 @@ class ARDInfo:
         """
         tarz = dict()
 
-        for scene in self.scene_ids:
+        for scene, tar in zip(self.scene_ids, self.tarfiles):
 
             tarz[scene] = dict()
 
@@ -128,13 +133,7 @@ class ARDInfo:
 
                 tarz[scene][prod] = dict()
 
-                lookfor = [scene, prod]
-
-                for tar in self.tarfiles:
-
-                    if all(look in os.path.basename(tar) for look in lookfor):
-
-                        tarz[scene][prod] = tar
+                tarz[scene][prod] = os.path.split(tar)[0] + os.sep + scene + "_" + prod + ".tar"
 
         return tarz
 
