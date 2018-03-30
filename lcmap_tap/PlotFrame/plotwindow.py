@@ -4,6 +4,7 @@ display and interactions for the PyCCD plots."""
 import datetime as dt
 
 import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 from PyQt5 import QtWidgets
 
@@ -16,7 +17,16 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 
 
 class MplCanvas(FigureCanvas):
+    """
+    TODO: Add summary line
+    """
+
     def __init__(self, fig):
+        """
+        TODO: Add Summary
+        Args:
+            fig:
+        """
         self.fig = fig
 
         FigureCanvas.__init__(self, self.fig)
@@ -35,7 +45,18 @@ class MplCanvas(FigureCanvas):
 
 
 class PlotWindow(QtWidgets.QMainWindow):
-    def __init__(self, fig, artist_map, lines_map, gui, scenes, parent=None):
+    def __init__(self, fig, axes, artist_map, lines_map, gui, scenes, parent=None):
+        """
+        TODO Add a summary
+        Args:
+            fig:
+            axes:
+            artist_map:
+            lines_map:
+            gui:
+            scenes:
+            parent:
+        """
 
         super(PlotWindow, self).__init__(parent)
 
@@ -52,12 +73,15 @@ class PlotWindow(QtWidgets.QMainWindow):
         # Create a mutable object to contain the information pulled by the point_pick method
         self.value_holder = {}
 
-        # Define a picker method to grab data off of the plot wherever the mouse cursor is when clicked
         def point_pick(event):
             """
-            Return the x_data and y_data for the selected artist using a mouse click event
-            :param event:
-            :return:
+            Define a picker method to grab data off of the plot wherever the mouse cursor is when clicked
+
+            Args:
+                event: A mouse-click event
+
+            Returns:
+                The x_data and y_data for the selected artist using a mouse click event
             """
             # References useful information about the pick location
             mouseevent = event.mouseevent
@@ -89,22 +113,23 @@ class PlotWindow(QtWidgets.QMainWindow):
 
                     artist_data = [nearest_x, nearest_y]
 
-                    print("point clicked: {}\n\
-                          nearest artist: {}\n\
-                          subplot: {}".format(point_clicked, self.value_holder, b))
-
                     self.value_holder["temp"] = [point_clicked, artist_data]
 
                     test_str = "{:%Y%m%d}".format(self.value_holder["temp"][1][0])
 
+                    print("point clicked: {}\n\
+                          nearest artist: {}\n\
+                          artist data: {}\n\
+                          subplot: {}".format(point_clicked, self.value_holder, artist_data, b))
+
                     # Look through the scene IDs to find which one corresponds to the selected obs. date
-                    for id in scenes:
-                        if test_str in id:
-                            self.value_holder["temp"].append(id)
+                    for scene in scenes:
+                        if test_str in scene:
+                            self.value_holder["temp"].append(scene)
 
                             gui.ui.clicked_listWidget.addItem("Scene ID: {}\n"
                                                               "Obs. Date: {:%Y-%b-%d}\n"
-                                                              "{}-Value: {}".format(id,
+                                                              "{}-Value: {}".format(scene,
                                                                                     self.value_holder['temp'][1][0],
                                                                                     b,
                                                                                     self.value_holder['temp'][1][1][0]))
@@ -119,16 +144,18 @@ class PlotWindow(QtWidgets.QMainWindow):
                 # Do this so nothing happens when the other mouse buttons are clicked while over a plot
                 return False, dict()
 
-        # Define a picker method that allows toggling lines on/off by clicking the legend
         def leg_pick(event):
             """
+            Define a picker method that allows toggling lines on/off by clicking them on the legend
+            Args:
+                event: A mouse-click event
 
-            :param event:
-            :return:
+            Returns:
+
             """
             mouseevent = event.mouseevent
 
-            # Only want this to work if the left mouse button is clicked
+            # Only want this to work if the left mouse button is clicked (value == 1)
             if mouseevent.button == 1:
 
                 try:
@@ -162,6 +189,19 @@ class PlotWindow(QtWidgets.QMainWindow):
             else:
                 return False, dict()
 
+        def enter_axes(event):
+            self.ax = event.inaxes
+
+        def leave_axes(event):
+            self.ax = None
+
+        def zoom_event(event):
+            #
+
+            pass
+
+
+
         self.nav = NavigationToolbar(self.canvas, self.widget)
 
         self.widget.layout().addWidget(self.nav)
@@ -169,6 +209,7 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.widget.layout().addWidget(self.canvas)
 
         self.scroll = QtWidgets.QScrollArea(self.widget)
+
         self.scroll.setWidgetResizable(True)
 
         self.scroll.setWidget(self.canvas)
@@ -178,5 +219,11 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.canvas.mpl_connect("pick_event", point_pick)
 
         self.canvas.mpl_connect("pick_event", leg_pick)
+
+        self.canvas.mpl_connect("axes_enter_event", enter_axes)
+
+        self.canvas.mpl_connect("axes_leave_event", leave_axes)
+
+        self.canvas.mpl_connect("scroll_event", zoom_event)
 
         self.show()

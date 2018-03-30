@@ -91,14 +91,15 @@ def draw_figure(data, items):
     # squeeze=False allows for plt.subplots to have a single subplot, must specify the column index as well
     # when calling a subplot e.g. axes[num, 0] for plot number 'num' and column 0
     fig, axes = plt.subplots(nrows=len(plot_data), ncols=1, figsize=(18, len(plot_data) * 5),
-                             dpi=65, squeeze=False)
+                             dpi=65, squeeze=False, sharex=True, sharey=False)
 
     for num, b in enumerate(plot_data.keys()):
         """Make lists to contain references to the specific artist objects for the current subplot.
         These lists are reset with each iteration, but they're current items are stored in the artist_map and
         lines_map dictionaries at the end of the for-loop."""
-        # print('plotting.....')
+
         end_lines, break_lines, start_lines, match_lines, model_lines, date_lines = [], [], [], [], [], []
+
         obs_points, out_points, mask_points = [], [], []
 
         # ---- Plot the observed values within the PyCCD time range ----
@@ -131,6 +132,7 @@ def draw_figure(data, items):
         mask_points.append(axes[num, 0].scatter(x=data.dates_in[~data.ccd_mask],
                                                 y=plot_data[b][0][data.date_mask][~data.ccd_mask], s=21, color="0.65",
                                                 marker="o", picker=5))
+
         # Generate legend line for the masked observations; faux3 contains the line-artist but isn't used
         faux3 = axes[num, 0].plot([], [], marker="o", ms=4, color="0.65", linewidth=0,
                                   label="Masked")
@@ -280,10 +282,14 @@ def draw_figure(data, items):
             # Map the artist to the corresponding legend line
             lines_map[legline] = origline
 
+        # With sharex=True, set all x-axis tick labels to visible
+        axes[num, 0].tick_params(axis='both', which='both', labelsize=12, labelbottom=True)
+
+
     # Fill in the figure canvas
     fig.tight_layout()
 
     # Make room for the legend
     fig.subplots_adjust(right=0.9)
 
-    return fig, artist_map, lines_map
+    return fig, artist_map, lines_map, axes

@@ -1,10 +1,28 @@
+"""controls.py"""
+
 import datetime as dt
-import time
 import os
 import sys
+import time
 import traceback
 
 import matplotlib
+import matplotlib.pyplot as plt
+
+try:
+    import ogr
+    import osr
+
+    gdal_found = True
+
+except ImportError:
+    import ogr
+    import osr
+
+    gdal_found = False
+
+    # TODO Enable logging
+    print("GDAL not found, can't generate point shapefile.")
 
 # Tell matplotlib to use the QT5Agg Backend
 matplotlib.use('Qt5Agg')
@@ -26,9 +44,8 @@ from lcmap_tap.RetrieveData import ard_info
 
 from lcmap_tap.Visualization.ard_viewer_qpixelmap import ARDViewerX
 
-import matplotlib.pyplot as plt
-
 # TODO Update to the appropriate projection when fix is applied to ARD source data
+# This is the projected coordinate system currently used by CONUS ARD Collection 01
 WKT = 'PROJCS["Albers",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378140,298.2569999999957,AUTHORITY["EPSG",' \
       '"7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],AUTHORITY["EPSG",' \
       '"4326"]],PROJECTION["Albers_Conic_Equal_Area"],PARAMETER["standard_parallel_1",29.5],' \
@@ -36,18 +53,19 @@ WKT = 'PROJCS["Albers",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",637814
       'PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]]]'
 
 
-def get_time():
-    """
-    Return the current time stamp
-    :return:
-    """
-    return time.strftime("%Y%m%d-%I%M%S")
-
-
 class PlotControls(QMainWindow):
     def __init__(self):
 
         super(PlotControls, self).__init__()
+
+        # TODO Add widget for ARD
+        self.ard_directory = r"Z:\bulk\sites\ard_source\production"
+
+        self.extracted_data = None
+        self.plot_window = None
+        self.ard_specs = None
+        self.ard = None
+        self.fig = None
 
         # Create an instance of a class that builds the user-interface, created in QT Designer and compiled with pyuic5
         self.ui = ui_main.Ui_TAP_Tool()
@@ -55,14 +73,28 @@ class PlotControls(QMainWindow):
         # Call the method that adds all of the widgets to the GUI
         self.ui.setupUi(self)
 
-        #### some temporary default values to make testing easier ####
-        self.ui.browseoutputline.setText(r"D:\Plot_Outputs\3.19.2018")
-        self.ui.browsejsonline.setText(r"Z:\tiles\h28v09\change\2017.08.18\json")
-        self.ui.browsecacheline.setText(r"Z:\cache\h28v09")
-        self.ui.xline.setText("1772368")
-        self.ui.yline.setText("1827300")
+        self.connect_widgets()
 
-        #### Connect the various widgets to the methods they interact with ####
+        self.ui.clicked_listWidget.itemClicked.connect(self.show_ard)
+
+        self.init_ui()
+
+    def connect_widgets(self):
+        """
+        Connect the various widgets to the methods they interact with
+        Returns:
+            None
+        """
+        # *** some temporary default values to make testing easier ***
+        self.ui.browseoutputline.setText(r"D:\Plot_Outputs\3.30.2018")
+        self.ui.browsejsonline.setText(r"Z:\bulk\tiles\h03v02\change\2017.08.18\json")
+        self.ui.browsecacheline.setText(r"Z:\bulk\cache\h03v02")
+        self.ui.xline.setText("-2000417")
+        self.ui.yline.setText("3004111")
+
+        self.check_values()
+
+        # *** Connect the various widgets to the methods they interact with ***
         self.ui.browsecachebutton.clicked.connect(self.browsecache)
 
         self.ui.browsejsonbutton.clicked.connect(self.browsejson)
@@ -83,13 +115,13 @@ class PlotControls(QMainWindow):
 
         self.ui.clearpushButton.clicked.connect(self.clear)
 
-        self.ui.savefigpushButton.clicked.connect(self.savefig)
+        self.ui.savefigpushButton.clicked.connect(self.save_fig)
 
         self.ui.exitbutton.clicked.connect(self.exit_plot)
 
-        self.ui.clicked_listWidget.itemClicked.connect(self.show_ard)
+        # self.ui.clicked_listWidget.itemClicked.connect(self.show_ard)
 
-        self.init_ui()
+        return None
 
     def init_ui(self):
         """
@@ -103,56 +135,97 @@ class PlotControls(QMainWindow):
         Clear the observations window
         :return:
         """
-        # self.ui.plainTextEdit_click.clear()
         self.ui.clicked_listWidget.clear()
 
-    def savefig(self):
+    @staticmethod
+    def get_time():
         """
-        Save the current figure to a PNG file
-        :return:
+        Return the current time stamp
+        Returns:
+            A formatted string containing the current date and time
         """
-        outdir = self.ui.browseoutputline.text()
+        return time.strftime("%Y%m%d-%I%M%S")
 
-        if not os.path.exists(outdir):
-            os.makedirs(outdir)
+    def fname_generator(self, ext=".png"):
+        """
+        Generate a string for an output file
+        Args:
+            ext: <str> The output file extension, default is .png
+        Returns:
+            <str> The full path to the output file name
+        """
+        return "{outdir}{sep}H{h}V{v}_{xy}_{t}{ext}".format(outdir=self.ui.browseoutputline.text(),
+                                                            sep=os.sep,
+                                                            h=self.extracted_data.H,
+                                                            v=self.extracted_data.V,
+                                                            xy=self.ui.xline.text() + "_" + self.ui.yline.text(),
+                                                            t=self.get_time(),
+                                                            ext=ext)
 
-        # Pull the coordinate so it can be a part of the .PNG filename
-        # coord = CCDReader.arcpaste_to_coord(self.ui.arccoordsline.text())
-        coord = self.ui.xline.text() + "_" + self.ui.yline.text()
+    def save_fig(self):
+        """
+        Save the current matplotlib figure to a PNG file
+        Returns:
+            None
+        """
+        if not os.path.exists(self.ui.browseoutputline.text()):
+            os.makedirs(self.ui.browseoutputline.text())
 
-        # Generate the output .png filename
-        self.fname = "{outdir}{sep}H{h}V{v}_{xy}.png".format(outdir=outdir, sep=os.sep, h=self.extracted_data.H,
-                                                                v=self.extracted_data.V, xy=coord)
+        fname = self.fname_generator()
 
         # Overwrite the .png if it already exists
-        if os.path.exists(self.fname):
-            os.remove(self.fname)
+        if os.path.exists(fname):
+            try:
+                os.remove(fname)
 
-        # Save the .png
-        plt.savefig(self.fname, bbox_inches="tight", dpi=150)
-        print("\nplt object saved to file {}\n".format(self.fname))
+            except IOError:
+                # TODO Enable logging
+                return None
+
+        plt.savefig(fname, bbox_inches="tight", dpi=150)
+
+        # TODO Enable logging
+        print("\nplt object saved to file {}\n".format(fname))
+
+        return None
 
     def check_values(self):
         """
-        Check to make sure all of the required parameters have been entered before enabling the plot button
-        :return: None
+        Check to make sure all of the required parameters have been entered before enabling certain buttons
+        Returns:
+            None
         """
+        # <int> A container to keep track of how many parameters have been entered
         counter = 0
 
-        checks = [self.ui.browsecacheline.text(), self.ui.browsejsonline.text(), self.ui.xline.text(),
-                  self.ui.yline.text(), self.ui.browseoutputline.text()]
+        # <list> List containing the text() values from each of the input widgets
+        checks = [self.ui.browsecacheline.text(),
+                  self.ui.browsejsonline.text(),
+                  self.ui.xline.text(),
+                  self.ui.yline.text(),
+                  self.ui.browseoutputline.text()]
 
+        # Parse through the checks list to check for entered text
         for check in checks:
             if check == "":
                 self.ui.plotbutton.setEnabled(False)
+
                 self.ui.clearpushButton.setEnabled(False)
+
                 self.ui.savefigpushButton.setEnabled(False)
+
             else:
                 counter += 1
 
-        # If all parameters are entered, then the sum will be 6
+        # If all parameters are entered, then counter will equal 6
         if counter == 5:
             self.ui.plotbutton.setEnabled(True)
+
+        # Don't try to generate a shapefile if GDAL isn't installed
+        if gdal_found is False:
+            self.ui.radioshp.setEnabled(False)
+
+        return None
 
     def browsecache(self):
 
@@ -178,12 +251,13 @@ class PlotControls(QMainWindow):
 
         return None
 
-    def show_results(self, data):
+    def show_model_params(self, data):
         """
         Print the model results out to the GUI QPlainTextEdit widget
         :param data:
         :return:
         """
+        # TODO Enable logging
         self.ui.plainTextEdit_results.clear()
 
         self.ui.plainTextEdit_results.appendPlainText(data.message)
@@ -227,7 +301,8 @@ class PlotControls(QMainWindow):
 
         # Close the previous plot window if still open
         try:
-            self.p.close()
+            self.plot_window.close()
+
         # Will raise AttributeError if this is the first plot because "p" doesn't exist yet
         except AttributeError:
             pass
@@ -244,6 +319,7 @@ class PlotControls(QMainWindow):
             # Clear the results window
             self.ui.plainTextEdit_results.clear()
 
+            # TODO Enable logging
             # Show which exception was raised
             self.ui.plainTextEdit_results.appendPlainText("***Plotting Error***\
                                                           \n\nType of Exception: {}\
@@ -256,30 +332,36 @@ class PlotControls(QMainWindow):
             return None
 
         # TODO Add a source image directory in the GUI
-        self.ard_info = ard_info.ARDInfo(r"Z:\sites\ard_source\production",
-                                         self.extracted_data.H, self.extracted_data.V)
+        self.ard_specs = ard_info.ARDInfo(self.ard_directory,
+                                          self.extracted_data.H,
+                                          self.extracted_data.V)
 
         # Display change model information for the entered coordinates
-        self.show_results(data=self.extracted_data)
+        self.show_model_params(data=self.extracted_data)
 
-        # Retrieve the bands and/or indices selected for plotting
-        self.item_list = [str(i.text()) for i in self.ui.listitems.selectedItems()]
+        # <list> The bands and/or indices selected for plotting
+        item_list = [str(i.text()) for i in self.ui.listitems.selectedItems()]
 
-        # Make the matplotlib figure object containing all of the artists(axes, points, lines, legends, labels, etc.)
-        # The artist_map is a dict mapping each specific PathCollection artist to it's underlying dataset
-        # The lines_map is a dict mapping artist lines and points to the legend lines
-        self.fig, artist_map, lines_map = make_plots.draw_figure(data=self.extracted_data, items=self.item_list)
+        # fig <matplotlib.figure> Matplotlib figure object containing all of the artists
+        # artist_map <dict> mapping each specific PathCollection artist to it's underlying dataset
+        # lines_map <dict> mapping artist lines and points to the legend lines
+        self.fig, artist_map, lines_map, axes = make_plots.draw_figure(data=self.extracted_data, items=item_list)
 
         if not os.path.exists(self.ui.browseoutputline.text()):
             os.makedirs(self.ui.browseoutputline.text())
 
         # Generate the ESRI point shapefile
-        if shp_on is True:
-            self.get_shp()
+        if shp_on is True and gdal_found is True:
+            self.get_shp(coords=self.extracted_data.coord,
+                         out_shp=self.fname_generator(ext=".shp"))
 
         # Show the figure in an interactive window
-        self.p = PlotWindow(fig=self.fig, artist_map=artist_map, lines_map=lines_map, gui=self,
-                            scenes=self.extracted_data.image_ids)
+        self.plot_window = PlotWindow(fig=self.fig,
+                                      axes=axes,
+                                      artist_map=artist_map,
+                                      lines_map=lines_map,
+                                      gui=self,
+                                      scenes=self.extracted_data.image_ids)
 
         # Make these buttons available once a figure has been created
         self.ui.clearpushButton.setEnabled(True)
@@ -287,36 +369,30 @@ class PlotControls(QMainWindow):
 
         return None
 
-    def get_shp(self):
+    @staticmethod
+    def get_shp(coords, out_shp):
         """
-        Create a point shapefile from the pair of x, y coordinates entered into the GUI
-        :return:
+        Create a point shapefile at the (x, y) coordinates
+        Args:
+            coords: <GeoCoordinate>
+            out_shp: <str> Full path to the output shapefile
+
+        Returns:
+            None
         """
-        ###########################################################
-        # GeoCoordinate(x=(float value), y=(float value)
-        # References coords.x and coords.y to access x and y values
-        ###########################################################
-        h = self.extracted_data.H
+        outdir = os.path.split(out_shp)[0]
 
-        v = self.extracted_data.V
+        if not os.path.exists(outdir):
+            try:
+                os.makedirs(outdir)
 
-        coords = self.extracted_data.coord
+            except PermissionError:
+                # TODO Enable logging
 
-        out_folder = self.ui.browseoutputline.text()
+                return None
 
-        layer_name = "H" + str(h) + "_V" + str(v) + "_" + str(coords.x) + "_" + str(coords.y)
-
-        out_shp = out_folder + os.sep + layer_name + ".shp"
-
-        try:
-            from osgeo import ogr, osr
-
-        except ImportError:
-            import ogr, osr
-
-            print("GDAL not found, can't generate point shapefile.")
-
-            return None
+        # layer_name = "H" + str(h) + "_V" + str(v) + "_" + str(coords.x) + "_" + str(coords.y)
+        layer_name = os.path.splitext(os.path.split(out_shp)[-1])[0]
 
         # Set up driver
         driver = ogr.GetDriverByName("ESRI Shapefile")
@@ -324,10 +400,8 @@ class PlotControls(QMainWindow):
         # Create data source
         data_source = driver.CreateDataSource(out_shp)
 
-        # Set the spatial reference system to NAD83 CONUS Albers
+        # Create a SpatialReference() object and import the pre-defined well-known text
         srs = osr.SpatialReference()
-
-        # Set the spatial reference system to match ARD output (WGS 84 Albers)
         srs.ImportFromWkt(WKT)
 
         # Create layer, add fields to contain x and y coordinates
@@ -340,7 +414,7 @@ class PlotControls(QMainWindow):
         feature.SetField("X", coords.x)
         feature.SetField("Y", coords.y)
 
-        # Create the Well Known Text for the feature
+        # Create the Well Known Text containing the point feature location
         wkt = "POINT(%f %f)" % (coords.x, coords.y)
 
         # Create a point from the Well Known Text
@@ -352,20 +426,20 @@ class PlotControls(QMainWindow):
         # Create the feature in the layer
         layer.CreateFeature(feature)
 
-        # Save and close the data source
-        data_source = None
-
-        # Dereference the feature
-        feature, point, layer = None, None, None
-
         return None
 
     def show_ard(self, clicked_item):
         """
+        Display the ARD image clicked on the plot
+        Args:
+            clicked_item: <QListWidgetItem> Passed automatically by the itemClicked method of the QListWidget
 
-        :param clicked_item: Passed automatically by the ItemClicked method of the QListWidget
-        :return:
+        Returns:
+            None
         """
+        # Close the previous ARDViewerX instance if one exists
+        print("point clicked: ", clicked_item)
+
         try:
             self.ard.close()
 
@@ -375,23 +449,29 @@ class PlotControls(QMainWindow):
         try:
             # Don't include the processing date in the scene ID
             sceneID = clicked_item.text().split()[2][:23]
+            print(sceneID)
 
-            scene_files = self.ard_info.vsipaths[sceneID]
+            scene_files = self.ard_specs.vsipaths[sceneID]
+            print(scene_files[:10])
 
-            sensor = self.ard_info.get_sensor(sceneID)
+            sensor = self.ard_specs.get_sensor(sceneID)
+            print(sensor)
 
             self.ard = ARDViewerX(ard_file=scene_files[0:7], ccd=self.extracted_data, sensor=sensor, gui=self)
 
+        # TODO Enable logging
         except (AttributeError, IndexError):
             print(sys.exc_info()[0])
+
             print(sys.exc_info()[1])
+
             traceback.print_tb(sys.exc_info()[2])
-            pass
 
     def exit_plot(self):
         """
-        Close the tool at the user's behest
-        :return:
+        Close the GUI
+        Returns:
+            None
         """
         self.close()
 
