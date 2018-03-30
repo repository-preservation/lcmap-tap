@@ -6,7 +6,7 @@ import datetime as dt
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtCore
 
 matplotlib.use("Qt5Agg")
 
@@ -69,6 +69,8 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.fig = fig
         self.canvas = MplCanvas(fig=self.fig)
         self.canvas.draw()
+
+        self.ax = axes.flatten()[0]
 
         # Create a mutable object to contain the information pulled by the point_pick method
         self.value_holder = {}
@@ -190,17 +192,42 @@ class PlotWindow(QtWidgets.QMainWindow):
                 return False, dict()
 
         def enter_axes(event):
-            self.ax = event.inaxes
+            self.scroll.viewport().installEventFilter(self)
 
         def leave_axes(event):
-            self.ax = None
+            self.scroll.viewport().removeEventFilter(self)
 
         def zoom_event(event):
-            #
+            ax_xlim = self.ax.get_xlim()
+            ax_ylim = self.ax.get_ylim()
 
-            pass
+            x_range = (ax_xlim[1] - ax_xlim[0]) * 0.5
+            y_range = (ax_ylim[1] - ax_ylim[0]) * 0.5
 
+            xdata = event.xdata
+            ydata = event.ydata
 
+            if event.button == "up":
+                scale_factor = 3 / 4.
+
+            elif event.button == "down":
+                scale_factor = 1.25
+
+            else:
+                scale_factor = 1
+                print(event.button)
+
+            try:
+                self.ax.set_xlim([xdata - x_range * scale_factor,
+                                 xdata + x_range * scale_factor])
+
+                self.ax.set_ylim([ydata - y_range * scale_factor,
+                                  ydata + y_range * scale_factor])
+
+                self.canvas.draw()
+
+            except TypeError: # occurs using the scroll button outside of an axis, but still in the plot window
+                pass
 
         self.nav = NavigationToolbar(self.canvas, self.widget)
 
@@ -227,3 +254,9 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.canvas.mpl_connect("scroll_event", zoom_event)
 
         self.show()
+
+    def eventFilter(self, source, event):
+        if event.type() == QtCore.QEvent.Wheel and source is self.scroll.viewport():
+            return True
+
+        return super(PlotWindow, self).eventFilter(source, event)
