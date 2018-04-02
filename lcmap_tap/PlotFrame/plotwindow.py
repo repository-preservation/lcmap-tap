@@ -70,10 +70,15 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.canvas = MplCanvas(fig=self.fig)
         self.canvas.draw()
 
+        # <matplotlib.axes.Axes> All axes in the figure are linked via sharey=True, only need one axes object
+        # to control zooming on all axes simultaneously.
         self.ax = axes.flatten()[0]
 
-        # Create a mutable object to contain the information pulled by the point_pick method
-        self.value_holder = {}
+        # <tuple> Contains the original x-axes (i.e. date) limits in order (left, right)
+        self.xlim_original = self.ax.get_xlim()
+
+        # <dict> For containing the information pulled by the point_pick method defined below
+        self.value_holder = dict()
 
         def point_pick(event):
             """
@@ -81,19 +86,23 @@ class PlotWindow(QtWidgets.QMainWindow):
 
             Args:
                 event: A mouse-click event
+                       event.button == 1 <left-click>
+                       event.button == 2 <wheel-click>
+                       event.button == 3 <right-click>
 
             Returns:
                 The x_data and y_data for the selected artist using a mouse click event
+
             """
-            # References useful information about the pick location
-            mouseevent = event.mouseevent
+            # Reference useful information about the pick location
+            mouse_event = event.mouseevent
 
             # This references which object on the plot was hit by the pick
             artist = event.artist
 
             # Only works using left-click (event.mouseevent.button==1)
             # and on any of the scatter point series (PathCollection artists)
-            if isinstance(artist, PathCollection) and mouseevent.button == 1:
+            if isinstance(artist, PathCollection) and mouse_event.button == 1:
                 # Return the index value of the artist (i.e. which data point in the series was hit)
                 ind = event.ind
 
@@ -104,9 +113,9 @@ class PlotWindow(QtWidgets.QMainWindow):
 
                 try:
                     # Grab the date value at the clicked point
-                    click_x = dt.datetime.fromordinal(int(mouseevent.xdata))
+                    click_x = dt.datetime.fromordinal(int(mouse_event.xdata))
 
-                    point_clicked = [click_x, mouseevent.ydata]
+                    point_clicked = [click_x, mouse_event.ydata]
 
                     # Retrieve the x-y data for the plotted point within a set tolerance to the
                     # clicked point if there is one
@@ -197,32 +206,62 @@ class PlotWindow(QtWidgets.QMainWindow):
         def leave_axes(event):
             self.scroll.viewport().removeEventFilter(self)
 
-        def zoom_event(event):
-            ax_xlim = self.ax.get_xlim()
-            ax_ylim = self.ax.get_ylim()
+        def zoom_event(event, base_scale=2.):
+            """
+            Enable zooming in/out of the plots using the mouse scroll wheel.  Currently zoom on the x-axis only.
+            Source: https://gist.github.com/tacaswell/3144287
 
-            x_range = (ax_xlim[1] - ax_xlim[0]) * 0.5
-            y_range = (ax_ylim[1] - ax_ylim[0]) * 0.5
+            Args:
+                event: <scroll-event> Signal went when the scroll wheel is used inside of a plot window
+                base_scale: <float> Default is 2, the re-scaling factor.
 
+            Returns:
+                None
+            """
+            cur_xlim = self.ax.get_xlim()
+
+            # <float> The x-axis value where the mouse scroll event occurs
             xdata = event.xdata
-            ydata = event.ydata
 
+            # Decrease by scale factor (zoom in)
             if event.button == "up":
-                scale_factor = 3 / 4.
+                scale_factor = 1 / base_scale
 
+            # Increase by scale factor (zoom out)
             elif event.button == "down":
-                scale_factor = 1.25
+                scale_factor = base_scale
 
             else:
                 scale_factor = 1
-                print(event.button)
 
             try:
-                self.ax.set_xlim([xdata - x_range * scale_factor,
-                                 xdata + x_range * scale_factor])
+                # <float> X-Distance from cursor to current left-limit
+                x_left_dist = xdata - cur_xlim[0]
 
-                self.ax.set_ylim([ydata - y_range * scale_factor,
-                                  ydata + y_range * scale_factor])
+                # <float> X-Distance from cursor to current right-limit
+                x_right_dist = cur_xlim[1] - xdata
+
+                # <float> The x-axis rescaled left-limit
+                x_left = xdata - x_left_dist * scale_factor
+
+                # <float> The x-axis rescaled right-limit
+                x_right = xdata + x_right_dist * scale_factor
+
+                if x_left >= self.xlim_original[0] and x_right <= self.xlim_original[1]:
+
+                    self.ax.set_xlim([x_left, x_right])
+
+                elif x_left >= self.xlim_original[0] and x_right > self.xlim_original[1]:
+
+                    self.ax.set_xlim([x_left, self.xlim_original[1]])
+
+                elif x_left < self.xlim_original[0] and x_right <= self.xlim_original[1]:
+
+                    self.ax.set_xlim([self.xlim_original[0], x_right])
+
+                else:
+
+                    pass
 
                 self.canvas.draw()
 
@@ -256,6 +295,16 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.show()
 
     def eventFilter(self, source, event):
+        """
+        Override the parent class eventFilter method to ignore the mouse scroll wheel when zooming in a plot
+
+        Args:
+            source:
+            event:
+
+        Returns:
+
+        """
         if event.type() == QtCore.QEvent.Wheel and source is self.scroll.viewport():
             return True
 
