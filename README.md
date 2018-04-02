@@ -31,7 +31,7 @@ to a .PNG image file, and exiting out of the tool.
 
 ##### System Requirements:
 
-python >= 3.4
+python >= 3.5
 
 Matplotlib
 

@@ -26,7 +26,7 @@ setup(
 
     dependency_links=['https://github.com/conda-forge/gdal-feedstock/'],
 
-    python_requires='>=3.4',
+    python_requires='>=3.5',
 
     author='Daniel Zelenak',
 
