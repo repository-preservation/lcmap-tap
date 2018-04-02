@@ -1,4 +1,8 @@
-"""controls.py"""
+"""
+
+set the controls.py for the heart of the sun
+
+"""
 
 import datetime as dt
 import os
@@ -42,21 +46,15 @@ from lcmap_tap.Plotting import make_plots
 
 from lcmap_tap.RetrieveData import ard_info
 
+from lcmap_tap.Auxiliary import projections
+
 from lcmap_tap.Visualization.ard_viewer_qpixelmap import ARDViewerX
 
-# TODO Update to the appropriate projection when fix is applied to ARD source data
-# This is the projected coordinate system currently used by CONUS ARD Collection 01
-WKT = 'PROJCS["Albers",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378140,298.2569999999957,AUTHORITY["EPSG",' \
-      '"7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],AUTHORITY["EPSG",' \
-      '"4326"]],PROJECTION["Albers_Conic_Equal_Area"],PARAMETER["standard_parallel_1",29.5],' \
-      'PARAMETER["standard_parallel_2",45.5],PARAMETER["latitude_of_center",23],PARAMETER["longitude_of_center",-96],' \
-      'PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]]]'
 
-
-class PlotControls(QMainWindow):
+class MainControls(QMainWindow):
     def __init__(self):
 
-        super(PlotControls, self).__init__()
+        super(MainControls, self).__init__()
 
         # TODO Add widget for ARD
         self.ard_directory = r"Z:\bulk\sites\ard_source\production"
@@ -68,16 +66,32 @@ class PlotControls(QMainWindow):
         self.fig = None
 
         # Create an instance of a class that builds the user-interface, created in QT Designer and compiled with pyuic5
-        self.ui = ui_main.Ui_TAP_Tool()
+        self.ui = ui_main.Ui_TAPTool()
 
         # Call the method that adds all of the widgets to the GUI
         self.ui.setupUi(self)
 
+        self.defaults()
+
         self.connect_widgets()
 
-        self.ui.clicked_listWidget.itemClicked.connect(self.show_ard)
-
         self.init_ui()
+
+    def init_ui(self):
+        """
+        Show the user interface
+        :return:
+        """
+        self.show()
+
+    def defaults(self):
+        """
+        Set some defaults
+
+        Returns:
+            None
+        """
+        self.ui.radio_meters.setChecked(True)
 
     def connect_widgets(self):
         """
@@ -93,6 +107,8 @@ class PlotControls(QMainWindow):
         self.ui.yline.setText("3004111")
 
         self.check_values()
+
+        self.ui.radio_meters.setChecked(True)
 
         # *** Connect the various widgets to the methods they interact with ***
         self.ui.browsecachebutton.clicked.connect(self.browsecache)
@@ -119,16 +135,9 @@ class PlotControls(QMainWindow):
 
         self.ui.exitbutton.clicked.connect(self.exit_plot)
 
-        # self.ui.clicked_listWidget.itemClicked.connect(self.show_ard)
+        self.ui.clicked_listWidget.itemClicked.connect(self.show_ard)
 
         return None
-
-    def init_ui(self):
-        """
-        Show the user interface
-        :return:
-        """
-        self.show()
 
     def clear(self):
         """
@@ -141,8 +150,10 @@ class PlotControls(QMainWindow):
     def get_time():
         """
         Return the current time stamp
+
         Returns:
             A formatted string containing the current date and time
+
         """
         return time.strftime("%Y%m%d-%I%M%S")
 
@@ -156,8 +167,8 @@ class PlotControls(QMainWindow):
         """
         return "{outdir}{sep}H{h}V{v}_{xy}_{t}{ext}".format(outdir=self.ui.browseoutputline.text(),
                                                             sep=os.sep,
-                                                            h=self.extracted_data.H,
-                                                            v=self.extracted_data.V,
+                                                            h=self.extracted_data.geo_info.H,
+                                                            v=self.extracted_data.geo_info.V,
                                                             xy=self.ui.xline.text() + "_" + self.ui.yline.text(),
                                                             t=self.get_time(),
                                                             ext=ext)
@@ -228,7 +239,12 @@ class PlotControls(QMainWindow):
         return None
 
     def browsecache(self):
-
+        """
+        Open QFileDialog to manually browse to and retrieve the full path to the directory containing ARD cache files
+        Returns:
+            None
+        """
+        # <str> Full path to the ARD cache directory (tile-specific)
         cachedir = QFileDialog.getExistingDirectory(self)
 
         self.ui.browsecacheline.setText(cachedir)
@@ -236,7 +252,12 @@ class PlotControls(QMainWindow):
         return None
 
     def browsejson(self):
-
+        """
+        Open a QFileDialog to manually browse to and retrieve the full path to the PyCCD results directory
+        Returns:
+            None
+        """
+        # <str> Full path to the directory containing PyCCD results (.json files)
         jsondir = QFileDialog.getExistingDirectory(self)
 
         self.ui.browsejsonline.setText(jsondir)
@@ -244,7 +265,12 @@ class PlotControls(QMainWindow):
         return None
 
     def browseoutput(self):
-
+        """
+        Open a QFileDialog to manually browse to and retrieve the full path to the output directory
+        Returns:
+            None
+        """
+        # <str> Full path to the output directory, used for saving plot images
         output_dir = QFileDialog.getExistingDirectory(self)
 
         self.ui.browseoutputline.setText(output_dir)
@@ -254,8 +280,11 @@ class PlotControls(QMainWindow):
     def show_model_params(self, data):
         """
         Print the model results out to the GUI QPlainTextEdit widget
-        :param data:
-        :return:
+        Args:
+            data: <CCDReader instance> Class instance containing change model results and parameters
+
+        Returns:
+            None
         """
         # TODO Enable logging
         self.ui.plainTextEdit_results.clear()
@@ -293,11 +322,18 @@ class PlotControls(QMainWindow):
     def plot(self):
         """
         Instantiate the CCDReader class that retrieves the plotting data and generate the plots
-        :return:
+        Returns:
+            None
         """
-
-        # If True, generate a point shapefile for the entered coordinates
+        # <bool> If True, generate a point shapefile for the entered coordinates
         shp_on = self.ui.radioshp.isChecked()
+
+        # <bool> If True, input units are meters
+        if self.ui.radio_geog.isChecked():
+            units = "geog"
+
+        else:
+            units = "meters"
 
         # Close the previous plot window if still open
         try:
@@ -312,6 +348,7 @@ class PlotControls(QMainWindow):
         try:
             self.extracted_data = CCDReader(x=self.ui.xline.text(),
                                             y=self.ui.yline.text(),
+                                            units=units,
                                             cache_dir=str(self.ui.browsecacheline.text()),
                                             json_dir=str(self.ui.browsejsonline.text()))
 
@@ -333,8 +370,8 @@ class PlotControls(QMainWindow):
 
         # TODO Add a source image directory in the GUI
         self.ard_specs = ard_info.ARDInfo(self.ard_directory,
-                                          self.extracted_data.H,
-                                          self.extracted_data.V)
+                                          self.extracted_data.geo_info.H,
+                                          self.extracted_data.geo_info.V)
 
         # Display change model information for the entered coordinates
         self.show_model_params(data=self.extracted_data)
@@ -352,7 +389,7 @@ class PlotControls(QMainWindow):
 
         # Generate the ESRI point shapefile
         if shp_on is True and gdal_found is True:
-            self.get_shp(coords=self.extracted_data.coord,
+            self.get_shp(coords=self.extracted_data.geo_info.coord,
                          out_shp=self.fname_generator(ext=".shp"))
 
         # Show the figure in an interactive window
@@ -380,7 +417,9 @@ class PlotControls(QMainWindow):
         Returns:
             None
         """
-        outdir = os.path.split(out_shp)[0]
+        outdir = "{a}{b}{c}".format(a=os.path.split(out_shp)[0],
+                                    b=os.sep,
+                                    c="shp")
 
         if not os.path.exists(outdir):
             try:
@@ -391,7 +430,6 @@ class PlotControls(QMainWindow):
 
                 return None
 
-        # layer_name = "H" + str(h) + "_V" + str(v) + "_" + str(coords.x) + "_" + str(coords.y)
         layer_name = os.path.splitext(os.path.split(out_shp)[-1])[0]
 
         # Set up driver
@@ -402,7 +440,7 @@ class PlotControls(QMainWindow):
 
         # Create a SpatialReference() object and import the pre-defined well-known text
         srs = osr.SpatialReference()
-        srs.ImportFromWkt(WKT)
+        srs.ImportFromWkt(projections.AEA_WKT)
 
         # Create layer, add fields to contain x and y coordinates
         layer = data_source.CreateLayer(layer_name, srs)
@@ -449,13 +487,10 @@ class PlotControls(QMainWindow):
         try:
             # Don't include the processing date in the scene ID
             sceneID = clicked_item.text().split()[2][:23]
-            print(sceneID)
 
             scene_files = self.ard_specs.vsipaths[sceneID]
-            print(scene_files[:10])
 
             sensor = self.ard_specs.get_sensor(sceneID)
-            print(sensor)
 
             self.ard = ARDViewerX(ard_file=scene_files[0:7], ccd=self.extracted_data, sensor=sensor, gui=self)
 
