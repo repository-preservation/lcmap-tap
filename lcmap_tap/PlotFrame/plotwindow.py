@@ -4,7 +4,6 @@ display and interactions for the PyCCD plots."""
 import datetime as dt
 
 import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
 from PyQt5 import QtWidgets, QtCore
 
@@ -201,10 +200,32 @@ class PlotWindow(QtWidgets.QMainWindow):
                 return False, dict()
 
         def enter_axes(event):
-            self.scroll.viewport().installEventFilter(self)
+            """
+            Detect when the cursor enters a subplot area on the main canvas.  Install the overridden EventFilter
+            which deactivates the mouse wheel scrolling on the QMainWindow
+            Args:
+                event: The 'axes_enter_event'
+
+            Returns:
+                None
+
+            """
+            if event:
+                self.scroll.viewport().installEventFilter(self)
 
         def leave_axes(event):
-            self.scroll.viewport().removeEventFilter(self)
+            """
+            Detect when the cursor leaves a subplot area on the main canvas.  Remove the overridden EventFilter
+            to reactivate mouse wheel scrolling on the QMainWindow
+            Args:
+                event: The 'axes_leave_event'
+
+            Returns:
+                None
+
+            """
+            if event:
+                self.scroll.viewport().removeEventFilter(self)
 
         def zoom_event(event, base_scale=2.):
             """
@@ -265,7 +286,8 @@ class PlotWindow(QtWidgets.QMainWindow):
 
                 self.canvas.draw()
 
-            except TypeError: # occurs using the scroll button outside of an axis, but still in the plot window
+            # occurs using the scroll button outside of an axis, but still in the plot window
+            except TypeError:
                 pass
 
         self.nav = NavigationToolbar(self.canvas, self.widget)
