@@ -14,6 +14,7 @@ from lcmap_tap.Visualization.ui_image_viewer import Ui_ARDViewer
 
 from lcmap_tap.Visualization.rescale import Rescale
 
+from lcmap_tap.RetrieveData.retrieve_data import RowColumn
 
 class ARDViewerX(QMainWindow):
     Bands = namedtuple('Bands', ['R', 'G', 'B'])
@@ -375,7 +376,6 @@ class ARDViewerX(QMainWindow):
     def read_data(self):
         """
 
-        :param src_file:
         :return:
         """
         # src = gdal.Open(self.ard_file, gdal.GA_ReadOnly)
@@ -430,7 +430,8 @@ class ARDViewerX(QMainWindow):
 
         # Display a smaller extent taken from the image
         else:
-            pixel_rowcol = self.ccd.geo_to_rowcol(affine=self.ccd.PIXEL_AFFINE, coord=self.ccd.coord)
+            pixel_rowcol = self.ccd.geo_info.geo_to_rowcol(affine=self.ccd.geo_info.PIXEL_AFFINE,
+                                                           coord=self.ccd.geo_info.coord)
 
             row = pixel_rowcol.row - int(self.extent / 2.)
             column = pixel_rowcol.column - int(self.extent / 2.)
@@ -450,7 +451,7 @@ class ARDViewerX(QMainWindow):
             else:
                 pass
 
-            ul_rowcol = self.ccd.RowColumn(row=row, column=column)
+            ul_rowcol = RowColumn(row=row, column=column)
 
             r = self.r[ul_rowcol.row: ul_rowcol.row + self.extent, ul_rowcol.column: ul_rowcol.column + self.extent]
             g = self.g[ul_rowcol.row: ul_rowcol.row + self.extent, ul_rowcol.column: ul_rowcol.column + self.extent]
@@ -468,12 +469,10 @@ class ARDViewerX(QMainWindow):
     def rescale_rgb(self, r, g, b, qa):
         """
 
-        :param infile:
         :param r:
         :param g:
         :param b:
         :param qa:
-        :param extent:
         :return:
         """
 

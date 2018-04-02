@@ -95,7 +95,7 @@ class ARDInfo:
     def get_filelist(self, ext: str = ".tar") -> list:
         """
         Return a list of all files with the given extension in root indir
-        :param ext: File extension, ".tar" by defalt
+        :param ext: File extension, ".tar" by default
         :return:
         """
         return [os.path.join(self.subdir, f) for f in os.listdir(self.subdir) if f.endswith("_SR{}".format(ext))]
@@ -107,8 +107,6 @@ class ARDInfo:
         :param in_file: Full path to the tar file
         :return:
         """
-        # return os.path.splitext(os.path.basename(in_file))[0]
-        # return re.search(r"\w{2}\d{2}_\w{2}_\d{6}_\d{8}_\d{8}_\w\d\d_\w\d\d", os.path.basename(in_file)).group()
         return re.search(r"\w{2}\d{2}_\w{2}_\d{6}_\d{8}", os.path.basename(in_file)).group()
 
     def get_sceneid_list(self):
@@ -156,19 +154,13 @@ class ARDInfo:
         return band_specs[sensor]
 
     @staticmethod
-    def get_vsipath(in_tar: str, scene_id: str, band: str) -> str:
+    def get_vsipath(in_tar: str, band: str) -> str:
         """
         Return the virtual file paths for the current tarball
-        :param scene_id: The current scene identifier
         :param in_tar: The full path to the scene tarball
         :param band: The sensor specific bands
         :return:
         """
-        """
-        Return the virtual file path for the tarball
-        :return: 
-        """
-        # return "/vsitar/{}".format(in_tar) + os.sep + scene_id + "_{}.tif".format(band)
         return "/vsitar/{}".format(in_tar) + os.sep + os.path.basename(in_tar)[:40] + "_{}.tif".format(band)
 
     def get_vsipath_list(self) -> dict:
@@ -187,6 +179,6 @@ class ARDInfo:
                 tarfile = self.lookup[scene][prod]
 
                 for band in prods[prod]:
-                    paths[scene].append(self.get_vsipath(tarfile, scene, prods[prod][band]))
+                    paths[scene].append(self.get_vsipath(tarfile, prods[prod][band]))
 
         return paths

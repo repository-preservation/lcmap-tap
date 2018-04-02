@@ -3,39 +3,229 @@ import datetime as dt
 import json
 import os
 import re
+
 from collections import Counter
 from collections import OrderedDict
 from collections import namedtuple
-
+from typing import Tuple
+from osgeo import ogr
+from osgeo import osr
 import numpy as np
 
 from lcmap_tap.Plotting import plot_functions
 
+from lcmap_tap.Auxiliary import projections
+
+# Define some helper methods and data structures
+GeoExtent = namedtuple("GeoExtent", ["x_min", "y_max", "x_max", "y_min"])
+GeoAffine = namedtuple("GeoAffine", ["ul_x", "x_res", "rot_1", "ul_y", "rot_2", "y_res"])
+GeoCoordinate = namedtuple("GeoCoordinate", ["x", "y"])
+RowColumn = namedtuple("RowColumn", ["row", "column"])
+RowColumnExtent = namedtuple("RowColumnExtent", ["start_row", "start_col", "end_row", "end_col"])
+CONUS_EXTENT = GeoExtent(x_min=-2565585,
+                         y_min=14805,
+                         x_max=2384415,
+                         y_max=3314805)
+
+
+class GeoInfo:
+    def __init__(self, x: str, y: str, units: str = "meters"):
+        """
+        Get basic information about a tile based on the input coordinates
+
+        Args:
+            x: Representation of the X-coordinate in the given units
+            y: Representation of the Y-coordinate in the given units
+            units: Default is "meters"; how to interpret the input coordinate ("meters", "lat/lon")
+
+        """
+        self.units = units
+
+        if self.units == "meters":
+            # <GeoCoordinate> Containing the input coordinate in meters
+            self.coord = self.get_geocoordinate(xstring=x, ystring=y)
+
+            # <GeoCoordinate> Containing the input coordinate in geographic lat/lon
+            self.geo_coord = self.unit_conversion(coord=self.coord)
+
+        else:
+            # <GeoCoordinate> Containing the input coordinate in geographic lat/lon
+            self.geo_coord = self.get_geocoordinate(xstring=x, ystring=y)
+
+            # <GeoCoordinate> Containing the input coordinate in meters
+            self.coord = self.unit_conversion(coord=self.geo_coord, src="geog", dest="proj")
+
+        self.H, self.V = self.get_hv(x=self.coord.x, y=self.coord.y)
+
+        self.EXTENT, self.PIXEL_AFFINE = self.geospatial_hv(loc=CONUS_EXTENT,
+                                                            h=self.H,
+                                                            v=self.V)
+
+        self.CHIP_AFFINE = GeoAffine(ul_x=self.PIXEL_AFFINE.ul_x,
+                                     x_res=3000,
+                                     rot_1=0,
+                                     ul_y=self.PIXEL_AFFINE.ul_y,
+                                     rot_2=0,
+                                     y_res=-3000)
+
+        self.pixel_rowcol = self.geo_to_rowcol(self.PIXEL_AFFINE, self.coord)
+        self.pixel_coord = self.rowcol_to_geo(self.PIXEL_AFFINE, self.pixel_rowcol)
+
+        self.chip_rowcol = self.geo_to_rowcol(self.CHIP_AFFINE, self.coord)
+        self.chip_coord = self.rowcol_to_geo(self.CHIP_AFFINE, self.chip_rowcol)
+
+        self.rowcol = self.geo_to_rowcol(self.PIXEL_AFFINE, self.coord)
+
+    @staticmethod
+    def get_hv(x: GeoCoordinate.x,
+               y: GeoCoordinate.y,
+               x_min: GeoExtent.x_min = CONUS_EXTENT.x_min,
+               y_max: GeoExtent.y_max = CONUS_EXTENT.y_max,
+               base: int = 150000
+               ) -> Tuple[int, int]:
+        """
+        Determine the H and V designations from the entered geo-coordinates
+
+        Args:
+            x: GeoCoordinate.x
+            y: GeoCoordinate.y
+            x_min: Use the CONUS_EXTENT.x_min
+            y_max: Use the CONUS_EXTENT.y_max
+            base:
+
+        Returns:
+            Tuple containing the H and V as integers
+        """
+        h = int((x - x_min) / base)
+
+        v = int((y_max - y) / base)
+
+        return h, v
+
+    @staticmethod
+    def geospatial_hv(loc, h, v):
+        """
+
+        Args:
+            loc: <GeoExtent> Containing xmin, xmax, ymin, ymax values
+            h: <int> H designation
+            v: <int> V designation
+
+        Returns:
+
+        """
+        xmin = loc.x_min + h * 5000 * 30
+        xmax = loc.x_min + h * 5000 * 30 + 5000 * 30
+        ymax = loc.y_max - v * 5000 * 30
+        ymin = loc.y_max - v * 5000 * 30 - 5000 * 30
+
+        return (GeoExtent(x_min=xmin, x_max=xmax, y_max=ymax, y_min=ymin),
+                GeoAffine(ul_x=xmin, x_res=30, rot_1=0, ul_y=ymax, rot_2=0, y_res=-30))
+
+    @staticmethod
+    def get_geocoordinate(xstring: str, ystring: str):
+        """
+        Create GeoCoordinate type to hold the x and y coordinate values as type float
+
+        Args:
+            xstring: The user-input x-coordinate
+            ystring: The user-input y-coordinate
+
+        Returns:
+            The x and y coordinates as float values stored in a GeoCoordinate type-object
+        """
+        xpieces = xstring.split()
+        ypieces = ystring.split()
+
+        return GeoCoordinate(x=float(re.sub(",", "", xpieces[0])),
+                             y=float(re.sub(",", "", ypieces[0])))
+
+    @staticmethod
+    def unit_conversion(coord, src="proj", dest="geog"):
+        """
+        Convert between different units for a given coordinate system
+        projected -> meters
+        geographic -> dec. deg.
+        Args:
+            src: <str> Input units
+            dest: <str> Output units
+            coord: <GeoCoordinate>
+
+        Choices:
+            ["proj", "geog"]
+
+        Returns:
+            <GeoCoordinate> Object containing a coordinate value pair in the new units
+        """
+        units = {"proj": projections.AEA_WKT,
+                 "geog": projections.WGS_84_WKT}
+
+        in_srs = osr.SpatialReference()
+        in_srs.ImportFromWkt(units[src])
+
+        out_srs = osr.SpatialReference()
+        out_srs.ImportFromWkt(units[dest])
+
+        point = ogr.Geometry(ogr.wkbPoint)
+
+        point.AddPoint(coord.x, coord.y)
+
+        transform = osr.CoordinateTransformation(in_srs, out_srs)
+
+        point.Transform(transform)
+
+        return GeoCoordinate(x=point.GetX(),
+                             y=point.GetY())
+
+    @staticmethod
+    def geo_to_rowcol(affine, coord):
+        """
+        Transform geo-coordinate to row/col given a reference affine
+
+        Yline = (Ygeo - GT(3) - Xpixel*GT(4)) / GT(5)
+        Xpixel = (Xgeo - GT(0) - Yline*GT(2)) / GT(1)
+
+        :param affine:
+        :param coord:
+        :return:
+        """
+
+        row = (coord.y - affine.ul_y - affine.ul_x * affine.rot_2) / affine.y_res
+        col = (coord.x - affine.ul_x - affine.ul_y * affine.rot_1) / affine.x_res
+
+        return RowColumn(row=int(row), column=int(col))
+
+    @staticmethod
+    def rowcol_to_geo(affine, rowcol):
+        """
+        Transform a row/col into a geospatial coordinate given reference affine.
+
+        Xgeo = GT(0) + Xpixel*GT(1) + Yline*GT(2)
+        Ygeo = GT(3) + Xpixel*GT(4) + Yline*GT(5)
+
+        :param affine:
+        :param rowcol:
+        :return:
+        """
+
+        x = affine.ul_x + rowcol.column * affine.x_res + rowcol.row * affine.rot_1
+        y = affine.ul_y + rowcol.column * affine.rot_2 + rowcol.row * affine.y_res
+
+        return GeoCoordinate(x=x, y=y)
+
 
 class CCDReader:
-    # Define some helper methods and data structures
-    GeoExtent = namedtuple("GeoExtent", ["x_min", "y_max", "x_max", "y_min"])
-    GeoAffine = namedtuple("GeoAffine", ["ul_x", "x_res", "rot_1", "ul_y", "rot_2", "y_res"])
-    GeoCoordinate = namedtuple("GeoCoordinate", ["x", "y"])
-    RowColumn = namedtuple("RowColumn", ["row", "column"])
-    RowColumnExtent = namedtuple("RowColumnExtent", ["start_row", "start_col", "end_row", "end_col"])
-    CONUS_EXTENT = GeoExtent(x_min=-2565585,
-                             y_min=14805,
-                             x_max=2384415,
-                             y_max=3314805)
-
-    def __init__(self, x, y, cache_dir, json_dir):
+    def __init__(self, x, y, units, cache_dir, json_dir):
         """
-
-        :param x:
-        :param y:
-        :param cache_dir:
-        :param json_dir:
+        Use x and y coordinates to determine the H-V tile, retrieve the corresponding cache file and json file
+        based on the input coordinates.
+        Args:
+            x: <str> Representation of the coordinate X-value in meters
+            y: <str> Representation of the coordinate Y-value in meters
+            cache_dir: <str> Full path to the tile-specific ARD cache
+            json_dir: <str> Full path to the tile and version specific PyCCD results
         """
-        self.coord = self.arcpaste_to_coord(xstring=x, ystring=y)
-
-        self.H, self.V = self.get_hv(x=self.coord.x, x_min=self.CONUS_EXTENT.x_min,
-                                     y=self.coord.y, y_max=self.CONUS_EXTENT.y_max)
+        self.geo_info = GeoInfo(x=x, y=y, units=units)
 
         self.CACHE_INV = [os.path.join(cache_dir, f) for f in os.listdir(cache_dir)]
 
@@ -43,18 +233,9 @@ class CCDReader:
 
         # ****Setup geospatial and temporal information****
 
-        self.EXTENT, self.PIXEL_AFFINE = self.geospatial_hv(self.CONUS_EXTENT)
+        self.results = self.extract_jsoncurve()
 
-        self.CHIP_AFFINE = self.GeoAffine(ul_x=self.PIXEL_AFFINE.ul_x,
-                                          x_res=3000,
-                                          rot_1=0,
-                                          ul_y=self.PIXEL_AFFINE.ul_y,
-                                          rot_2=0,
-                                          y_res=-3000)
-
-        self.results = self.extract_jsoncurve(self.coord)
-
-        self.data, self.dates, self.image_ids = self.extract_cachepoint(self.coord)
+        self.data, self.dates, self.image_ids = self.extract_cachepoint()
 
         self.BEGIN_DATE = dt.date(year=1982, month=1, day=1)
         self.END_DATE = dt.date(year=2015, month=12, day=31)
@@ -67,6 +248,10 @@ class CCDReader:
         self.ccd_mask = np.array(self.results['processing_mask'], dtype=bool)
 
         self.qa = self.data[-1]
+
+        self.duplicates = ""
+
+        self.message = ""
 
         self.test_data()
 
@@ -190,71 +375,6 @@ class CCDReader:
         self.all_lookup = plot_functions.merge_dicts(self.band_lookup, self.index_lookup)
 
     @staticmethod
-    def get_hv(x, x_min, y, y_max, base=150000):
-        """
-        Determine the H and V from the entered coordinates
-        :param x:
-        :param y:
-        :param y_max:
-        :param x_min:
-        :param base:
-        :return:
-        """
-        h = int((x - x_min) / base)
-
-        v = int((y_max - y) / base)
-
-        return h, v
-
-    def geospatial_hv(self, loc):
-        """
-
-        :param loc:
-        :return:
-        """
-        xmin = loc.x_min + self.H * 5000 * 30
-        xmax = loc.x_min + self.H * 5000 * 30 + 5000 * 30
-        ymax = loc.y_max - self.V * 5000 * 30
-        ymin = loc.y_max - self.V * 5000 * 30 - 5000 * 30
-
-        return (self.GeoExtent(x_min=xmin, x_max=xmax, y_max=ymax, y_min=ymin),
-                self.GeoAffine(ul_x=xmin, x_res=30, rot_1=0, ul_y=ymax, rot_2=0, y_res=-30))
-
-    def geo_to_rowcol(self, affine, coord):
-        """
-        Transform geo-coordinate to row/col given a reference affine
-
-        Yline = (Ygeo - GT(3) - Xpixel*GT(4)) / GT(5)
-        Xpixel = (Xgeo - GT(0) - Yline*GT(2)) / GT(1)
-
-        :param affine:
-        :param coord:
-        :return:
-        """
-
-        row = (coord.y - affine.ul_y - affine.ul_x * affine.rot_2) / affine.y_res
-        col = (coord.x - affine.ul_x - affine.ul_y * affine.rot_1) / affine.x_res
-
-        return self.RowColumn(row=int(row), column=int(col))
-
-    def rowcol_to_geo(self, affine, rowcol):
-        """
-        Transform a row/col into a geospatial coordinate given reference affine.
-
-        Xgeo = GT(0) + Xpixel*GT(1) + Yline*GT(2)
-        Ygeo = GT(3) + Xpixel*GT(4) + Yline*GT(5)
-
-        :param affine: 
-        :param rowcol: 
-        :return: 
-        """
-
-        x = affine.ul_x + rowcol.column * affine.x_res + rowcol.row * affine.rot_1
-        y = affine.ul_y + rowcol.column * affine.rot_2 + rowcol.row * affine.y_res
-
-        return self.GeoCoordinate(x=x, y=y)
-
-    @staticmethod
     def load_cache(file):
         """
         Load the cache file and split the data into the image IDs and values
@@ -311,33 +431,43 @@ class CCDReader:
 
         return next(gen, None)
 
-    def extract_cachepoint(self, coord):
+    def extract_cachepoint(self):
         """
         Extract the spectral values from the cache file
-        :param coord:
         :return:
         """
-        rowcol = self.geo_to_rowcol(self.PIXEL_AFFINE, coord)
+        # rowcol = self.geo_to_rowcol(self.PIXEL_AFFINE, coord)
 
-        data, image_ids = self.load_cache(self.find_file(self.CACHE_INV, "r{}".format(rowcol.row)))
+        # data, image_ids = self.load_cache(self.find_file(self.CACHE_INV, "r{}".format(rowcol.row)))
+        data, image_ids = self.load_cache(self.find_file(self.CACHE_INV,
+                                                         "r{}".format(self.geo_info.rowcol.row)))
 
         dates = self.imageid_date(image_ids)
 
-        return data[:, :, rowcol.column], dates, image_ids
+        # return data[:, :, rowcol.column], dates, image_ids
+        return data[:, :, self.geo_info.rowcol.column], dates, image_ids
 
-    def extract_jsoncurve(self, coord):
+    def extract_jsoncurve(self):
         """
         Extract the pyccd information from the json file representing a chip of results.
         """
-        pixel_rowcol = self.geo_to_rowcol(self.PIXEL_AFFINE, coord)
-        pixel_coord = self.rowcol_to_geo(self.PIXEL_AFFINE, pixel_rowcol)
+        # pixel_rowcol = self.geo_to_rowcol(self.PIXEL_AFFINE, coord)
+        # pixel_coord = self.rowcol_to_geo(self.PIXEL_AFFINE, pixel_rowcol)
+        #
+        # chip_rowcol = self.geo_to_rowcol(self.CHIP_AFFINE, coord)
+        # chip_coord = self.rowcol_to_geo(self.CHIP_AFFINE, chip_rowcol)
 
-        chip_rowcol = self.geo_to_rowcol(self.CHIP_AFFINE, coord)
-        chip_coord = self.rowcol_to_geo(self.CHIP_AFFINE, chip_rowcol)
+        # file = self.find_file(self.JSON_INV,
+        #                       "H{:02d}V{:02d}_{}_{}.json".format(self.H, self.V, chip_coord.x, chip_coord.y))
+        # result = self.find_chipcurve(file, pixel_coord)
 
         file = self.find_file(self.JSON_INV,
-                              "H{:02d}V{:02d}_{}_{}.json".format(self.H, self.V, chip_coord.x, chip_coord.y))
-        result = self.find_chipcurve(file, pixel_coord)
+                              "H{:02d}V{:02d}_{}_{}.json".format(self.geo_info.H,
+                                                                 self.geo_info.V,
+                                                                 self.geo_info.chip_coord.x,
+                                                                 self.geo_info.chip_coord.y))
+
+        result = self.find_chipcurve(file, self.geo_info.pixel_coord)
 
         return json.loads(result["result"])
 
@@ -354,19 +484,6 @@ class CCDReader:
                 coef[1] * np.cos(days * 1 * 2 * np.pi / 365.25) + coef[2] * np.sin(days * 1 * 2 * np.pi / 365.25) +
                 coef[3] * np.cos(days * 2 * 2 * np.pi / 365.25) + coef[4] * np.sin(days * 2 * 2 * np.pi / 365.25) +
                 coef[5] * np.cos(days * 3 * 2 * np.pi / 365.25) + coef[6] * np.sin(days * 3 * 2 * np.pi / 365.25))
-
-    def arcpaste_to_coord(self, xstring, ystring):
-        """
-
-        :param xstring:
-        :param ystring:
-        :return: 
-        """
-        xpieces = xstring.split()
-        ypieces = ystring.split()
-
-        return self.GeoCoordinate(x=float(re.sub(",", "", xpieces[0])),
-                                  y=float(re.sub(",", "", ypieces[0])))
 
     def test_data(self):
         """
