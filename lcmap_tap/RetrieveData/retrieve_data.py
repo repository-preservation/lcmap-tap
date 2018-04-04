@@ -257,7 +257,7 @@ class CCDReader:
 
         self.qa = self.data[-1]
 
-        self.duplicates = ""
+        self.duplicates = None
 
         self.message = ""
 

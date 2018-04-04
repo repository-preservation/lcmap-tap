@@ -77,7 +77,7 @@ class MainControls(QMainWindow):
                                                                    "label_x1": "X (meters)",
                                                                    "label_y1": "Y (meters)",
                                                                    "label_x2": "Long (dec. deg.)",
-                                                                   "label_y2": "Lat (dec. deg.",
+                                                                   "label_y2": "Lat (dec. deg.)",
                                                                    "label_unit2": "Geographic - Lat/Long - Decimal "
                                                                                   "Degrees - WGS 84"},
                       "Geographic - Lat/Long - Decimal Degrees - WGS 84": {"unit": "lat/long",
@@ -329,11 +329,8 @@ class MainControls(QMainWindow):
 
         self.ui.plainTextEdit_results.appendPlainText(data.message)
 
-        try:
+        if data.duplicates:
             self.ui.plainTextEdit_results.appendPlainText("\n***Duplicate dates***\n{}".format(data.duplicates))
-
-        except AttributeError:
-            pass
 
         self.ui.plainTextEdit_results.appendPlainText("\n\nBegin Date: {}".format(data.BEGIN_DATE))
 
@@ -420,8 +417,12 @@ class MainControls(QMainWindow):
 
         # Generate the ESRI point shapefile
         if shp_on is True and gdal_found is True:
+            temp_shp = self.fname_generator(ext=".shp")
+            root, name = os.path.split(temp_shp)
+            root = root + os.sep + "shp"
+
             self.get_shp(coords=self.extracted_data.geo_info.coord,
-                         out_shp=self.fname_generator(ext=".shp"))
+                         out_shp="{}{}{}".format(root, os.sep, name))
 
         # Show the figure in an interactive window
         self.plot_window = PlotWindow(fig=self.fig,
@@ -442,19 +443,15 @@ class MainControls(QMainWindow):
         """
         Create a point shapefile at the (x, y) coordinates
         Args:
-            coords: <GeoCoordinate>
-            out_shp: <str> Full path to the output shapefile
+            coords: <GeoCoordinate> 
+            out_shp: <str> Contains a root path and filename for the output shapefile
 
         Returns:
             None
         """
-        outdir = "{a}{b}{c}".format(a=os.path.split(out_shp)[0],
-                                    b=os.sep,
-                                    c="shp")
-
-        if not os.path.exists(outdir):
+        if not os.path.exists(os.path.split(out_shp)[0]):
             try:
-                os.makedirs(outdir)
+                os.makedirs(os.path.split(out_shp)[0])
 
             except PermissionError:
                 # TODO Enable logging
