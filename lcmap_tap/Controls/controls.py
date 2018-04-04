@@ -37,7 +37,7 @@ from PyQt5.QtWidgets import QMainWindow, QFileDialog
 from lcmap_tap.UserInterface import ui_main
 
 # Import the CCDReader class which retrieves json and cache data
-from lcmap_tap.RetrieveData.retrieve_data import CCDReader
+from lcmap_tap.RetrieveData.retrieve_data import CCDReader, GeoInfo
 
 # Import the PlotWindow class defined in the plotwindow.py module
 from lcmap_tap.PlotFrame.plotwindow import PlotWindow
@@ -71,7 +71,23 @@ class MainControls(QMainWindow):
         # Call the method that adds all of the widgets to the GUI
         self.ui.setupUi(self)
 
-        self.defaults()
+        self.selected_units = self.ui.comboBoxUnits.currentText()
+
+        self.units = {"Projected - Meters - Albers CONUS WGS 84": {"unit": "meters",
+                                                                   "label_x1": "X (meters)",
+                                                                   "label_y1": "Y (meters)",
+                                                                   "label_x2": "Long (dec. deg.)",
+                                                                   "label_y2": "Lat (dec. deg.",
+                                                                   "label_unit2": "Geographic - Lat/Long - Decimal "
+                                                                                  "Degrees - WGS 84"},
+                      "Geographic - Lat/Long - Decimal Degrees - WGS 84": {"unit": "lat/long",
+                                                                           "label_x1": "Long (dec. deg.)",
+                                                                           "label_y1": "Lat (dec. deg.)",
+                                                                           "label_x2": "X (meters)",
+                                                                           "label_y2": "Y (meters)",
+                                                                           "label_unit2": "Projected - Meters - "
+                                                                                          "Albers CONUS WGS 84"}
+                      }
 
         self.connect_widgets()
 
@@ -84,15 +100,6 @@ class MainControls(QMainWindow):
         """
         self.show()
 
-    def defaults(self):
-        """
-        Set some defaults
-
-        Returns:
-            None
-        """
-        self.ui.radio_meters.setChecked(True)
-
     def connect_widgets(self):
         """
         Connect the various widgets to the methods they interact with
@@ -103,12 +110,10 @@ class MainControls(QMainWindow):
         self.ui.browseoutputline.setText(r"D:\Plot_Outputs\3.30.2018")
         self.ui.browsejsonline.setText(r"Z:\bulk\tiles\h03v02\change\2017.08.18\json")
         self.ui.browsecacheline.setText(r"Z:\bulk\cache\h03v02")
-        self.ui.xline.setText("-2000417")
-        self.ui.yline.setText("3004111")
+        self.ui.x1line.setText("-2000417")
+        self.ui.y1line.setText("3004111")
 
         self.check_values()
-
-        self.ui.radio_meters.setChecked(True)
 
         # *** Connect the various widgets to the methods they interact with ***
         self.ui.browsecachebutton.clicked.connect(self.browsecache)
@@ -121,9 +126,9 @@ class MainControls(QMainWindow):
 
         self.ui.browsejsonline.textChanged.connect(self.check_values)
 
-        self.ui.xline.textChanged.connect(self.check_values)
+        self.ui.x1line.textChanged.connect(self.check_values)
 
-        self.ui.yline.textChanged.connect(self.check_values)
+        self.ui.y1line.textChanged.connect(self.check_values)
 
         self.ui.browseoutputline.textChanged.connect(self.check_values)
 
@@ -136,6 +141,8 @@ class MainControls(QMainWindow):
         self.ui.exitbutton.clicked.connect(self.exit_plot)
 
         self.ui.clicked_listWidget.itemClicked.connect(self.show_ard)
+
+        self.ui.comboBoxUnits.currentIndexChanged.connect(self.set_units)
 
         return None
 
@@ -157,6 +164,35 @@ class MainControls(QMainWindow):
         """
         return time.strftime("%Y%m%d-%I%M%S")
 
+    def set_units(self):
+        """
+        Change the unit labels if the units are changed on the GUI
+
+        Returns:
+            None
+
+        """
+        self.selected_units = self.ui.comboBoxUnits.currentText()
+
+        self.ui.label_x1.setText(self.units[self.selected_units]["label_x1"])
+
+        self.ui.label_y1.setText(self.units[self.selected_units]["label_y1"])
+
+        self.ui.label_x2.setText(self.units[self.selected_units]["label_x2"])
+
+        self.ui.label_y2.setText(self.units[self.selected_units]["label_y2"])
+
+        self.ui.label_units2.setText(self.units[self.selected_units]["label_unit2"])
+
+        # <GeoCoordinate> containing the converted coordinates to display
+        temp = GeoInfo.unit_conversion(coord=GeoInfo.get_geocoordinate(xstring=self.ui.x1line.text(),
+                                                                       ystring=self.ui.y1line.text()),
+                                       src=self.units[self.selected_units]["unit"],
+                                       dest=self.units[self.ui.label_units2.text()]["unit"])
+
+        self.ui.x2line.setText(str(temp.x))
+        self.ui.y2line.setText(str(temp.y))
+
     def fname_generator(self, ext=".png"):
         """
         Generate a string for an output file
@@ -169,7 +205,7 @@ class MainControls(QMainWindow):
                                                             sep=os.sep,
                                                             h=self.extracted_data.geo_info.H,
                                                             v=self.extracted_data.geo_info.V,
-                                                            xy=self.ui.xline.text() + "_" + self.ui.yline.text(),
+                                                            xy=self.ui.x1line.text() + "_" + self.ui.y1line.text(),
                                                             t=self.get_time(),
                                                             ext=ext)
 
@@ -212,8 +248,8 @@ class MainControls(QMainWindow):
         # <list> List containing the text() values from each of the input widgets
         checks = [self.ui.browsecacheline.text(),
                   self.ui.browsejsonline.text(),
-                  self.ui.xline.text(),
-                  self.ui.yline.text(),
+                  self.ui.x1line.text(),
+                  self.ui.y1line.text(),
                   self.ui.browseoutputline.text()]
 
         # Parse through the checks list to check for entered text
@@ -231,6 +267,8 @@ class MainControls(QMainWindow):
         # If all parameters are entered, then counter will equal 6
         if counter == 5:
             self.ui.plotbutton.setEnabled(True)
+
+            self.set_units()
 
         # Don't try to generate a shapefile if GDAL isn't installed
         if gdal_found is False:
@@ -328,13 +366,6 @@ class MainControls(QMainWindow):
         # <bool> If True, generate a point shapefile for the entered coordinates
         shp_on = self.ui.radioshp.isChecked()
 
-        # <bool> If True, input units are meters
-        if self.ui.radio_geog.isChecked():
-            units = "geog"
-
-        else:
-            units = "meters"
-
         # Close the previous plot window if still open
         try:
             self.plot_window.close()
@@ -346,9 +377,9 @@ class MainControls(QMainWindow):
         # If there is a problem with any of the parameters, the first erroneous parameter
         # will cause an exception to occur which will be displayed in the GUI for the user, and the tool won't close.
         try:
-            self.extracted_data = CCDReader(x=self.ui.xline.text(),
-                                            y=self.ui.yline.text(),
-                                            units=units,
+            self.extracted_data = CCDReader(x=self.ui.x1line.text(),
+                                            y=self.ui.y1line.text(),
+                                            units=self.units[self.selected_units]["unit"],
                                             cache_dir=str(self.ui.browsecacheline.text()),
                                             json_dir=str(self.ui.browsejsonline.text()))
 
