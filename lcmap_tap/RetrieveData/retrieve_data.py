@@ -53,7 +53,7 @@ class GeoInfo:
             self.geo_coord = self.get_geocoordinate(xstring=x, ystring=y)
 
             # <GeoCoordinate> Containing the input coordinate in meters
-            self.coord = self.unit_conversion(coord=self.geo_coord, src="geog", dest="proj")
+            self.coord = self.unit_conversion(coord=self.geo_coord, src="lat/long", dest="meters")
 
         self.H, self.V = self.get_hv(x=self.coord.x, y=self.coord.y)
 
@@ -134,14 +134,22 @@ class GeoInfo:
         Returns:
             The x and y coordinates as float values stored in a GeoCoordinate type-object
         """
+        def str_to_float(split: list):
+            try:
+                return float(re.sub(",", "", split[0]))
+
+            # This occurs when entering a negative value; cannot convert "-" to float
+            except ValueError:
+                return 0.00
+
         xpieces = xstring.split()
         ypieces = ystring.split()
 
-        return GeoCoordinate(x=float(re.sub(",", "", xpieces[0])),
-                             y=float(re.sub(",", "", ypieces[0])))
+        return GeoCoordinate(x=str_to_float(xpieces),
+                             y=str_to_float(ypieces))
 
     @staticmethod
-    def unit_conversion(coord, src="proj", dest="geog"):
+    def unit_conversion(coord, src="meters", dest="lat/long"):
         """
         Convert between different units for a given coordinate system
         projected -> meters
@@ -157,8 +165,8 @@ class GeoInfo:
         Returns:
             <GeoCoordinate> Object containing a coordinate value pair in the new units
         """
-        units = {"proj": projections.AEA_WKT,
-                 "geog": projections.WGS_84_WKT}
+        units = {"meters": projections.AEA_WKT,
+                 "lat/long": projections.WGS_84_WKT}
 
         in_srs = osr.SpatialReference()
         in_srs.ImportFromWkt(units[src])
