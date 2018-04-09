@@ -63,6 +63,7 @@ class MainControls(QMainWindow):
 
         self.extracted_data = None
         self.plot_window = None
+        self.maps_window = None
         self.ard_specs = None
         self.ard = None
         self.fig = None
