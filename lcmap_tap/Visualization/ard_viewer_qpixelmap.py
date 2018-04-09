@@ -10,14 +10,19 @@ from PyQt5 import QtCore
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtWidgets import QMainWindow, QSizePolicy, QLabel, QFileDialog
 
-from lcmap_tap.Visualization.ui_image_viewer import Ui_ARDViewer
+from lcmap_tap.Visualization.ui_ard_viewer import Ui_ARDViewer
 
 from lcmap_tap.Visualization.rescale import Rescale
 
 from lcmap_tap.RetrieveData.retrieve_data import RowColumn
 
+
 class ARDViewerX(QMainWindow):
     Bands = namedtuple('Bands', ['R', 'G', 'B'])
+
+    band_nums = [1, 2, 3, 4, 5, 6]
+
+    extents = [100, 250, 500, 1000, 'full']
 
     def __init__(self, ard_file, ccd, sensor, gui):
         super(ARDViewerX, self).__init__()
@@ -27,6 +32,16 @@ class ARDViewerX(QMainWindow):
 
         # Call the method that builds the GUI window
         self.ui.setupUi(self)
+
+        self.sizePolicy = None
+
+        self.pixel_map = None
+
+        self.R = None
+
+        self.G = None
+
+        self.B = None
 
         # Create an empty QLabel object that will be used to display imagery
         self.imgLabel = QLabel()
@@ -53,8 +68,6 @@ class ARDViewerX(QMainWindow):
 
         self.get_rgb()
 
-        self.band_nums = [1, 2, 3, 4, 5, 6]
-
         self.r_actions = [self.ui.actionBand_1, self.ui.actionBand_2, self.ui.actionBand_3, self.ui.actionBand_4,
                           self.ui.actionBand_5, self.ui.actionBand_6]
 
@@ -70,8 +83,6 @@ class ARDViewerX(QMainWindow):
 
         self.lookup_b = {b: b_action for b, b_action in zip(self.band_nums, self.b_actions)}
 
-        self.extents = [100, 250, 500, 1000, 'full']
-
         self.extent_actions = [self.ui.action100x100, self.ui.action250x250,
                                self.ui.action500x500, self.ui.action1000x1000, self.ui.actionFull]
 
@@ -79,6 +90,7 @@ class ARDViewerX(QMainWindow):
 
         # Idea for using lambda to pass extra arguments to these slots came from:
         # https://eli.thegreenplace.net/2011/04/25/passing-extra-arguments-to-pyqt-slot
+        # Selected R Channel
         self.ui.actionBand_1.triggered.connect(lambda: self.get_R(band=1))
         self.ui.actionBand_2.triggered.connect(lambda: self.get_R(band=2))
         self.ui.actionBand_3.triggered.connect(lambda: self.get_R(band=3))
@@ -86,6 +98,7 @@ class ARDViewerX(QMainWindow):
         self.ui.actionBand_5.triggered.connect(lambda: self.get_R(band=5))
         self.ui.actionBand_6.triggered.connect(lambda: self.get_R(band=6))
 
+        # Select G Channel
         self.ui.actionBand_7.triggered.connect(lambda: self.get_G(band=1))
         self.ui.actionBand_8.triggered.connect(lambda: self.get_G(band=2))
         self.ui.actionBand_9.triggered.connect(lambda: self.get_G(band=3))
@@ -93,6 +106,7 @@ class ARDViewerX(QMainWindow):
         self.ui.actionBand_11.triggered.connect(lambda: self.get_G(band=5))
         self.ui.actionBand_12.triggered.connect(lambda: self.get_G(band=6))
 
+        # Select B Channel
         self.ui.actionBand_13.triggered.connect(lambda: self.get_B(band=1))
         self.ui.actionBand_14.triggered.connect(lambda: self.get_B(band=2))
         self.ui.actionBand_15.triggered.connect(lambda: self.get_B(band=3))
@@ -100,27 +114,7 @@ class ARDViewerX(QMainWindow):
         self.ui.actionBand_17.triggered.connect(lambda: self.get_B(band=5))
         self.ui.actionBand_18.triggered.connect(lambda: self.get_B(band=6))
 
-        # self.ui.actionBand_1.triggered.connect(lambda: self.get_R(band=0))
-        # self.ui.actionBand_2.triggered.connect(lambda: self.get_R(band=1))
-        # self.ui.actionBand_3.triggered.connect(lambda: self.get_R(band=2))
-        # self.ui.actionBand_4.triggered.connect(lambda: self.get_R(band=3))
-        # self.ui.actionBand_5.triggered.connect(lambda: self.get_R(band=4))
-        # self.ui.actionBand_6.triggered.connect(lambda: self.get_R(band=5))
-        #
-        # self.ui.actionBand_7.triggered.connect(lambda: self.get_G(band=0))
-        # self.ui.actionBand_8.triggered.connect(lambda: self.get_G(band=1))
-        # self.ui.actionBand_9.triggered.connect(lambda: self.get_G(band=2))
-        # self.ui.actionBand_10.triggered.connect(lambda: self.get_G(band=3))
-        # self.ui.actionBand_11.triggered.connect(lambda: self.get_G(band=4))
-        # self.ui.actionBand_12.triggered.connect(lambda: self.get_G(band=5))
-        #
-        # self.ui.actionBand_13.triggered.connect(lambda: self.get_B(band=0))
-        # self.ui.actionBand_14.triggered.connect(lambda: self.get_B(band=1))
-        # self.ui.actionBand_15.triggered.connect(lambda: self.get_B(band=2))
-        # self.ui.actionBand_16.triggered.connect(lambda: self.get_B(band=3))
-        # self.ui.actionBand_17.triggered.connect(lambda: self.get_B(band=4))
-        # self.ui.actionBand_18.triggered.connect(lambda: self.get_B(band=5))
-
+        # Select Spatial Extent
         self.ui.action100x100.triggered.connect(lambda: self.set_extent(extent=100))
         self.ui.action250x250.triggered.connect(lambda: self.set_extent(extent=250))
         self.ui.action500x500.triggered.connect(lambda: self.set_extent(extent=500))
@@ -140,25 +134,29 @@ class ARDViewerX(QMainWindow):
 
     def init_ui(self):
         """
+        Initialize the map-viewer window
+        Returns:
 
-        :return:
         """
         self.show()
 
     def exit(self):
         """
+        Close the map-viewer window
+        Returns:
 
-        :return:
         """
         self.close()
 
-    def save_img(self):
+    def save_img(self, fmt=".png"):
         """
 
-        :return:
-        """
-        fmt = ".png"
+        Args:
+            fmt:
 
+        Returns:
+
+        """
         fmts = [".bmp", ".jpg", ".png"]
 
         try:
@@ -170,12 +168,15 @@ class ARDViewerX(QMainWindow):
 
             # If a file extension was specified, make sure it is valid for a QImage
             elif os.path.splitext(browse)[1] != '':
+
                 if not any([f == os.path.splitext(browse)[1] for f in fmts]):
+
                     # If the file extension isn't valid, set it to .png instead
                     browse = os.path.splitext(browse)[0] + fmt
 
             self.img.save(browse, quality=100)
 
+        # TODO Determine exact exception that occurs here
         except:
             print(sys.exc_info()[0])
             print(sys.exc_info()[1])
@@ -183,8 +184,10 @@ class ARDViewerX(QMainWindow):
 
     def display_img(self):
         """
-        Show the image file
-        :return:
+        Show the ARD image
+
+        Returns:
+
         """
         try:
             # self.sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
@@ -221,7 +224,8 @@ class ARDViewerX(QMainWindow):
     def resizeimg(self):
         """
 
-        :return:
+        Returns:
+
         """
         try:
             self.sizePolicy = QSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
@@ -236,9 +240,12 @@ class ARDViewerX(QMainWindow):
 
     def resizeEvent(self, event):
         """
+        Overridden method
+        Args:
+            event:
 
-        :param **kwargs:
-        :return:
+        Returns:
+
         """
         try:
             sizePolicy = QSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
@@ -439,15 +446,19 @@ class ARDViewerX(QMainWindow):
             # Make sure that the extent doesn't go off of the main image extent
             if row < 0:
                 row = 0
+
             elif row + self.extent > self.r.shape[0]:
                 row = self.r.shape[0] - self.extent
+
             else:
                 pass
 
             if column < 0:
                 column = 0
+
             elif column + self.extent > self.r.shape[1]:
                 column = self.r.shape[1] - self.extent
+
             else:
                 pass
 
@@ -459,8 +470,6 @@ class ARDViewerX(QMainWindow):
             qa = self.qa[ul_rowcol.row: ul_rowcol.row + self.extent, ul_rowcol.column: ul_rowcol.column + self.extent]
 
             self.rgb = self.rescale_rgb(r=r, g=g, b=b, qa=qa)
-
-            # self.rgb = np.require(self.rgb, np.uint8, 'C')
 
             self.img = QImage(self.rgb.data, self.extent, self.extent, self.rgb.strides[0], QImage.Format_RGB888)
 

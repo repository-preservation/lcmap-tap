@@ -1,6 +1,5 @@
 
 """Define various functions to make life easier (ideally)"""
-import numpy as np
 from collections import OrderedDict
 
 
@@ -12,10 +11,12 @@ def merge_dicts(*dict_args):
     :return result: dict
     """
     result = OrderedDict()
+
     for dictionary in dict_args:
         result.update(dictionary)
 
     return result
+
 
 def test_for_zero(num):
     """
