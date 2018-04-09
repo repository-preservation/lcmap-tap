@@ -65,6 +65,8 @@ class ARDInfo:
 
         self.subdir = self.get_subdir()
 
+        self.tile_name = os.path.basename(self.subdir)
+
         self.tarfiles = self.get_filelist()
 
         self.tarfiles.sort()
