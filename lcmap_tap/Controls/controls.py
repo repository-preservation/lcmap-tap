@@ -44,11 +44,13 @@ from lcmap_tap.PlotFrame.plotwindow import PlotWindow
 
 from lcmap_tap.Plotting import make_plots
 
-from lcmap_tap.RetrieveData import ard_info
+from lcmap_tap.RetrieveData.ard_info import ARDInfo
 
 from lcmap_tap.Auxiliary import projections
 
 from lcmap_tap.Visualization.ard_viewer_qpixelmap import ARDViewerX
+
+from lcmap_tap.Visualization.maps_viewer import MapsViewer
 
 
 class MainControls(QMainWindow):
@@ -143,6 +145,8 @@ class MainControls(QMainWindow):
         self.ui.clicked_listWidget.itemClicked.connect(self.show_ard)
 
         self.ui.comboBoxUnits.currentIndexChanged.connect(self.set_units)
+
+        self.ui.mapButton.clicked.connect(self.show_maps)
 
         return None
 
@@ -397,9 +401,9 @@ class MainControls(QMainWindow):
             return None
 
         # TODO Add a source image directory in the GUI
-        self.ard_specs = ard_info.ARDInfo(self.ard_directory,
-                                          self.extracted_data.geo_info.H,
-                                          self.extracted_data.geo_info.V)
+        self.ard_specs = ARDInfo(self.ard_directory,
+                                 self.extracted_data.geo_info.H,
+                                 self.extracted_data.geo_info.V)
 
         # Display change model information for the entered coordinates
         self.show_model_params(data=self.extracted_data)
@@ -434,7 +438,10 @@ class MainControls(QMainWindow):
 
         # Make these buttons available once a figure has been created
         self.ui.clearpushButton.setEnabled(True)
+
         self.ui.savefigpushButton.setEnabled(True)
+
+        self.ui.mapButton.setEnabled(True)
 
         return None
 
@@ -529,6 +536,15 @@ class MainControls(QMainWindow):
             print(sys.exc_info()[1])
 
             traceback.print_tb(sys.exc_info()[2])
+
+    def show_maps(self):
+        """
+        Display the mapped products viewer
+        Returns:
+
+        """
+        if self.ard_specs:
+            self.maps_window = MapsViewer(tile=self.ard_specs.tile_name)
 
     def exit_plot(self):
         """
