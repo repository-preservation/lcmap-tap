@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>624</width>
-    <height>673</height>
+    <width>653</width>
+    <height>719</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,8 +25,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>600</width>
-         <height>561</height>
+         <width>633</width>
+         <height>588</height>
         </rect>
        </property>
       </widget>
@@ -35,23 +35,75 @@
     <item row="1" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
-       <widget class="QPushButton" name="update_button">
-        <property name="minimumSize">
-         <size>
-          <width>100</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>100</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Update</string>
-        </property>
-       </widget>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item alignment="Qt::AlignLeft">
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>Right Click - Toggle Pan On/Off</string>
+          </property>
+         </widget>
+        </item>
+        <item alignment="Qt::AlignLeft">
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>Left Click - Return Point Location</string>
+          </property>
+         </widget>
+        </item>
+        <item alignment="Qt::AlignLeft">
+         <widget class="QLabel" name="label_4">
+          <property name="text">
+           <string>Wheel  - Zoom In/Out</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item alignment="Qt::AlignHCenter">
+         <widget class="QPushButton" name="update_button">
+          <property name="minimumSize">
+           <size>
+            <width>100</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>100</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Update</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item alignment="Qt::AlignHCenter">
+         <widget class="QPushButton" name="zoom_button">
+          <property name="minimumSize">
+           <size>
+            <width>100</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>100</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Zoom to Point</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
      </layout>
     </item>
@@ -62,8 +114,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>624</width>
-     <height>26</height>
+     <width>653</width>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuImage">
@@ -114,19 +166,8 @@
     <addaction name="actionSave_Image"/>
     <addaction name="actionExit"/>
    </widget>
-   <widget class="QMenu" name="menuExtent">
-    <property name="title">
-     <string>Extent</string>
-    </property>
-    <addaction name="action100x100"/>
-    <addaction name="action250x250"/>
-    <addaction name="action500x500"/>
-    <addaction name="action1000x1000"/>
-    <addaction name="actionFull"/>
-   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuImage"/>
-   <addaction name="menuExtent"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionBand_1">
