@@ -235,9 +235,13 @@ class CCDReader:
         """
         self.geo_info = GeoInfo(x=x, y=y, units=units)
 
-        self.CACHE_INV = [os.path.join(cache_dir, f) for f in os.listdir(cache_dir)]
+        self.cache_dir = cache_dir
 
-        self.JSON_INV = [os.path.join(json_dir, f) for f in os.listdir(json_dir)]
+        self.json_dir = json_dir
+
+        self.CACHE_INV = [os.path.join(self.cache_dir, f) for f in os.listdir(self.cache_dir)]
+
+        self.JSON_INV = [os.path.join(self.json_dir, f) for f in os.listdir(self.json_dir)]
 
         # ****Setup geospatial and temporal information****
 
