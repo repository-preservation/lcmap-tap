@@ -134,6 +134,12 @@ class GeoInfo:
         Returns:
             The x and y coordinates as float values stored in a GeoCoordinate type-object
         """
+        if isinstance(xstring, int):
+            xstring = str(xstring)
+
+        if isinstance(ystring, int):
+            ystring = str(ystring)
+
         def str_to_float(split: list):
             try:
                 return float(re.sub(",", "", split[0]))
