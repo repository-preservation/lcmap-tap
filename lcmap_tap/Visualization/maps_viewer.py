@@ -1,26 +1,146 @@
 import os
 import glob
-import matplotlib
+# import matplotlib
 
-matplotlib.use("Qt5Agg")
+# matplotlib.use("Qt5Agg")
 
-from PyQt5 import QtCore  # , QtWidgets, QtGui
+from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtGui import QPixmap  # , QImage, QActionEvent
 from PyQt5.QtWidgets import QMainWindow, QSlider  # QFileDialog, QSizePolicy, QLabel, QAction
 
 # import matplotlib.pyplot as plt
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+# from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 from lcmap_tap.Visualization.ui_maps_viewer import Ui_MapViewer
 
 
-class MplCanvas(FigureCanvas):
-    def __init__(self, fig):
-        self.fig = fig
+class ImageViewer(QtWidgets.QGraphicsView):
+    image_clicked = QtCore.pyqtSignal(QtCore.QPointF)
 
-        FigureCanvas.__init__(self, self.fig)
+    def __init__(self):
+        super(ImageViewer, self).__init__()
 
-        FigureCanvas.updateGeometry(self)
+        self._zoom = 0
+
+        self._empty = True
+
+        self.scene = QtWidgets.QGraphicsScene(self)
+
+        self._image = QtWidgets.QGraphicsPixmapItem()
+
+        self._mouse_button = None
+
+        self.scene.addItem(self._image)
+
+        self.setScene(self.scene)
+
+        self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
+
+        self.setResizeAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
+
+        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+
+        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+
+        self.setBackgroundBrush(QtGui.QBrush(QtGui.QColor(30, 30, 30)))
+
+        self.setFrameShape(QtWidgets.QFrame.NoFrame)
+
+    def has_image(self):
+        return not self._empty
+
+    def fitInView(self, scale=True, **kwargs):
+        rect = QtCore.QRectF(self._image.pixmap().rect())
+
+        if not rect.isNull():
+            self.setSceneRect(rect)
+
+            if self.has_image():
+                unity = self.transform().mapRect(QtCore.QRectF(0, 0, 1, 1))
+
+                self.scale(1 / unity.width(), 1 / unity.height())
+
+                view_rect = self.viewport().rect()
+
+                scene_rect = self.transform().mapRect(rect)
+
+                factor = min(view_rect.width() / scene_rect.width(),
+                             view_rect.height() / scene_rect.height())
+
+                self.scale(factor, factor)
+
+            self._zoom = 0
+
+    def set_image(self, pixmap=None):
+        self._zoom = 0
+
+        if pixmap and not pixmap.isNull():
+            self._empty = False
+
+            self._image.setPixmap(pixmap)
+
+        else:
+            self._empty = True
+
+            self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
+
+            self._image.setPixmap(QtGui.QPixmap())
+
+        self.fitInView()
+
+    def wheelEvent(self, event: QtGui.QWheelEvent):
+        if self.has_image():
+            if event.angleDelta().y() > 0:
+                factor = 1.25
+                self._zoom += 1
+
+            else:
+                factor = 0.8
+                self._zoom -= 1
+
+            if self._zoom > 0:
+                self.scale(factor, factor)
+
+            elif self._zoom == 0:
+                self.fitInView()
+
+            else:
+                self._zoom = 0
+
+    def toggle_drag(self):
+        if self.dragMode() == QtWidgets.QGraphicsView.ScrollHandDrag:
+            self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
+
+        elif not self._image.pixmap().isNull():
+            self.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
+
+    def mousePressEvent(self, event: QtGui.QMouseEvent):
+
+        # 1 -> Left-click
+        # 2 -> Right-click
+        # 4 -> Wheel-click
+        self._mouse_button = event.button()
+
+        if event.button() == QtCore.Qt.RightButton:
+
+            self.toggle_drag()
+
+        if self._image.isUnderMouse() and event.button() == QtCore.Qt.LeftButton \
+                and self.dragMode() == QtWidgets.QGraphicsView.NoDrag:
+
+            point = self.mapToScene(event.pos())
+
+            print("point", point)
+
+            self.image_clicked.emit(QtCore.QPointF(point))
+
+        super(ImageViewer, self).mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event: QtGui.QMouseEvent):
+
+        # self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
+
+        super(ImageViewer, self).mouseReleaseEvent(event)
 
 
 class MapsViewer(QMainWindow):
@@ -80,6 +200,10 @@ class MapsViewer(QMainWindow):
 
         self.ui.setupUi(self)
 
+        self.graphics_view = ImageViewer()
+
+        self.ui.scrollArea.setWidget(self.graphics_view)
+
         self.img_list1 = list()
 
         self.img_list2 = list()
@@ -113,9 +237,9 @@ class MapsViewer(QMainWindow):
 
         self.ui.comboBox_map1.currentIndexChanged.connect(self.browse_map1)
 
-        self.ui.comboBox_map2.currentIndexChanged.connect(self.browse_map2)
-
-        self.ui.comboBox_map3.currentIndexChanged.connect(self.browse_map3)
+        # self.ui.comboBox_map2.currentIndexChanged.connect(self.browse_map2)
+        #
+        # self.ui.comboBox_map3.currentIndexChanged.connect(self.browse_map3)
 
         self.init_ui()
 
@@ -237,9 +361,11 @@ class MapsViewer(QMainWindow):
 
         self.pixel_map1 = QPixmap(imgs[0])
 
-        self.ui.map1_QLabel.setPixmap(self.pixel_map1.scaled(self.ui.map1_QLabel.size(),
-                                                             QtCore.Qt.KeepAspectRatio,
-                                                             transformMode=QtCore.Qt.SmoothTransformation))
+        # self.ui.map1_QLabel.setPixmap(self.pixel_map1.scaled(self.ui.map1_QLabel.size(),
+        #                                                      QtCore.Qt.KeepAspectRatio,
+        #                                                      transformMode=QtCore.Qt.SmoothTransformation))
+
+        self.graphics_view.set_image(self.pixel_map1)
 
     def date_changed(self, value):
         """
@@ -253,30 +379,34 @@ class MapsViewer(QMainWindow):
         try:
             temp1 = [img for img in self.img_list1 if str(value) in img][0]
             self.pixel_map1 = QPixmap(temp1)
-            self.ui.map1_QLabel.setPixmap(self.pixel_map1.scaled(self.ui.map1_QLabel.size(),
-                                                                 QtCore.Qt.KeepAspectRatio,
-                                                                 transformMode=QtCore.Qt.SmoothTransformation))
-        except (TypeError, IndexError, AttributeError):
-            pass
 
-        try:
-            temp2 = [img for img in self.img_list2 if str(value) in img][0]
-            self.pixel_map2 = QPixmap(temp2)
-            self.ui.map2_QLabel.setPixmap(self.pixel_map2.scaled(self.ui.map2_QLabel.size(),
-                                                                 QtCore.Qt.KeepAspectRatio,
-                                                                 transformMode=QtCore.Qt.SmoothTransformation))
-        except (TypeError, IndexError, AttributeError):
-            pass
+            # self.ui.map1_QLabel.setPixmap(self.pixel_map1.scaled(self.ui.map1_QLabel.size(),
+            #                                                      QtCore.Qt.KeepAspectRatio,
+            #                                                      transformMode=QtCore.Qt.SmoothTransformation))
 
-        try:
-            temp3 = [img for img in self.img_list3 if str(value) in img][0]
-            self.pixel_map3 = QPixmap(temp3)
-            self.ui.map3_QLabel.setPixmap(self.pixel_map3.scaled(self.ui.map3_QLabel.size(),
-                                                                 QtCore.Qt.KeepAspectRatio,
-                                                                 transformMode=QtCore.Qt.SmoothTransformation))
+            self.graphics_view.set_image(self.pixel_map1)
 
         except (TypeError, IndexError, AttributeError):
             pass
+
+        # try:
+        #     temp2 = [img for img in self.img_list2 if str(value) in img][0]
+        #     self.pixel_map2 = QPixmap(temp2)
+        #     self.ui.map2_QLabel.setPixmap(self.pixel_map2.scaled(self.ui.map2_QLabel.size(),
+        #                                                          QtCore.Qt.KeepAspectRatio,
+        #                                                          transformMode=QtCore.Qt.SmoothTransformation))
+        # except (TypeError, IndexError, AttributeError):
+        #     pass
+        #
+        # try:
+        #     temp3 = [img for img in self.img_list3 if str(value) in img][0]
+        #     self.pixel_map3 = QPixmap(temp3)
+        #     self.ui.map3_QLabel.setPixmap(self.pixel_map3.scaled(self.ui.map3_QLabel.size(),
+        #                                                          QtCore.Qt.KeepAspectRatio,
+        #                                                          transformMode=QtCore.Qt.SmoothTransformation))
+        #
+        # except (TypeError, IndexError, AttributeError):
+        #     pass
 
     def get_product_specs(self, product):
         """
@@ -322,81 +452,82 @@ class MapsViewer(QMainWindow):
             else:
                 return cat, folder, temp_folder
 
-    def browse_map1(self, index: int):
+    def browse_map1(self):
         """
         Load the mapped product for Map 1
-        Args:
-            index: comboBox index, signal automatically sent
-
         Returns:
             None
         """
         # <str> Represents the currently selected text in the combo box
         product = self.ui.comboBox_map1.currentText()
 
-        try:
-            self.img_list1 = glob.glob(self.products[product]["root"] + os.sep + "*.tif")
+        if product is not "":
 
-            temp = [img for img in self.img_list1 if str(self.ui.date_slider.value()) in img][0]
+            try:
+                self.img_list1 = glob.glob(self.products[product]["root"] + os.sep + "*.tif")
 
-            self.pixel_map1 = QPixmap(temp)
+                temp = [img for img in self.img_list1 if str(self.ui.date_slider.value()) in img][0]
 
-            self.ui.map1_QLabel.setPixmap(self.pixel_map1.scaled(self.ui.map1_QLabel.size(),
-                                                                 QtCore.Qt.KeepAspectRatio,
-                                                                 transformMode=QtCore.Qt.SmoothTransformation))
+                self.pixel_map1 = QPixmap(temp)
 
-        except IndexError:
-            pass
+                # self.ui.map1_QLabel.setPixmap(self.pixel_map1.scaled(self.ui.map1_QLabel.size(),
+                #                                                      QtCore.Qt.KeepAspectRatio,
+                #                                                      transformMode=QtCore.Qt.SmoothTransformation))
 
-    def browse_map2(self, index):
-        """
-        Load the mapped product for Map 2
-        Args:
-            index: comboBox index, signal automatically sent
+                self.graphics_view.set_image(self.pixel_map1)
 
-        Returns:
-            None
-        """
-        # <str> Represents the currently selected text in the combo box
-        product = self.ui.comboBox_map2.currentText()
+            except IndexError:
+                pass
 
-        try:
-            self.img_list2 = glob.glob(self.products[product]["root"] + os.sep + "*.tif")
-
-            temp = [img for img in self.img_list2 if str(self.ui.date_slider.value()) in img][0]
-
-            self.pixel_map2 = QPixmap(temp)
-
-            self.ui.map2_QLabel.setPixmap(self.pixel_map2.scaled(self.ui.map2_QLabel.size(),
-                                                                 QtCore.Qt.KeepAspectRatio,
-                                                                 transformMode=QtCore.Qt.SmoothTransformation))
-        except IndexError:
-            pass
-
-    def browse_map3(self, index):
-        """
-        Load the mapped product for Map 3
-        Args:
-            index: comboBox index, signal automatically sent
-
-        Returns:
-            None
-        """
-        # <str> Represents the currently selected text in the combo box
-        product = self.ui.comboBox_map3.currentText()
-
-        try:
-            self.img_list3 = glob.glob(self.products[product]["root"] + os.sep + "*.tif")
-
-            temp = [img for img in self.img_list3 if str(self.ui.date_slider.value()) in img][0]
-
-            self.pixel_map3 = QPixmap(temp)
-
-            self.ui.map3_QLabel.setPixmap(self.pixel_map3.scaled(self.ui.map3_QLabel.size(),
-                                                                 QtCore.Qt.KeepAspectRatio,
-                                                                 transformMode=QtCore.Qt.SmoothTransformation))
-        except IndexError:
-            pass
+    # def browse_map2(self, index):
+    #     """
+    #     Load the mapped product for Map 2
+    #     Args:
+    #         index: comboBox index, signal automatically sent
+    #
+    #     Returns:
+    #         None
+    #     """
+    #     # <str> Represents the currently selected text in the combo box
+    #     product = self.ui.comboBox_map2.currentText()
+    #
+    #     try:
+    #         self.img_list2 = glob.glob(self.products[product]["root"] + os.sep + "*.tif")
+    #
+    #         temp = [img for img in self.img_list2 if str(self.ui.date_slider.value()) in img][0]
+    #
+    #         self.pixel_map2 = QPixmap(temp)
+    #
+    #         self.ui.map2_QLabel.setPixmap(self.pixel_map2.scaled(self.ui.map2_QLabel.size(),
+    #                                                              QtCore.Qt.KeepAspectRatio,
+    #                                                              transformMode=QtCore.Qt.SmoothTransformation))
+    #     except IndexError:
+    #         pass
+    #
+    # def browse_map3(self, index):
+    #     """
+    #     Load the mapped product for Map 3
+    #     Args:
+    #         index: comboBox index, signal automatically sent
+    #
+    #     Returns:
+    #         None
+    #     """
+    #     # <str> Represents the currently selected text in the combo box
+    #     product = self.ui.comboBox_map3.currentText()
+    #
+    #     try:
+    #         self.img_list3 = glob.glob(self.products[product]["root"] + os.sep + "*.tif")
+    #
+    #         temp = [img for img in self.img_list3 if str(self.ui.date_slider.value()) in img][0]
+    #
+    #         self.pixel_map3 = QPixmap(temp)
+    #
+    #         self.ui.map3_QLabel.setPixmap(self.pixel_map3.scaled(self.ui.map3_QLabel.size(),
+    #                                                              QtCore.Qt.KeepAspectRatio,
+    #                                                              transformMode=QtCore.Qt.SmoothTransformation))
+    #     except IndexError:
+    #         pass
 
     def resizeEvent(self, event):
         """
@@ -404,17 +535,23 @@ class MapsViewer(QMainWindow):
 
         """
         try:
-            self.ui.map1_QLabel.setPixmap(self.pixel_map1.scaled(self.ui.map1_QLabel.size(),
-                                                                 QtCore.Qt.KeepAspectRatio,
-                                                                 transformMode=QtCore.Qt.SmoothTransformation))
+            # self.ui.map1_QLabel.setPixmap(self.pixel_map1.scaled(self.ui.map1_QLabel.size(),
+            #                                                      QtCore.Qt.KeepAspectRatio,
+            #                                                      transformMode=QtCore.Qt.SmoothTransformation))
 
-            self.ui.map2_QLabel.setPixmap(self.pixel_map2.scaled(self.ui.map2_QLabel.size(),
-                                                                 QtCore.Qt.KeepAspectRatio,
-                                                                 transformMode=QtCore.Qt.SmoothTransformation))
+            sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Ignored)
 
-            self.ui.map3_QLabel.setPixmap(self.pixel_map3.scaled(self.ui.map3_QLabel.size(),
-                                                                 QtCore.Qt.KeepAspectRatio,
-                                                                 transformMode=QtCore.Qt.SmoothTransformation))
+            self.graphics_view.setSizePolicy(sizePolicy)
+
+            self.graphics_view.set_image(self.pixel_map1)
+
+            # self.ui.map2_QLabel.setPixmap(self.pixel_map2.scaled(self.ui.map2_QLabel.size(),
+            #                                                      QtCore.Qt.KeepAspectRatio,
+            #                                                      transformMode=QtCore.Qt.SmoothTransformation))
+            #
+            # self.ui.map3_QLabel.setPixmap(self.pixel_map3.scaled(self.ui.map3_QLabel.size(),
+            #                                                      QtCore.Qt.KeepAspectRatio,
+            #                                                      transformMode=QtCore.Qt.SmoothTransformation))
 
         except AttributeError:
             pass
