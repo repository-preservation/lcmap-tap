@@ -34,6 +34,8 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
         self._image = QtWidgets.QGraphicsPixmapItem()
 
+        self._mouse_button = None
+
         self.scene.addItem(self._image)
 
         self.setScene(self.scene)
@@ -46,14 +48,14 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
 
-        self.setBackgroundBrush(QtGui.QBrush(QtGui.QColor(30,30,30)))
+        self.setBackgroundBrush(QtGui.QBrush(QtGui.QColor(30, 30, 30)))
 
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
 
     def has_image(self):
         return not self._empty
 
-    def fitInView(self, scale=True):
+    def fitInView(self, scale=True, **kwargs):
         rect = QtCore.QRectF(self._image.pixmap().rect())
 
         if not rect.isNull():
@@ -62,7 +64,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
             if self.has_image():
                 unity = self.transform().mapRect(QtCore.QRectF(0, 0, 1, 1))
 
-                self.scale(1 / unity.width(), 1 /unity.height())
+                self.scale(1 / unity.width(), 1 / unity.height())
 
                 view_rect = self.viewport().rect()
 
@@ -111,7 +113,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
             else:
                 self._zoom = 0
 
-    def toggleDragMode(self):
+    def toggle_drag(self):
         if self.dragMode() == QtWidgets.QGraphicsView.ScrollHandDrag:
             self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
 
@@ -127,7 +129,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
         if event.button() == QtCore.Qt.RightButton:
 
-            self.toggleDragMode()
+            self.toggle_drag()
 
         if self._image.isUnderMouse() and event.button() == QtCore.Qt.LeftButton \
                 and self.dragMode() == QtWidgets.QGraphicsView.NoDrag:
@@ -164,35 +166,28 @@ class ARDViewerX(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
 
         self.sizePolicy = None
-
         self.pixel_map = None
-
         self.R = None
-
         self.G = None
-
         self.B = None
-
         self.r = None
-
         self.g = None
-
         self.b = None
-
         self.qa = None
-
         self.img = None
-
         self.rgb = None
-
         self.rect = None
+        self.new_ccd = None
 
+        # Was using QLabel to display imagery before, using QGraphicsView via ImageViewer class now.
         # Create an empty QLabel object that will be used to display imagery
         # self.imgLabel = QLabel()
-        self.graphics_view = ImageViewer()
 
         # Add the QLabel to the QScrollArea
         # self.ui.scrollArea.setWidget(self.imgLabel)
+
+        self.graphics_view = ImageViewer()
+
         self.ui.scrollArea.setWidget(self.graphics_view)
 
         self.ard_file = ard_file
@@ -221,8 +216,6 @@ class ARDViewerX(QtWidgets.QMainWindow):
         self.read_data()
 
         self.get_rgb()
-
-
 
         self.r_actions = [self.ui.actionBand_1, self.ui.actionBand_2, self.ui.actionBand_3, self.ui.actionBand_4,
                           self.ui.actionBand_5, self.ui.actionBand_6]
@@ -395,7 +388,7 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
         """
         def check_upper(val, limit=0):
-            for i in range(100, -1, -1):
+            for i in range(50, -1, -1):
                 val_ul = val - i
 
                 if val_ul > limit:
@@ -408,7 +401,7 @@ class ARDViewerX(QtWidgets.QMainWindow):
                     return limit
 
         def check_lower(val, limit):
-            for i in range(100, -1, -1):
+            for i in range(50, -1, -1):
                 val_lr = val + i
 
                 if val_lr < limit:
@@ -435,7 +428,7 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
         unity = self.graphics_view.transform().mapRect(QtCore.QRectF(0, 0, 1, 1))
 
-        self.graphics_view.scale(1 / unity.width(), 1 /unity.height())
+        self.graphics_view.scale(1 / unity.width(), 1 / unity.height())
 
         view_rect = self.graphics_view.viewport().rect()
 
@@ -447,7 +440,7 @@ class ARDViewerX(QtWidgets.QMainWindow):
         self.graphics_view.scale(factor, factor)
 
         # Arbitrary number of times to zoom out with the mouse wheel before full extent is reset, based on a guess
-        self.graphics_view._zoom = 10
+        self.graphics_view._zoom = 12
 
     def resizeimg(self):
         """
@@ -487,17 +480,7 @@ class ARDViewerX(QtWidgets.QMainWindow):
         try:
             sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Ignored)
 
-            # self.imgLabel.setSizePolicy(sizePolicy)
-            #
-            # self.imgLabel.setPixmap(self.pixel_map.scaled(self.imgLabel.size(),
-            #                                               QtCore.Qt.KeepAspectRatio,
-            #                                               transformMode=QtCore.Qt.SmoothTransformation))
-
             self.graphics_view.setSizePolicy(sizePolicy)
-
-            # self.graphics_view.set_image(self.pixel_map.scaled(self.graphics_view.size(),
-            #                                                    QtCore.Qt.KeepAspectRatio,
-            #                                                    transformMode=QtCore.Qt.SmoothTransformation))
 
             self.graphics_view.set_image(self.pixel_map)
 
@@ -772,8 +755,15 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
         self.graphics_view.scene.addRect(self.rect, pen)
 
-    def update_rect(self, pos):
+    def update_rect(self, pos: QtCore.QPointF):
+        """
+        Get new row/col when image is clicked, draw a new rectangle at that clicked row/col location
+        Args:
+            pos: Contains row and column of the scene location that was clicked
 
+        Returns:
+
+        """
         # TODO Figure out how to remove previous rectangles
         pen = QtGui.QPen(QtCore.Qt.magenta)
         pen.setWidthF(0.1)
@@ -784,19 +774,23 @@ class ARDViewerX(QtWidgets.QMainWindow):
         upper_left = QtCore.QPointF(self.col, self.row)
         bottom_right = QtCore.QPointF(self.col + 1., self.row + 1.)
 
+        # TODO Why doesn't moveTo work
         # self.rect.moveTo(col, row)
         self.rect = QtCore.QRectF(upper_left, bottom_right)
 
         self.graphics_view.scene.addRect(self.rect, pen)
 
-        # self.update_plot()
+        self.update_plot()
 
     def update_plot(self):
 
-        rowcol = RowColumn(row=self.row, col=self.col)
+        rowcol = RowColumn(row=self.row, column=self.col)
 
         coords = GeoInfo.rowcol_to_geo(affine=self.ccd.geo_info.PIXEL_AFFINE,
-                                            rowcol=rowcol)
+                                       rowcol=rowcol)
+
+        print("coords", coords)
+        print("coords type", type(coords), type(coords.x), type(coords.y))
 
         self.new_ccd = CCDReader(x=coords.x,
                                  y=coords.y,
@@ -804,9 +798,9 @@ class ARDViewerX(QtWidgets.QMainWindow):
                                  cache_dir=self.ccd.cache_dir,
                                  json_dir=self.ccd.json_dir)
 
+        self.gui.ui.x1line.setText(str(coords.x))
+        self.gui.ui.y1line.setText(str(coords.y))
 
+        self.gui.check_values()
 
-
-
-
-
+        self.gui.plot()
