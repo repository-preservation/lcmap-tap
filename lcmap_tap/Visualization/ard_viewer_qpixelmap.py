@@ -2,21 +2,19 @@ import os
 import sys
 import traceback
 from collections import namedtuple
-
 import numpy as np
 from osgeo import gdal
+import time
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5 import QtWidgets, QtGui
 
 from lcmap_tap.Visualization.ui_ard_viewer import Ui_ARDViewer
-
 from lcmap_tap.Visualization.rescale import Rescale
 
 # Import the CCDReader class which retrieves json and cache data
 from lcmap_tap.RetrieveData.retrieve_data import CCDReader, GeoInfo
-
 from lcmap_tap.RetrieveData.retrieve_data import RowColumn
 
 
@@ -154,7 +152,7 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
     # extents = [100, 250, 500, 1000, 'full']
 
-    def __init__(self, ard_file, ccd, sensor, gui):
+    def __init__(self, ard_file, ccd, sensor, gui, current_view=None):
         """
 
         Args:
@@ -195,6 +193,8 @@ class ARDViewerX(QtWidgets.QMainWindow):
         self.graphics_view = ImageViewer()
 
         self.ui.scrollArea.setWidget(self.graphics_view)
+
+        self.current_view = current_view
 
         self.ard_file = ard_file
 
@@ -288,6 +288,10 @@ class ARDViewerX(QtWidgets.QMainWindow):
         self.display_img()
 
         self.make_rect()
+
+        # If a previous ARD obs. was displayed, maintain the previous view rectangle when displaying the new obs.
+        if self.current_view:
+            self.graphics_view.scene.setSceneRect(self.current_view)
 
         self.ui.zoom_button.clicked.connect(self.zoom_to_point)
 
@@ -430,12 +434,6 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
         rect = QtCore.QRectF(upper_left, bottom_right)
 
-        self.graphics_view.setSceneRect(rect)
-
-        unity = self.graphics_view.transform().mapRect(QtCore.QRectF(0, 0, 1, 1))
-
-        self.graphics_view.scale(1 / unity.width(), 1 / unity.height())
-
         view_rect = self.graphics_view.viewport().rect()
 
         scene_rect = self.graphics_view.transform().mapRect(rect)
@@ -445,53 +443,10 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
         self.graphics_view.scale(factor, factor)
 
+        self.graphics_view.centerOn(self.current_pixel)
+
         # Arbitrary number of times to zoom out with the mouse wheel before full extent is reset, based on a guess
         self.graphics_view._zoom = 12
-
-    def resizeimg(self):
-        """
-
-        Returns:
-
-        """
-        try:
-            self.sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Ignored)
-
-            # self.imgLabel.setSizePolicy(self.sizePolicy)
-            #
-            # self.imgLabel.setPixmap(self.pixel_map.scaled(self.imgLabel.size(),
-            #                                               QtCore.Qt.KeepAspectRatio,
-            #                                               transformMode=QtCore.Qt.SmoothTransformation))
-
-            self.graphics_view.setSizePolicy(self.sizePolicy)
-
-            # self.graphics_view.set_image(self.pixel_map.scaled(self.graphics_view.size(),
-            #                                                    QtCore.Qt.KeepAspectRatio,
-            #                                                    transformMode=QtCore.Qt.SmoothTransformation))
-
-            self.graphics_view.set_image(self.pixel_map)
-
-        except AttributeError:
-            pass
-
-    def resizeEvent(self, event):
-        """
-        Overridden method
-        Args:
-            event:
-
-        Returns:
-
-        """
-        try:
-            sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Ignored)
-
-            self.graphics_view.setSizePolicy(sizePolicy)
-
-            self.graphics_view.set_image(self.pixel_map)
-
-        except AttributeError:
-            pass
 
     def get_R(self, band):
         """
@@ -659,57 +614,6 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
         :return:
         """
-        # Display the full extent of the image
-        # if self.extent == self.r.shape[0]:
-        #
-        #     self.rgb = self.rescale_rgb(r=self.r, g=self.g, b=self.b, qa=self.qa)
-        #
-        #     # self.rgb = np.require(self.rgb, np.uint8, 'C')
-        #
-        #     self.img = QImage(self.rgb.data, self.extent, self.extent, self.rgb.strides[0], QImage.Format_RGB888)
-        #
-        #     self.img.ndarray = self.rgb
-        #
-        # # Display a smaller extent taken from the image
-        # else:
-        #     pixel_rowcol = self.ccd.geo_info.geo_to_rowcol(affine=self.ccd.geo_info.PIXEL_AFFINE,
-        #                                                    coord=self.ccd.geo_info.coord)
-        #
-        #     row = pixel_rowcol.row - int(self.extent / 2.)
-        #     column = pixel_rowcol.column - int(self.extent / 2.)
-        #
-        #     # Make sure that the extent doesn't go off of the main image extent
-        #     if row < 0:
-        #         row = 0
-        #
-        #     elif row + self.extent > self.r.shape[0]:
-        #         row = self.r.shape[0] - self.extent
-        #
-        #     else:
-        #         pass
-        #
-        #     if column < 0:
-        #         column = 0
-        #
-        #     elif column + self.extent > self.r.shape[1]:
-        #         column = self.r.shape[1] - self.extent
-        #
-        #     else:
-        #         pass
-        #
-        #     ul_rowcol = RowColumn(row=row, column=column)
-        #
-        #     r = self.r[ul_rowcol.row: ul_rowcol.row + self.extent, ul_rowcol.column: ul_rowcol.column + self.extent]
-        #     g = self.g[ul_rowcol.row: ul_rowcol.row + self.extent, ul_rowcol.column: ul_rowcol.column + self.extent]
-        #     b = self.b[ul_rowcol.row: ul_rowcol.row + self.extent, ul_rowcol.column: ul_rowcol.column + self.extent]
-        #     qa = self.qa[ul_rowcol.row: ul_rowcol.row + self.extent, ul_rowcol.column: ul_rowcol.column + self.extent]
-        #
-        #     self.rgb = self.rescale_rgb(r=r, g=g, b=b, qa=qa)
-        #
-        #     self.img = QImage(self.rgb.data, self.extent, self.extent, self.rgb.strides[0], QImage.Format_RGB888)
-        #
-        #     self.img.ndarray = self.rgb
-
         self.rgb = self.rescale_rgb(r=self.r, g=self.g, b=self.b, qa=self.qa)
 
         self.img = QImage(self.rgb.data, self.r.shape[0], self.r.shape[0], self.rgb.strides[0], QImage.Format_RGB888)
@@ -725,9 +629,6 @@ class ARDViewerX(QtWidgets.QMainWindow):
         :param qa:
         :return:
         """
-
-        # rgb = np.zeros((self.extent, self.extent, 3), dtype=np.uint8)
-
         rgb = np.zeros((self.r.shape[0], self.r.shape[0], 3), dtype=np.uint8)
 
         r_rescale = Rescale(sensor=self.sensor, array=r, qa=qa)
@@ -792,6 +693,8 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
         # self.graphics_view.scene.addRect(self.rect, pen)
         self.graphics_view.scene.addItem(self.current_pixel)
+
+        time.sleep(1)
 
         self.update_plot()
 
