@@ -183,13 +183,6 @@ class ARDViewerX(QtWidgets.QMainWindow):
         self.current_pixel = None
         self.new_ccd = None
 
-        # Was using QLabel to display imagery before, using QGraphicsView via ImageViewer class now.
-        # Create an empty QLabel object that will be used to display imagery
-        # self.imgLabel = QLabel()
-
-        # Add the QLabel to the QScrollArea
-        # self.ui.scrollArea.setWidget(self.imgLabel)
-
         self.graphics_view = ImageViewer()
 
         self.ui.scrollArea.setWidget(self.graphics_view)
@@ -238,11 +231,6 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
         self.lookup_b = {b: b_action for b, b_action in zip(self.band_nums, self.b_actions)}
 
-        # self.extent_actions = [self.ui.action100x100, self.ui.action250x250,
-        #                        self.ui.action500x500, self.ui.action1000x1000, self.ui.actionFull]
-
-        # self.lookup_extent = {e: extent_action for e, extent_action in zip(self.extents, self.extent_actions)}
-
         # Idea for using lambda to pass extra arguments to these slots came from:
         # https://eli.thegreenplace.net/2011/04/25/passing-extra-arguments-to-pyqt-slot
         # Selected R Channel
@@ -268,13 +256,6 @@ class ARDViewerX(QtWidgets.QMainWindow):
         self.ui.actionBand_16.triggered.connect(lambda: self.get_B(band=4))
         self.ui.actionBand_17.triggered.connect(lambda: self.get_B(band=5))
         self.ui.actionBand_18.triggered.connect(lambda: self.get_B(band=6))
-
-        # # Select Spatial Extent
-        # self.ui.action100x100.triggered.connect(lambda: self.set_extent(extent=100))
-        # self.ui.action250x250.triggered.connect(lambda: self.set_extent(extent=250))
-        # self.ui.action500x500.triggered.connect(lambda: self.set_extent(extent=500))
-        # self.ui.action1000x1000.triggered.connect(lambda: self.set_extent(extent=1000))
-        # self.ui.actionFull.triggered.connect(lambda: self.set_extent(extent='full'))
 
         self.ui.update_button.clicked.connect(self.update_image)
 
@@ -353,38 +334,9 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
         """
         try:
-            # self.sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
             self.sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Ignored)
 
-            # self.imgLabel.setSizePolicy(self.sizePolicy)
-            # self.graphics_view.setSizePolicy(self.sizePolicy)
-
-            # Maintain the image native ratio
-            # self.imgLabel.setScaledContents(False)
-
-            # Trial and error found this to be the correct way to assemble the image.  Otherwise you end up
-            # with a rotated and/or mirrored image.  This is however incredibly inefficient.  I'm leaving the code
-            # in for reference.  This took approximately 70 seconds to load a 5000x5000 pixel image.  Now it takes
-            # less than 3 seconds to load in the full extent image.
-            # for y in range(self.extent):
-            #     for x in range(self.extent):
-            #         try:
-            #             self.img.setPixel(x, y, QColor(*self.rgb[y][x]).rgb())
-            #
-            #         except:
-            #             print(sys.exc_info()[0])
-            #             print(sys.exc_info()[1])
-            #             traceback.print_tb(sys.exc_info()[2])
-
             self.pixel_map = QPixmap.fromImage(self.img)
-
-            # self.imgLabel.setPixmap(self.pixel_map.scaled(self.imgLabel.size(),
-            #                                               QtCore.Qt.KeepAspectRatio,
-            #                                               transformMode=QtCore.Qt.SmoothTransformation))
-
-            # self.graphics_view.set_image(self.pixel_map.scaled(self.graphics_view.size(),
-            #                                                    QtCore.Qt.KeepAspectRatio,
-            #                                                    transformMode=QtCore.Qt.SmoothTransformation))
 
             self.graphics_view.set_image(self.pixel_map)
 
@@ -523,30 +475,6 @@ class ARDViewerX(QtWidgets.QMainWindow):
             else:
                 self.b_check = 0
 
-    # def set_extent(self, extent):
-    #     """
-    #
-    #     :return:
-    #     """
-    #     for key in self.lookup_extent.keys():
-    #         if not key == extent:
-    #             self.lookup_extent[key].setChecked(False)
-    #
-    #     # Get only the checked extent
-    #     for key in self.lookup_extent.keys():
-    #         if self.lookup_extent[key].isChecked():
-    #             extent = key
-    #
-    #     if extent == 'full':
-    #         self.extent = self.r.shape[0]
-    #
-    #     else:
-    #         self.extent = extent
-    #
-    #     self.get_rgb()
-    #
-    #     self.display_img()
-
     def update_image(self):
         """
 
@@ -575,30 +503,6 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
         :return:
         """
-        # src = gdal.Open(self.ard_file, gdal.GA_ReadOnly)
-        #
-        # if src is None:
-        #     self.gui.ui.plainTextEdit_results.appendPlainText("Could not open {}".format(self.ard_file))
-        #
-        # self.r = src.GetRasterBand(self.bands.R).ReadAsArray()
-        # self.g = src.GetRasterBand(self.bands.G).ReadAsArray()
-        # self.b = src.GetRasterBand(self.bands.B).ReadAsArray()
-        #
-        # band_count = src.RasterCount
-        #
-        # if band_count == 7:
-        #     self.qa = src.GetRasterBand(7).ReadAsArray()
-        #
-        # elif band_count == 8:
-        #     self.qa = src.GetRasterBand(8).ReadAsArray()
-        # # TODO error handling if raster count is not 7 or 8
-        #
-        # else:
-        #     self.qa = np.zeros_like(self.r)
-        #     self.qa[self.r == -9999] = 1
-        #
-        # src = None
-
         try:
             self.r = gdal.Open(self.ard_file[self.bands.R - 1]).ReadAsArray()
             self.g = gdal.Open(self.ard_file[self.bands.G - 1]).ReadAsArray()
