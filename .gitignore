@@ -56,8 +56,10 @@ docs/_build/
 # *.UI
 Notebooks/Working/
 *.ipynb
-Testing/
 
+# Other Dev Stuff
+Testing/
 changify/
 IWDS/
 scratch/
+*.pickle
