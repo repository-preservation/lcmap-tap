@@ -136,8 +136,6 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
             point = self.mapToScene(event.pos())
 
-            print("point", point)
-
             self.image_clicked.emit(QtCore.QPointF(point))
 
         super(ImageViewer, self).mousePressEvent(event)
@@ -157,6 +155,14 @@ class ARDViewerX(QtWidgets.QMainWindow):
     # extents = [100, 250, 500, 1000, 'full']
 
     def __init__(self, ard_file, ccd, sensor, gui):
+        """
+
+        Args:
+            ard_file: List of the vsipaths associated with the current ard observation
+            ccd: 
+            sensor:
+            gui:
+        """
         super(ARDViewerX, self).__init__()
 
         # Load the main GUI code that was built in Qt Designer
@@ -176,7 +182,7 @@ class ARDViewerX(QtWidgets.QMainWindow):
         self.qa = None
         self.img = None
         self.rgb = None
-        self.rect = None
+        self.current_pixel = None
         self.new_ccd = None
 
         # Was using QLabel to display imagery before, using QGraphicsView via ImageViewer class now.
@@ -745,15 +751,18 @@ class ARDViewerX(QtWidgets.QMainWindow):
         pen = QtGui.QPen(QtCore.Qt.magenta)
         pen.setWidthF(0.1)
 
-        row = self.pixel_rowcol.row
-        col = self.pixel_rowcol.column
+        self.row = self.pixel_rowcol.row
+        self.col = self.pixel_rowcol.column
 
-        upper_left = QtCore.QPointF(col, row)
-        bottom_right = QtCore.QPointF(col + 1., row + 1.)
+        upper_left = QtCore.QPointF(self.col, self.row)
+        bottom_right = QtCore.QPointF(self.col + 1, self.row + 1)
 
-        self.rect = QtCore.QRectF(upper_left, bottom_right)
+        # self.rect = QtCore.QRectF(upper_left, bottom_right)
+        self.current_pixel = QtWidgets.QGraphicsRectItem(QtCore.QRectF(upper_left, bottom_right))
+        self.current_pixel.setPen(pen)
 
-        self.graphics_view.scene.addRect(self.rect, pen)
+        # self.graphics_view.scene.addRect(self.rect, pen)
+        self.graphics_view.scene.addItem(self.current_pixel)
 
     def update_rect(self, pos: QtCore.QPointF):
         """
@@ -764,7 +773,10 @@ class ARDViewerX(QtWidgets.QMainWindow):
         Returns:
 
         """
-        # TODO Figure out how to remove previous rectangles
+        # Remove the previous rectangle from the scene
+        if self.current_pixel:
+            self.graphics_view.scene.removeItem(self.current_pixel)
+
         pen = QtGui.QPen(QtCore.Qt.magenta)
         pen.setWidthF(0.1)
 
@@ -772,13 +784,14 @@ class ARDViewerX(QtWidgets.QMainWindow):
         self.col = int(pos.x())
 
         upper_left = QtCore.QPointF(self.col, self.row)
-        bottom_right = QtCore.QPointF(self.col + 1., self.row + 1.)
+        bottom_right = QtCore.QPointF(self.col + 1, self.row + 1)
 
-        # TODO Why doesn't moveTo work
-        # self.rect.moveTo(col, row)
-        self.rect = QtCore.QRectF(upper_left, bottom_right)
+        # self.rect = QtCore.QRectF(upper_left, bottom_right)
+        self.current_pixel = QtWidgets.QGraphicsRectItem(QtCore.QRectF(upper_left, bottom_right))
+        self.current_pixel.setPen(pen)
 
-        self.graphics_view.scene.addRect(self.rect, pen)
+        # self.graphics_view.scene.addRect(self.rect, pen)
+        self.graphics_view.scene.addItem(self.current_pixel)
 
         self.update_plot()
 
