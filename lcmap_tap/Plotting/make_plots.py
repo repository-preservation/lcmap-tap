@@ -95,7 +95,7 @@ def draw_figure(data, items):
 
     for num, b in enumerate(plot_data.keys()):
         """Make lists to contain references to the specific artist objects for the current subplot.
-        These lists are reset with each iteration, but they're current items are stored in the artist_map and
+        These lists are reset with each iteration, but their current items are stored in the artist_map and
         lines_map dictionaries at the end of the for-loop."""
 
         end_lines, break_lines, start_lines, match_lines, model_lines, date_lines = [], [], [], [], [], []
