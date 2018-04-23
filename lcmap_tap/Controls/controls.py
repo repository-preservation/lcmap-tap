@@ -63,7 +63,7 @@ class MainControls(QMainWindow):
         super(MainControls, self).__init__()
 
         # TODO Add widget for ARD
-        self.ard_directory = helper['ard_dir']
+        # self.ard_directory = helper['ard_dir']
 
         self.extracted_data = None
         self.plot_window = None
@@ -115,11 +115,11 @@ class MainControls(QMainWindow):
             None
         """
         # *** some temporary default values to make testing easier ***
-        self.ui.browseoutputline.setText(helper['test_output'])
-        self.ui.browsejsonline.setText(helper['test_json'])
-        self.ui.browsecacheline.setText(helper['test_cache'])
-        self.ui.x1line.setText(helper['test_x'])
-        self.ui.y1line.setText(helper['test_y'])
+        # self.ui.browseoutputline.setText(helper['test_output'])
+        # self.ui.browsejsonline.setText(helper['test_json'])
+        # self.ui.browsecacheline.setText(helper['test_cache'])
+        # self.ui.x1line.setText(helper['test_x'])
+        # self.ui.y1line.setText(helper['test_y'])
 
         self.check_values()
 
