@@ -145,7 +145,7 @@ class GeoInfo:
                 return float(re.sub(",", "", split[0]))
 
             # This occurs when entering a negative value; cannot convert "-" to float
-            except ValueError:
+            except (ValueError, IndexError):
                 return 0.00
 
         xpieces = xstring.split()
