@@ -6,7 +6,7 @@ from lcmap_tap.Controls.controls import MainControls
 
 
 def main():
-    session_id = "session_{}".format(MainControls.get_time())
+    # session_id = "session_{}".format(MainControls.get_time())
 
     app = QApplication(sys.argv)
 

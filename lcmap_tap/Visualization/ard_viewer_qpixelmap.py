@@ -17,6 +17,8 @@ from lcmap_tap.Visualization.rescale import Rescale
 from lcmap_tap.RetrieveData.retrieve_data import CCDReader, GeoInfo
 from lcmap_tap.RetrieveData.retrieve_data import RowColumn
 
+from lcmap_tap.Plotting import plot_functions
+
 
 class ImageViewer(QtWidgets.QGraphicsView):
     image_clicked = QtCore.pyqtSignal(QtCore.QPointF)
@@ -150,8 +152,6 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
     band_nums = [1, 2, 3, 4, 5, 6]
 
-    # extents = [100, 250, 500, 1000, 'full']
-
     def __init__(self, ard_file, ccd, sensor, gui, current_view=None):
         """
 
@@ -257,6 +257,14 @@ class ARDViewerX(QtWidgets.QMainWindow):
         self.ui.actionBand_17.triggered.connect(lambda: self.get_B(band=5))
         self.ui.actionBand_18.triggered.connect(lambda: self.get_B(band=6))
 
+        self.ui.actionNDVI.triggered.connect(lambda: self.get_index("ndvi"))
+        self.ui.actionMSAVI.triggered.connect(lambda: self.get_index("msavi"))
+        self.ui.actionEVI.triggered.connect(lambda: self.get_index("evi"))
+        self.ui.actionSAVI.triggered.connect(lambda: self.get_index("savi"))
+        self.ui.actionNDMI.triggered.connect(lambda: self.get_index("ndmi"))
+        self.ui.actionNBR.triggered.connect(lambda: self.get_index("nbr"))
+        self.ui.actionNBR_2.triggered.connect(lambda: self.get_index("nbr2"))
+
         self.ui.update_button.clicked.connect(self.update_image)
 
         self.ui.actionSave_Image.triggered.connect(self.save_img)
@@ -269,10 +277,6 @@ class ARDViewerX(QtWidgets.QMainWindow):
         self.display_img()
 
         self.make_rect()
-
-        # If a previous ARD obs. was displayed, maintain the previous view rectangle when displaying the new obs.
-        if self.current_view:
-            self.graphics_view.scene.setSceneRect(self.current_view)
 
         self.ui.zoom_button.clicked.connect(self.zoom_to_point)
 
@@ -340,6 +344,17 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
             self.graphics_view.set_image(self.pixel_map)
 
+            if self.current_view:
+
+                view_rect = self.graphics_view.viewport().rect()
+
+                scene_rect = self.graphics_view.transform().mapRect(self.current_view)
+
+                factor = min(view_rect.width() / scene_rect.width(),
+                             view_rect.height() / scene_rect.height())
+
+                self.graphics_view.scale(factor, factor)
+
         except AttributeError:
             pass
 
@@ -399,6 +414,8 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
         # Arbitrary number of times to zoom out with the mouse wheel before full extent is reset, based on a guess
         self.graphics_view._zoom = 12
+
+        self.current_view = self.graphics_view.sceneRect()
 
     def get_R(self, band):
         """
@@ -523,6 +540,65 @@ class ARDViewerX(QtWidgets.QMainWindow):
         self.img = QImage(self.rgb.data, self.r.shape[0], self.r.shape[0], self.rgb.strides[0], QImage.Format_RGB888)
 
         self.img.ndarray = self.rgb
+
+    def get_index(self, name: str):
+        """
+        Generate and display the index that was selected
+
+        Args:
+            name: The index name, used to identify the appropriate index calculation and input arguments
+
+        Returns:
+            None
+
+        """
+        index_calc = {"ndvi": {"func": plot_functions.ndvi,
+                               "args": {"R": self.ard_file[2],
+                                        "NIR": self.ard_file[3]}},
+                      "msavi": {"func": plot_functions.msavi,
+                                "args": {"R": self.ard_file[2],
+                                         "NIR": self.ard_file[3]}},
+                      "savi": {"func": plot_functions.savi,
+                               "args": {"R": self.ard_file[2],
+                                        "NIR": self.ard_file[3]}},
+                      "evi": {"func": plot_functions.evi,
+                              "args": {"B": self.ard_file[0],
+                                       "R": self.ard_file[2],
+                                       "NIR": self.ard_file[3]}},
+                      "ndmi": {"func": plot_functions.ndmi,
+                               "args": {"NIR": self.ard_file[3],
+                                        "SWIR1": self.ard_file[4]}},
+                      "nbr": {"func": plot_functions.nbr,
+                              "args": {"NIR": self.ard_file[3],
+                                       "SWIR2": self.ard_file[5]}},
+                      "nbr2": {"func": plot_functions.nbr2,
+                               "args": {"SWIR1": self.ard_file[4],
+                                        "SWIR2": self.ard_file[5]}                               }
+                      }
+
+        func = index_calc[name]["func"]
+
+        self.index = func(**vars(index_calc[name]["args"]))
+
+        # Read in the arrays required for the selected index function
+        for key in index_calc[name]["args"].keys():
+            index_calc[name]["args"][key] = gdal.Open(index_calc[name]["args"][key]).ReadAsArray()
+
+        if isinstance(self.qa, type(None)):
+            self.qa = gdal.Open(self.ard_file[-1]).ReadAsArray()
+
+        self.index_vis = np.zeros((self.r.shape[0], self.r.shape[0], 1), dtype=np.uint8)
+
+        index_rescale = Rescale(sensor=self.sensor, array=self.index, qa=self.qa)
+
+        self.index_vis[:, :, 0] = index_rescale.rescaled
+
+        self.img = QImage(self.index_vis.data, self.r.shape[0], self.r.shape[0], self.index_vis.strides[0],
+                          QImage.Format_RGB888)
+
+        self.img.ndarray = self.index_vis
+
+        self.display_img()
 
     def rescale_rgb(self, r, g, b, qa):
         """

@@ -26,7 +26,7 @@
          <x>0</x>
          <y>0</y>
          <width>633</width>
-         <height>588</height>
+         <height>597</height>
         </rect>
        </property>
       </widget>
@@ -166,8 +166,22 @@
     <addaction name="actionSave_Image"/>
     <addaction name="actionExit"/>
    </widget>
+   <widget class="QMenu" name="menuIndicies">
+    <property name="title">
+     <string>Indicies</string>
+    </property>
+    <addaction name="actionNDVI_2"/>
+    <addaction name="actionMSAVI_2"/>
+    <addaction name="actionSAVI"/>
+    <addaction name="actionEVI"/>
+    <addaction name="actionNDMI"/>
+    <addaction name="actionNBR"/>
+    <addaction name="actionNBR_2"/>
+    <addaction name="actionTC"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuImage"/>
+   <addaction name="menuIndicies"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionBand_1">
@@ -372,6 +386,46 @@
   <action name="actionExit">
    <property name="text">
     <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionNDVI_2">
+   <property name="text">
+    <string>NDVI</string>
+   </property>
+  </action>
+  <action name="actionMSAVI_2">
+   <property name="text">
+    <string>MSAVI</string>
+   </property>
+  </action>
+  <action name="actionSAVI">
+   <property name="text">
+    <string>SAVI</string>
+   </property>
+  </action>
+  <action name="actionNDMI">
+   <property name="text">
+    <string>NDMI</string>
+   </property>
+  </action>
+  <action name="actionNBR">
+   <property name="text">
+    <string>NBR</string>
+   </property>
+  </action>
+  <action name="actionEVI">
+   <property name="text">
+    <string>EVI</string>
+   </property>
+  </action>
+  <action name="actionNBR_2">
+   <property name="text">
+    <string>NBR-2</string>
+   </property>
+  </action>
+  <action name="actionTC">
+   <property name="text">
+    <string>TC</string>
    </property>
   </action>
  </widget>
