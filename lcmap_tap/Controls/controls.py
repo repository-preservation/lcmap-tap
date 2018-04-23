@@ -53,18 +53,18 @@ from lcmap_tap.Visualization.ard_viewer_qpixelmap import ARDViewerX
 
 from lcmap_tap.Visualization.maps_viewer import MapsViewer
 
-# Load in some necessary file paths
-with open('helper.yaml', 'r') as stream:
-    helper = yaml.load(stream)
+# Load in some necessary file paths - commenting this out for now
+# with open('helper.yaml', 'r') as stream:
+#     helper = yaml.load(stream)
 
 class MainControls(QMainWindow):
     def __init__(self):
 
         super(MainControls, self).__init__()
 
-        # TODO Add widget for ARD
         # self.ard_directory = helper['ard_dir']
 
+        self.ard_directory = None
         self.extracted_data = None
         self.plot_window = None
         self.maps_window = None
@@ -130,9 +130,13 @@ class MainControls(QMainWindow):
 
         self.ui.browseoutputbutton.clicked.connect(self.browseoutput)
 
+        self.ui.browseardbutton.click.connect(self.browseard)
+
         self.ui.browsecacheline.textChanged.connect(self.check_values)
 
         self.ui.browsejsonline.textChanged.connect(self.check_values)
+
+        self.ui.browseARDline.textChanged.connect(self.check_values)
 
         self.ui.x1line.textChanged.connect(self.check_values)
 
@@ -258,6 +262,7 @@ class MainControls(QMainWindow):
         # <list> List containing the text() values from each of the input widgets
         checks = [self.ui.browsecacheline.text(),
                   self.ui.browsejsonline.text(),
+                  self.ui.browseardbutton.text(),
                   self.ui.x1line.text(),
                   self.ui.y1line.text(),
                   self.ui.browseoutputline.text()]
@@ -275,7 +280,7 @@ class MainControls(QMainWindow):
                 counter += 1
 
         # If all parameters are entered, then counter will equal 6
-        if counter == 5:
+        if counter == 6:
             self.ui.plotbutton.setEnabled(True)
 
             self.set_units()
@@ -296,6 +301,16 @@ class MainControls(QMainWindow):
         cachedir = QFileDialog.getExistingDirectory(self)
 
         self.ui.browsecacheline.setText(cachedir)
+
+        return None
+
+    def browseard(self):
+        """
+        Open QFileDialog to manually browse to the directory containing ARD tarballs
+        Returns:
+
+        """
+        self.ard_directory = QFileDialog.getExistingDirectory(self)
 
         return None
 
