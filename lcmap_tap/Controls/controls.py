@@ -130,7 +130,7 @@ class MainControls(QMainWindow):
 
         self.ui.browseoutputbutton.clicked.connect(self.browseoutput)
 
-        self.ui.browseardbutton.click.connect(self.browseard)
+        self.ui.browseardbutton.clicked.connect(self.browseard)
 
         self.ui.browsecacheline.textChanged.connect(self.check_values)
 
