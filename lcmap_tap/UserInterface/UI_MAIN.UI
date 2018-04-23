@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>957</width>
-    <height>512</height>
+    <height>535</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -358,6 +358,95 @@
       </item>
      </layout>
     </item>
+    <item row="0" column="2" rowspan="15">
+     <layout class="QVBoxLayout" name="outputverticalLayout">
+      <item>
+       <widget class="QLabel" name="modelresultsLabel">
+        <property name="text">
+         <string>Model Results:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPlainTextEdit" name="plainTextEdit_results">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="clickresultsLabel">
+        <property name="text">
+         <string>Selected Observations:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QListWidget" name="clicked_listWidget">
+        <property name="alternatingRowColors">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="QPushButton" name="clearpushButton">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>75</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>75</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Clear</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="exitbutton">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>75</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>75</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Close</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </item>
     <item row="1" column="0">
      <widget class="QLabel" name="cache_label">
       <property name="text">
@@ -425,13 +514,46 @@
      </layout>
     </item>
     <item row="5" column="0">
+     <widget class="QLabel" name="label">
+      <property name="text">
+       <string>Full path to ARD .tar files</string>
+      </property>
+     </widget>
+    </item>
+    <item row="6" column="0">
+     <layout class="QHBoxLayout" name="horizontalLayout_ARD_dir">
+      <item>
+       <widget class="QLineEdit" name="browseARDline"/>
+      </item>
+      <item>
+       <widget class="QPushButton" name="browseardbutton">
+        <property name="minimumSize">
+         <size>
+          <width>25</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>25</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>...</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="7" column="0">
      <widget class="QLabel" name="output_label">
       <property name="text">
        <string>Output directory to save plots:</string>
       </property>
      </widget>
     </item>
-    <item row="6" column="0">
+    <item row="8" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout_plotsave">
       <item>
        <widget class="QLineEdit" name="browseoutputline"/>
@@ -457,7 +579,7 @@
       </item>
      </layout>
     </item>
-    <item row="7" column="1">
+    <item row="9" column="1">
      <spacer name="spacer_2">
       <property name="orientation">
        <enum>Qt::Vertical</enum>
@@ -473,7 +595,7 @@
       </property>
      </spacer>
     </item>
-    <item row="8" column="0">
+    <item row="10" column="0">
      <widget class="QRadioButton" name="radioshp">
       <property name="text">
        <string>Create Point Shapefile on Plot</string>
@@ -486,7 +608,7 @@
       </property>
      </widget>
     </item>
-    <item row="9" column="1">
+    <item row="11" column="1">
      <spacer name="spacer_3">
       <property name="orientation">
        <enum>Qt::Vertical</enum>
@@ -502,7 +624,7 @@
       </property>
      </spacer>
     </item>
-    <item row="10" column="0" colspan="2">
+    <item row="12" column="0" colspan="2">
      <widget class="QListWidget" name="listitems">
       <property name="alternatingRowColors">
        <bool>false</bool>
@@ -597,7 +719,7 @@
       </item>
      </widget>
     </item>
-    <item row="11" column="1">
+    <item row="13" column="1">
      <spacer name="spacer_4">
       <property name="orientation">
        <enum>Qt::Vertical</enum>
@@ -613,7 +735,7 @@
       </property>
      </spacer>
     </item>
-    <item row="12" column="0">
+    <item row="14" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
        <widget class="QPushButton" name="plotbutton">
@@ -701,95 +823,6 @@
       </item>
      </layout>
     </item>
-    <item row="0" column="2" rowspan="13">
-     <layout class="QVBoxLayout" name="outputverticalLayout">
-      <item>
-       <widget class="QLabel" name="modelresultsLabel">
-        <property name="text">
-         <string>Model Results:</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPlainTextEdit" name="plainTextEdit_results">
-        <property name="readOnly">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="clickresultsLabel">
-        <property name="text">
-         <string>Selected Observations:</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QListWidget" name="clicked_listWidget">
-        <property name="alternatingRowColors">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayout">
-        <item>
-         <widget class="QPushButton" name="clearpushButton">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>75</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>75</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Clear</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="exitbutton">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>75</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>75</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Close</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-     </layout>
-    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -807,10 +840,13 @@
  <tabstops>
   <tabstop>x1line</tabstop>
   <tabstop>y1line</tabstop>
+  <tabstop>comboBoxUnits</tabstop>
   <tabstop>browsecacheline</tabstop>
   <tabstop>browsecachebutton</tabstop>
   <tabstop>browsejsonline</tabstop>
   <tabstop>browsejsonbutton</tabstop>
+  <tabstop>browseARDline</tabstop>
+  <tabstop>browseardbutton</tabstop>
   <tabstop>browseoutputline</tabstop>
   <tabstop>browseoutputbutton</tabstop>
   <tabstop>radioshp</tabstop>
@@ -818,9 +854,12 @@
   <tabstop>plotbutton</tabstop>
   <tabstop>savefigpushButton</tabstop>
   <tabstop>mapButton</tabstop>
-  <tabstop>plainTextEdit_results</tabstop>
-  <tabstop>clicked_listWidget</tabstop>
+  <tabstop>clearpushButton</tabstop>
   <tabstop>exitbutton</tabstop>
+  <tabstop>clicked_listWidget</tabstop>
+  <tabstop>plainTextEdit_results</tabstop>
+  <tabstop>y2line</tabstop>
+  <tabstop>x2line</tabstop>
  </tabstops>
  <resources/>
  <connections/>
