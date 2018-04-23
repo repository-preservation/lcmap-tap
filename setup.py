@@ -17,7 +17,6 @@ setup(
 
     install_requires=[
         'matplotlib',
-        'PyQt5',
         'numpy',
         'gdal'
     ],
