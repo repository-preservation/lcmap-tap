@@ -5,16 +5,20 @@ import numpy as np
 
 
 class Rescale:
-    def __init__(self, src_file, array, qa, lower_percentile=1, upper_percentile=99):
+    def __init__(self, sensor, array, qa, lower_percentile=1, upper_percentile=99):
         self.lower_percentile = lower_percentile
 
         self.upper_percentile = upper_percentile
 
-        self.src_file = src_file
-
         self.array = array
 
+        self.sensor = sensor
+
         self.qa = qa
+
+        self.mask_clear = np.zeros_like(self.qa, dtype=np.bool)
+
+        self.mask_fill = np.copy(self.mask_clear)
 
         self.get_masks()
 
@@ -31,19 +35,10 @@ class Rescale:
     def get_masks(self):
         """
 
-        :param infile:
-        :param qa:
         :return:
         """
-        basename = os.path.basename(self.src_file)
 
-        sensor = basename[0] + basename[3]
-
-        self.mask_clear = np.zeros_like(self.qa, dtype=np.bool)
-
-        self.mask_fill = np.copy(self.mask_clear)
-
-        if sensor == "L8":
+        if self.sensor == "LC08":
             # PIXELQA 322, 324 are clear land/water obs. with low confidence cloud and low confidence cirrus
             self.mask_clear[self.qa == 322] = True
             self.mask_clear[self.qa == 324] = True
@@ -69,9 +64,6 @@ class Rescale:
     def clip_array(self):
         """
 
-        :param array:
-        :param array:
-        :param limits:
         :return:
         """
 
@@ -91,9 +83,9 @@ class Rescale:
         out_data = np.zeros_like(self.clipped, dtype=np.int32)
 
         out_data[self.mask_fill] = (
-            (self.clipped[self.mask_fill] - np.min(self.clipped[self.mask_fill])) *
-            (out_max - out_min) / (np.max(self.clipped[self.mask_fill]) -
-                                   np.min(self.clipped[self.mask_fill]))
+                (self.clipped[self.mask_fill] - np.min(self.clipped[self.mask_fill])) *
+                (out_max - out_min) / (np.max(self.clipped[self.mask_fill]) -
+                                       np.min(self.clipped[self.mask_fill]))
         )
 
         return out_data

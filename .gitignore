@@ -56,4 +56,12 @@ docs/_build/
 # *.UI
 Notebooks/Working/
 *.ipynb
+
+# Other Dev Stuff
 Testing/
+changify/
+IWDS/
+scratch/
+*.pickle
+
+helper.yaml
