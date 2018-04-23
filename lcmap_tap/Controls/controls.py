@@ -9,6 +9,7 @@ import os
 import sys
 import time
 import traceback
+import yaml
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -52,6 +53,9 @@ from lcmap_tap.Visualization.ard_viewer_qpixelmap import ARDViewerX
 
 from lcmap_tap.Visualization.maps_viewer import MapsViewer
 
+# Load in some necessary file paths
+with open('helper.yaml', 'r') as stream:
+    helper = yaml.load(stream)
 
 class MainControls(QMainWindow):
     def __init__(self):
@@ -59,7 +63,7 @@ class MainControls(QMainWindow):
         super(MainControls, self).__init__()
 
         # TODO Add widget for ARD
-        self.ard_directory = r"Z:\bulk\sites\ard_source\production"
+        self.ard_directory = helper['ard_dir']
 
         self.extracted_data = None
         self.plot_window = None
@@ -67,6 +71,7 @@ class MainControls(QMainWindow):
         self.ard_specs = None
         self.ard = None
         self.fig = None
+        self.current_view = None
 
         # Create an instance of a class that builds the user-interface, created in QT Designer and compiled with pyuic5
         self.ui = ui_main.Ui_TAPTool()
@@ -110,11 +115,11 @@ class MainControls(QMainWindow):
             None
         """
         # *** some temporary default values to make testing easier ***
-        self.ui.browseoutputline.setText(r"D:\Plot_Outputs\3.30.2018")
-        self.ui.browsejsonline.setText(r"Z:\bulk\tiles\h03v02\change\2017.08.18\json")
-        self.ui.browsecacheline.setText(r"Z:\bulk\cache\h03v02")
-        self.ui.x1line.setText("-2000417")
-        self.ui.y1line.setText("3004111")
+        self.ui.browseoutputline.setText(helper['test_output'])
+        self.ui.browsejsonline.setText(helper['test_json'])
+        self.ui.browsecacheline.setText(helper['test_cache'])
+        self.ui.x1line.setText(helper['test_x'])
+        self.ui.y1line.setText(helper['test_y'])
 
         self.check_values()
 
@@ -512,13 +517,7 @@ class MainControls(QMainWindow):
             None
         """
         # Close the previous ARDViewerX instance if one exists
-        print("point clicked: ", clicked_item)
-
-        try:
-            self.ard.close()
-
-        except AttributeError:
-            pass
+        # print("point clicked: ", clicked_item)
 
         try:
             # Don't include the processing date in the scene ID
@@ -528,7 +527,25 @@ class MainControls(QMainWindow):
 
             sensor = self.ard_specs.get_sensor(sceneID)
 
-            self.ard = ARDViewerX(ard_file=scene_files[0:7], ccd=self.extracted_data, sensor=sensor, gui=self)
+            if not self.ard:
+                self.ard = ARDViewerX(ard_file=scene_files[0:7],
+                                      ccd=self.extracted_data,
+                                      sensor=sensor,
+                                      gui=self, # Provide backwards interactions with the main GUI
+                                      # current_view=self.current_view # Send the previous view rectangle to the new image
+                                      )
+
+            else:
+                self.ard.ard_file = scene_files[0:7]
+
+                self.ard.sensor = sensor
+
+                self.ard.read_data()
+
+                self.ard.get_rgb()
+
+                self.ard.display_img()
+
 
         # TODO Enable logging
         except (AttributeError, IndexError):
