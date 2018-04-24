@@ -57,6 +57,7 @@ from lcmap_tap.Visualization.maps_viewer import MapsViewer
 # with open('helper.yaml', 'r') as stream:
 #     helper = yaml.load(stream)
 
+
 class MainControls(QMainWindow):
     def __init__(self):
 
@@ -140,7 +141,11 @@ class MainControls(QMainWindow):
 
         self.ui.x1line.textChanged.connect(self.check_values)
 
+        self.ui.x1line.textChanged.connect(self.set_units)
+
         self.ui.y1line.textChanged.connect(self.check_values)
+
+        self.ui.y1line.textChanged.connect(self.set_units)
 
         self.ui.browseoutputline.textChanged.connect(self.check_values)
 
@@ -311,6 +316,8 @@ class MainControls(QMainWindow):
 
         """
         self.ard_directory = QFileDialog.getExistingDirectory(self)
+
+        self.ui.browseARDline.setText(self.ard_directory)
 
         return None
 

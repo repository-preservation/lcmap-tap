@@ -63,9 +63,10 @@ class ARDInfo:
 
         self.v = str(v)
 
-        self.subdir = self.get_subdir()
+        # self.subdir = self.get_subdir()
 
-        self.tile_name = os.path.basename(self.subdir)
+        # self.tile_name = os.path.basename(self.subdir)
+        self.tile_name = os.path.basename(self.root)
 
         self.tarfiles = self.get_filelist()
 
@@ -100,8 +101,8 @@ class ARDInfo:
         :param ext: File extension, ".tar" by default
         :return:
         """
-        return [os.path.join(self.subdir, f) for f in os.listdir(self.subdir) if f.endswith("_SR{}".format(ext))]
-
+        # return [os.path.join(self.subdir, f) for f in os.listdir(self.subdir) if f.endswith("_SR{}".format(ext))]
+        return [os.path.join(self.root, f) for f in os.listdir(self.root) if f.endswith("_SR{}".format(ext))]
     @staticmethod
     def get_sceneid(in_file: str) -> str:
         """
