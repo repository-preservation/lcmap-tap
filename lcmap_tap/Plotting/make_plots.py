@@ -91,7 +91,10 @@ def draw_figure(data, items):
     # squeeze=False allows for plt.subplots to have a single subplot, must specify the column index as well
     # when calling a subplot e.g. axes[num, 0] for plot number 'num' and column 0
     fig, axes = plt.subplots(nrows=len(plot_data), ncols=1, figsize=(18, len(plot_data) * 5),
-                             dpi=65, squeeze=False, sharex=True, sharey=False)
+                             dpi=65, squeeze=False, sharex='none', sharey='none')
+
+    # Create an empty dict to contain references to an empty plot used for showing the clicked point
+    highlight = {}
 
     for num, b in enumerate(plot_data.keys()):
         """Make lists to contain references to the specific artist objects for the current subplot.
@@ -100,7 +103,23 @@ def draw_figure(data, items):
 
         end_lines, break_lines, start_lines, match_lines, model_lines, date_lines = [], [], [], [], [], []
 
-        obs_points, out_points, mask_points = [], [], []
+        obs_points, out_points, mask_points, empty_point = [], [], [], []
+
+        # ---- Create an empty plot to use for displaying which point is clicked later on ----
+        empty_point.append(axes[num, 0].plot([],[],
+                                             ms=12,
+                                             c="none",
+                                             marker="D",
+                                             mec="lime",
+                                             mew=1.75,
+                                             picker=3,
+                                             linewidth=0))
+
+        faux0 = axes[num, 0].plot([], [], marker="D", ms=8, color="none", mec="lime", mew=1.75,
+                                  linewidth=0, label="Selected")
+
+        artist_map[b] = empty_point[0][0]
+        print("subplot ", b, "empty_point ", empty_point[0][0])
 
         # ---- Plot the observed values within the PyCCD time range ----
         obs_points.append(axes[num, 0].scatter(x=data.dates_in[total_mask],
@@ -131,7 +150,7 @@ def draw_figure(data, items):
         # ---- Plot the observed values masked out by PyCCD ----
         mask_points.append(axes[num, 0].scatter(x=data.dates_in[~data.ccd_mask],
                                                 y=plot_data[b][0][data.date_mask][~data.ccd_mask], s=21, color="0.65",
-                                                marker="o", picker=5))
+                                                marker="o", picker=2))
 
         # Generate legend line for the masked observations; faux3 contains the line-artist but isn't used
         faux3 = axes[num, 0].plot([], [], marker="o", ms=4, color="0.65", linewidth=0,
@@ -261,17 +280,13 @@ def draw_figure(data, items):
         leg = axes[num, 0].legend(ncol=1, loc="upper left", bbox_to_anchor=(1.00, 1.00),
                                   borderaxespad=0.)
 
-        # Collect all of the plot artists together in a list of lists
-        # lines = [obs_points, out_points, mask_points, end_lines, break_lines, start_lines, match_lines,
-        #          model_lines, date_lines]
-
         """Have to check for the possibility that match_lines is empty...might be worth considering not plotting this
         at all"""
         if len(match_lines) == 0:
-            lines = [obs_points, out_points, mask_points, end_lines, break_lines, start_lines,
+            lines = [empty_point[0], obs_points, out_points, mask_points, end_lines, break_lines, start_lines,
                      model_lines, date_lines]
         else:
-            lines = [obs_points, out_points, mask_points, end_lines, break_lines, start_lines, match_lines,
+            lines = [empty_point[0], obs_points, out_points, mask_points, end_lines, break_lines, start_lines, match_lines,
                      model_lines, date_lines]
 
         # Map the legend lines to their original artists so the event picker can interact with them

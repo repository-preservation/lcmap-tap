@@ -18,7 +18,8 @@ setup(
     install_requires=[
         'matplotlib',
         'numpy',
-        'gdal'
+        'gdal',
+        'pyyaml'
     ],
 
     entry_points={'gui_scripts': ['lcmap_tap = lcmap_tap.__main__:main']},
