@@ -91,10 +91,7 @@ def draw_figure(data, items):
     # squeeze=False allows for plt.subplots to have a single subplot, must specify the column index as well
     # when calling a subplot e.g. axes[num, 0] for plot number 'num' and column 0
     fig, axes = plt.subplots(nrows=len(plot_data), ncols=1, figsize=(18, len(plot_data) * 5),
-                             dpi=65, squeeze=False, sharex='none', sharey='none')
-
-    # Create an empty dict to contain references to an empty plot used for showing the clicked point
-    highlight = {}
+                             dpi=65, squeeze=False, sharex='all', sharey='none')
 
     for num, b in enumerate(plot_data.keys()):
         """Make lists to contain references to the specific artist objects for the current subplot.
@@ -118,8 +115,8 @@ def draw_figure(data, items):
         faux0 = axes[num, 0].plot([], [], marker="D", ms=8, color="none", mec="lime", mew=1.75,
                                   linewidth=0, label="Selected")
 
+        # Store a reference to the empty point which will be used to display clicked points on the plot
         artist_map[b] = empty_point[0][0]
-        print("subplot ", b, "empty_point ", empty_point[0][0])
 
         # ---- Plot the observed values within the PyCCD time range ----
         obs_points.append(axes[num, 0].scatter(x=data.dates_in[total_mask],

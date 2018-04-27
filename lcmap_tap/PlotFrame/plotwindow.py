@@ -224,6 +224,7 @@ class PlotWindow(QtWidgets.QMainWindow):
             y = self.artist_map[artist][1]
             b = self.artist_map[artist][2]
 
+            # <class 'matplotlib.lines.Line2D'>
             highlight = self.artist_map[b]
 
             self.prev_highlight = highlight
@@ -311,7 +312,7 @@ class PlotWindow(QtWidgets.QMainWindow):
         Source: https://gist.github.com/tacaswell/3144287
 
         Args:
-            event: <scroll-event> Signal went when the scroll wheel is used inside of a plot window
+            event: <scroll-event> Signal sent when the scroll wheel is used inside of a plot window
             base_scale: <float> Default is 2, the re-scaling factor.
 
         Returns:
