@@ -1,51 +1,50 @@
-"""Sensor-dependent band specifications and other information related to the ARD stack"""
+"""Sensor-dependent band specifications and other information related to the ARD stack.  Used to construct
+useful data structures that house sceneIDs mapped to tar files and the bands contained within"""
 
 import os
 import re
-import datetime
 
-
+# <dict> Used to look-up the sensor-specific bands stored in a scene tarball.
 band_specs = {
     "LC08": {
-        "SR": {"1": "SRB2",
-               "2": "SRB3",
-               "3": "SRB4",
-               "4": "SRB5",
-               "5": "SRB6",
-               "6": "SRB7",
+        "SR": {"blue": "SRB2",
+               "green": "SRB3",
+               "red": "SRB4",
+               "nir": "SRB5",
+               "swir1": "SRB6",
+               "swir2": "SRB7",
                "qa": "PIXELQA"},
-        "BT": {"10": "BTB10",
-               "11": "BTB11"}
+        "BT": {"thermal": "BTB10"}
     },
     "LE07": {
-        "SR": {"1": "SRB1",
-               "2": "SRB2",
-               "3": "SRB3",
-               "4": "SRB4",
-               "5": "SRB5",
-               "7": "SRB7",
+        "SR": {"blue": "SRB1",
+               "green": "SRB2",
+               "red": "SRB3",
+               "nir": "SRB4",
+               "swir1": "SRB5",
+               "swir2": "SRB7",
                "qa": "PIXELQA"},
-        "BT": {"6": "BTB6"}
+        "BT": {"thermal": "BTB6"}
     },
     "LT05": {
-        "SR": {"1": "SRB1",
-               "2": "SRB2",
-               "3": "SRB3",
-               "4": "SRB4",
-               "5": "SRB5",
-               "7": "SRB7",
+        "SR": {"blue": "SRB1",
+               "green": "SRB2",
+               "red": "SRB3",
+               "nir": "SRB4",
+               "swir1": "SRB5",
+               "swir2": "SRB7",
                "qa": "PIXELQA"},
-        "BT": {"6": "BTB6"}
+        "BT": {"thermal": "BTB6"}
     },
     "LT04": {
-        "SR": {"1": "SRB1",
-               "2": "SRB2",
-               "3": "SRB3",
-               "4": "SRB4",
-               "5": "SRB5",
-               "7": "SRB7",
+        "SR": {"blue": "SRB1",
+               "green": "SRB2",
+               "red": "SRB3",
+               "nir": "SRB4",
+               "swir1": "SRB5",
+               "swir2": "SRB7",
                "qa": "PIXELQA"},
-        "BT": {"6": "BTB6"}
+        "BT": {"thermal": "BTB6"}
     },
 }
 
@@ -53,19 +52,19 @@ band_specs = {
 class ARDInfo:
     def __init__(self, root: str, h: str, v: str):
         """
-        :param h: H designator
-        :param v: V designator
-        :param root: The full path to the input root directory (Directory containing all tile sub-folders)
+
+        Args:
+            root: The full path to the tile
+            h: The tile horizontal designator
+            v: The tile vertical designator
         """
+
         self.root = root
 
         self.h = str(h)
 
         self.v = str(v)
 
-        # self.subdir = self.get_subdir()
-
-        # self.tile_name = os.path.basename(self.subdir)
         self.tile_name = os.path.basename(self.root)
 
         self.tarfiles = self.get_filelist()
@@ -84,8 +83,11 @@ class ARDInfo:
 
     def get_subdir(self) -> str:
         """
-        Return the full path to the tile subdirectory
-        :return:
+        Return the full path to the tile sub-directory
+
+        Returns:
+            The string containing the full path to a tile's sub-directory
+
         """
         if len(self.h) == 1:
             self.h = "0" + self.h
@@ -97,32 +99,53 @@ class ARDInfo:
 
     def get_filelist(self, ext: str = ".tar") -> list:
         """
-        Return a list of all files with the given extension in root indir
-        :param ext: File extension, ".tar" by default
-        :return:
+        Return a list of all files with the given extension in the self.root directory
+
+        Args:
+            ext: A file extension to look for, the default is ".tar"
+
+        Returns:
+            A list containing all files in self.root with the given extension
+
         """
-        # return [os.path.join(self.subdir, f) for f in os.listdir(self.subdir) if f.endswith("_SR{}".format(ext))]
         return [os.path.join(self.root, f) for f in os.listdir(self.root) if f.endswith("_SR{}".format(ext))]
+
     @staticmethod
     def get_sceneid(in_file: str) -> str:
         """
-        Get the scene ID for the input file
-        :param in_file: Full path to the tar file
-        :return:
+        Get the scene ID for the input tarfile
+
+        Args:
+            in_file: Full path to the input tarfile
+
+        Returns:
+            The scene ID taken from the input file name that matches a given regular expression
+
         """
         return re.search(r"\w{2}\d{2}_\w{2}_\d{6}_\d{8}", os.path.basename(in_file)).group()
 
     def get_sceneid_list(self):
         """
-        Return a list of all the unique scene IDs in the tile sub-folder
-        :return:
+        Return a list containing the unique scene IDs in the tile sub-folder
+
+        Returns:
+            A list of the scene IDs based on the list of input tarfiles
+
         """
         return [self.get_sceneid(f) for f in self.tarfiles]
 
-    def tarfile_lookup(self, prods: tuple=("SR", "BT")):
+    def tarfile_lookup(self, prods: tuple = ("SR", "BT")):
         """
-        Return a dict of scene ID: tarfiles
-        :return:
+        Return a dictionary that maps each scene ID to the full path of the product tarfiles
+        specified by the tuple 'prod'.  Default products are 'SR' and 'BT'.
+
+        Args:
+            prods: The target products to point to
+
+        Returns:
+            tarz: The dictionary whose keys are scene ID's mapped to the corresponding scene tarballs
+            for specific products, which are in turn mapped to strings containing the full path of the products
+
         """
         tarz = dict()
 
@@ -131,7 +154,6 @@ class ARDInfo:
             tarz[scene] = dict()
 
             for prod in prods:
-
                 tarz[scene][prod] = dict()
 
                 tarz[scene][prod] = os.path.split(tar)[0] + os.sep + os.path.basename(tar)[:40] + "_" + prod + ".tar"
@@ -142,34 +164,55 @@ class ARDInfo:
     def get_sensor(scene_id: str) -> str:
         """
         Determine sensor from the input filename
-        :param scene_id: The scene identifier
-        :return:
+
+        Args:
+            scene_id: The scene ID
+
+        Returns:
+            The string that matches the regular expression used to find the sensor name
+
         """
         return re.search(r"\w{2}\d{2}", scene_id).group()
 
     @staticmethod
     def get_bands(sensor: str) -> dict:
         """
-        Return a dict of sensor-specific band designations for retrieving the appropriate .tif file
-        :param sensor:
-        :return:
+        Return a dict of sensor-specific band designations for retrieving the appropriate .tif file; taken from the
+        out-scope dict 'band_specs'
+
+        Args:
+            sensor: The sensor name, used as a key in the band_specs dictionary
+
+        Returns:
+            A dictionary with the sensor-specific strings used to point to appropriate bands within the tarball
+
         """
         return band_specs[sensor]
 
     @staticmethod
     def get_vsipath(in_tar: str, band: str) -> str:
         """
-        Return the virtual file paths for the current tarball
-        :param in_tar: The full path to the scene tarball
-        :param band: The sensor specific bands
-        :return:
+        Return the virtual file path for the current tarball and band which is used by GDAL to open as a virtual
+        file path
+
+        Args:
+            in_tar: Full path to the scene's tarfile
+            band: The sensor specific band
+
+        Returns:
+            The full path to the band stored in the tarfile
+
         """
         return "/vsitar/{}".format(in_tar) + os.sep + os.path.basename(in_tar)[:40] + "_{}.tif".format(band)
 
     def get_vsipath_list(self) -> dict:
         """
-        Return a dict containing all of the vsi paths, ready to open when needed
-        :return:
+        Return a dict containing all of the vsi paths so they can be accessed as needed
+
+        Returns:
+            A dictionary whose key-value pairs are scene IDs mapped to the corresponding .tif files stored in those
+            scenes' tarfiles
+
         """
         paths = dict()
 
