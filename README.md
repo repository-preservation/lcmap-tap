@@ -110,7 +110,7 @@ virtual env
 
 Once installed, lcmap_tap can be executed directly from the command line:
 ```bash
-$activate <env-name>
+$activate env-name
 (env-name)$lcmap_tap
 ```
 
