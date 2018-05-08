@@ -81,7 +81,6 @@ the LCMAP TAP tool and its dependencies.
     
     Windows |Linux
     --------|-------
-            | 
     $activate <env-name> |$source activate <env-name>
     
 * Install the required packages
