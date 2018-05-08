@@ -5,7 +5,7 @@
 This plotting tool is being developed to provide visualization and
 analysis support of LCMAP products generated with PyCCD.  Additionally, it provides 
 plotting of time-series ARD.  Multispectral
-time-series models and calculated indices at a specified point (pixel) location
+time-series models and calculated indices at a specified point (i.e. pixel) location
 can be plotted.  The GUI provides customization for which components are included
 on the plot.  The default setting is to include all ARD observations, PyCCD time-segment
 model-fits, time-segment attributes including start, end, and break
