@@ -389,7 +389,8 @@ class MainControls(QMainWindow):
             log.debug("Duplicate dates: {}".format(data.duplicates))
 
         log.info("Plotting for tile H{:02}V{:02} at point ({}, {}) meters".format(data.geo_info.H, data.geo_info.V,
-                                                                    data.geo_info.coord.x, data.geo_info.coord.y))
+                                                                                  data.geo_info.coord.x,
+                                                                                  data.geo_info.coord.y))
 
         self.ui.plainTextEdit_results.appendPlainText("\n\nBegin Date: {}".format(data.BEGIN_DATE))
         log.info("Begin Date: {}".format(data.BEGIN_DATE))
@@ -399,7 +400,7 @@ class MainControls(QMainWindow):
 
         for num, result in enumerate(data.results["change_models"]):
             self.ui.plainTextEdit_results.appendPlainText("Result: {}".format(num + 1))
-            log.info("Result: {}".format(num+1))
+            log.info("Result: {}".format(num + 1))
 
             self.ui.plainTextEdit_results.appendPlainText(
                 "Start Date: {}".format(dt.datetime.fromordinal(result["start_day"])))
