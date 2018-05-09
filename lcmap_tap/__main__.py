@@ -1,24 +1,25 @@
 import sys
-import traceback
 from lcmap_tap.logger import log
 from PyQt5.QtWidgets import QApplication
 from lcmap_tap.Controls.controls import MainControls
 
 
-def exc_handler(type, value, tb):
+def exc_handler(exc_type, exc_value, exc_traceback):
     """
     Customized handling of top-level exceptions
     Args:
-        type: exception class
-        value: exception instance
-        tb: traceback object
+        exc_type: exception class
+        exc_value: exception instance
+        exc_traceback: traceback object
 
     Returns:
 
     """
-    log.warning("Uncaught Exception Type: {}".format(str(type)))
-    log.warning("Uncaught Exception Value: {}".format(str(value)))
-    log.warning("Uncaught Exception Traceback: {}".format(traceback.print_tb(tb)))
+    # if issubclass(exc_type, KeyboardInterrupt):
+    #     sys.__excepthook__(exc_type, exc_value, exc_traceback)
+    #     return
+
+    log.critical("Uncaught Exception: ", exc_info=(exc_type, exc_value, exc_traceback))
 
 
 sys.excepthook = exc_handler

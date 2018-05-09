@@ -50,24 +50,30 @@ from lcmap_tap.Visualization.ard_viewer_qpixelmap import ARDViewerX
 from lcmap_tap.Visualization.maps_viewer import MapsViewer
 
 # Load in some necessary file paths - commenting this out for now
-with open('helper.yaml', 'r') as stream:
-    helper = yaml.load(stream)
+if os.path.exists('helper.yaml'):
+    with open('helper.yaml', 'r') as stream:
+        helper = yaml.load(stream)
+
+else:
+    helper = None
 
 
-def exc_handler(type, value, tb):
+def exc_handler(exc_type, exc_value, exc_traceback):
     """
     Customized handling of top-level exceptions
     Args:
-        type: exception class
-        value: exception instance
-        tb: traceback object
+        exc_type: exception class
+        exc_value: exception instance
+        exc_traceback: traceback object
 
     Returns:
 
     """
-    log.warning("Uncaught Exception Type: {}".format(str(type)))
-    log.warning("Uncaught Exception Value: {}".format(str(value)))
-    log.warning("Uncaught Exception Traceback: {}".format(traceback.print_tb(tb)))
+    # if issubclass(exc_type, KeyboardInterrupt):
+    #     sys.__excepthook__(exc_type, exc_value, exc_traceback)
+    #     return
+
+    log.critical("Uncaught Exception: ", exc_info=(exc_type, exc_value, exc_traceback))
 
 
 sys.excepthook = exc_handler
@@ -80,8 +86,6 @@ class MainControls(QMainWindow):
 
         # self.ard_directory = helper['ard_dir']
 
-        self.ard_directory = None
-        # self.ard_directory = helper["ard_dir"]
         self.extracted_data = None
         self.plot_window = None
         self.maps_window = None
@@ -334,9 +338,9 @@ class MainControls(QMainWindow):
         Returns:
 
         """
-        self.ard_directory = QFileDialog.getExistingDirectory(self)
+        ard_directory = QFileDialog.getExistingDirectory(self)
 
-        self.ui.browseARDline.setText(self.ard_directory)
+        self.ui.browseARDline.setText(ard_directory)
 
         return None
 
@@ -384,33 +388,36 @@ class MainControls(QMainWindow):
 
             log.debug("Duplicate dates: {}".format(data.duplicates))
 
+        log.info("Plotting for tile H{:02}V{:02} at point ({}, {}) meters".format(data.geo_info.H, data.geo_info.V,
+                                                                    data.geo_info.coord.x, data.geo_info.coord.y))
+
         self.ui.plainTextEdit_results.appendPlainText("\n\nBegin Date: {}".format(data.BEGIN_DATE))
-        log.debug("Begin Date: {}".format(data.BEGIN_DATE))
+        log.info("Begin Date: {}".format(data.BEGIN_DATE))
 
         self.ui.plainTextEdit_results.appendPlainText("End Date: {}\n".format(data.END_DATE))
-        log.debug("End Date: {}".format(data.END_DATE))
+        log.info("End Date: {}".format(data.END_DATE))
 
         for num, result in enumerate(data.results["change_models"]):
             self.ui.plainTextEdit_results.appendPlainText("Result: {}".format(num + 1))
-            log.debug("Result: {}".format(num+1))
+            log.info("Result: {}".format(num+1))
 
             self.ui.plainTextEdit_results.appendPlainText(
                 "Start Date: {}".format(dt.datetime.fromordinal(result["start_day"])))
-            log.debug("Start Date: {}".format(dt.datetime.fromordinal(result["start_day"])))
+            log.info("Start Date: {}".format(dt.datetime.fromordinal(result["start_day"])))
 
             self.ui.plainTextEdit_results.appendPlainText(
                 "End Date: {}".format(dt.datetime.fromordinal(result["end_day"])))
-            log.debug("End Date: {}".format(dt.datetime.fromordinal(result["end_day"])))
+            log.info("End Date: {}".format(dt.datetime.fromordinal(result["end_day"])))
 
             self.ui.plainTextEdit_results.appendPlainText(
                 "Break Date: {}".format(dt.datetime.fromordinal(result["break_day"])))
-            log.debug("Break Date: {}".format(dt.datetime.fromordinal(result["break_day"])))
+            log.info("Break Date: {}".format(dt.datetime.fromordinal(result["break_day"])))
 
             self.ui.plainTextEdit_results.appendPlainText("QA: {}".format(result["curve_qa"]))
-            log.debug("QA: {}".format(result["curve_qa"]))
+            log.info("QA: {}".format(result["curve_qa"]))
 
             self.ui.plainTextEdit_results.appendPlainText("Change prob: {}\n".format(result["change_probability"]))
-            log.debug("Change prob: {}".format(result["change_probability"]))
+            log.info("Change prob: {}".format(result["change_probability"]))
 
         return None
 
@@ -430,11 +437,7 @@ class MainControls(QMainWindow):
 
         # Will raise AttributeError if this is the first plot because "p" doesn't exist yet
         except AttributeError:
-            log.warning("%s" % sys.exc_info()[0])
-
-            log.warning("%s" % sys.exc_info()[1])
-
-            log.warning("%s" % traceback.print_tb(sys.exc_info()[2]))
+            pass
 
         # If there is a problem with any of the parameters, the first erroneous parameter
         # will cause an exception to occur which will be displayed in the GUI for the user, and the tool won't close.
@@ -445,7 +448,7 @@ class MainControls(QMainWindow):
                                             cache_dir=str(self.ui.browsecacheline.text()),
                                             json_dir=str(self.ui.browsejsonline.text()))
 
-        except (IndexError, AttributeError, TypeError, ValueError):
+        except (IndexError, AttributeError, TypeError, ValueError) as e:
             # Clear the results window
             self.ui.plainTextEdit_results.clear()
 
@@ -458,9 +461,12 @@ class MainControls(QMainWindow):
                                                                                        traceback.print_tb(
                                                                                            sys.exc_info()[2])))
 
+            log.error("Plotting Raised Exception: ")
+            log.error(e, exc_info=True)
+
             return None
 
-        self.ard_specs = ARDInfo(self.ard_directory,
+        self.ard_specs = ARDInfo(self.ui.browseARDline.text(),
                                  self.extracted_data.geo_info.H,
                                  self.extracted_data.geo_info.V)
 
@@ -522,11 +528,7 @@ class MainControls(QMainWindow):
 
             except PermissionError:
 
-                log.warning("%s" % sys.exc_info()[0])
-
-                log.warning("%s" % sys.exc_info()[1])
-
-                log.warning("%s" % traceback.print_tb(sys.exc_info()[2]))
+                log.warning("Generating shapefile raised exception: ", sys.exc_info)
 
                 return None
 
@@ -604,11 +606,7 @@ class MainControls(QMainWindow):
                 self.ard.display_img()
 
         except (AttributeError, IndexError):
-            log.warning("%s" % sys.exc_info()[0])
-
-            log.warning("%s" % sys.exc_info()[1])
-
-            log.warning("%s" % traceback.print_tb(sys.exc_info()[2]))
+            log.warning("Display ARD rasied exception: ", sys.exc_info)
 
     def show_maps(self):
         """
