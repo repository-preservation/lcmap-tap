@@ -1,7 +1,35 @@
+"""Create a matplotlib figure"""
+
+import sys
+import traceback
 import datetime as dt
+import matplotlib
 from matplotlib import pyplot as plt
 from collections import OrderedDict
+from typing import Tuple
+from numpy import ndarray
+from lcmap_tap.RetrieveData.retrieve_data import CCDReader
 from lcmap_tap.Plotting import plot_functions
+from lcmap_tap.logger import log
+
+
+def exc_handler(type, value, tb):
+    """
+    Customized handling of top-level exceptions
+    Args:
+        type: exception class
+        value: exception instance
+        tb: traceback object
+
+    Returns:
+
+    """
+    log.warning("Uncaught Exception Type: {}".format(str(type)))
+    log.warning("Uncaught Exception Value: {}".format(str(value)))
+    log.warning("Uncaught Exception Traceback: {}".format(traceback.print_tb(tb)))
+
+
+sys.excepthook = exc_handler
 
 
 def get_plot_items(data, items):
@@ -25,7 +53,7 @@ def get_plot_items(data, items):
         # temp_dict = {i: data.all_lookup[i] for i in items if i in data.all_lookup.keys()}
         # Use OrderedDict
         temp_dict = [(i, data.all_lookup[i]) for i in items if i in data.all_lookup.keys()]
-        temp_dict = OrderedDict(temp_dict)
+        temp_dict = OrderedDict(temp_dict)  # Turn list of tuples into an OrderedDict
 
         for a in set_lists.keys():
             if a in items:
@@ -41,12 +69,19 @@ def get_plot_items(data, items):
         return data.all_lookup
 
 
-def draw_figure(data, items):
+def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure, dict, dict, ndarray]:
     """
-    Generate a matplotlib figure
-    :param data: class instance
-    :param items: list of strings
-    :return:
+
+    Args:
+        data: an instance of the CCDReader class, contains all of the plotting attributes and data
+        items: A list of strings representing the subplots to be plotted
+
+    Returns:
+        fig: A matplotlib.figure.Figure object
+        artist_map: A dictionary mapping the data series to plot artists, used for referencing and interactivity
+        lines_map: A dictionary mapping the legend lines to the plot artists they represent, used for interactivity
+        axes: Using squeeze=False, returns a 2D numpy array of matplotlib.axes.Axes objects
+
     """
     plt.style.use('ggplot')
 
@@ -74,27 +109,37 @@ def draw_figure(data, items):
 
     total_mask = data.total_mask
 
-    # plot_data is a dict whose keys are band names, index names, or a combination of both
-    # plot_data.key[0] contains the observed values
-    # plot_data.key[1] contains the model predicted values
+    """plot_data is a dict whose keys are band names, index names, or a combination of both
+    
+    plot_data[key][0] contains the observed values
+    
+    plot_data[key][1] contains the model predicted values
+    """
     plot_data = get_plot_items(data=data, items=items)
 
-    # Create an empty dict to contain the mapping of data series to artists
-    # artist_map.key[0] contains the x-series
-    # artist_map.key[1] contains the y-series
-    # artist_map.key[2] contains the subplot name
+    """Create an empty dict to contain the mapping of data series to artists
+    
+    artist_map[key][0] contains the x-series
+    
+    artist_map[key][1] contains the y-series
+    
+    artist_map[key][2] contains the subplot name
+    
+    The keys that are subplot names will contain an empty point used for displaying which point is selected on the plot
+    
+    All other keys are the PathCollections returned by matplotlib.axes.Axes.scatter
+    
+    """
     artist_map = {}
 
-    # Create an empty dict to contain the mapping of legend lines to plot artists
+    """Create an empty dict to contain the mapping of legend lines to plot artists"""
     lines_map = {}
 
     # squeeze=False allows for plt.subplots to have a single subplot, must specify the column index as well
-    # when calling a subplot e.g. axes[num, 0] for plot number 'num' and column 0
+    # when referencing a subplot because will always return a 2D array
+    # e.g. axes[num, 0] for plot number 'num' and column 0
     fig, axes = plt.subplots(nrows=len(plot_data), ncols=1, figsize=(18, len(plot_data) * 5),
-                             dpi=65, squeeze=False, sharex='none', sharey='none')
-
-    # Create an empty dict to contain references to an empty plot used for showing the clicked point
-    highlight = {}
+                             dpi=65, squeeze=False, sharex='all', sharey='none')
 
     for num, b in enumerate(plot_data.keys()):
         """Make lists to contain references to the specific artist objects for the current subplot.
@@ -106,7 +151,7 @@ def draw_figure(data, items):
         obs_points, out_points, mask_points, empty_point = [], [], [], []
 
         # ---- Create an empty plot to use for displaying which point is clicked later on ----
-        empty_point.append(axes[num, 0].plot([],[],
+        empty_point.append(axes[num, 0].plot([], [],
                                              ms=12,
                                              c="none",
                                              marker="D",
@@ -115,35 +160,35 @@ def draw_figure(data, items):
                                              picker=3,
                                              linewidth=0))
 
-        faux0 = axes[num, 0].plot([], [], marker="D", ms=8, color="none", mec="lime", mew=1.75,
-                                  linewidth=0, label="Selected")
+        axes[num, 0].plot([], [], marker="D", ms=8, color="none", mec="lime", mew=1.75,
+                          linewidth=0, label="Selected")
 
+        # Store a reference to the empty point which will be used to display clicked points on the plot
         artist_map[b] = empty_point[0][0]
-        print("subplot ", b, "empty_point ", empty_point[0][0])
 
-        # ---- Plot the observed values within the PyCCD time range ----
+        """ ---- Plot the observed values within the PyCCD time range ---- """
         obs_points.append(axes[num, 0].scatter(x=data.dates_in[total_mask],
                                                y=plot_data[b][0][data.date_mask][total_mask], s=44, c="green",
                                                marker="o",
                                                edgecolors="black", picker=3))
 
         # Generate legend line for the observations used by pyccd; faux1 contains the line-artist but isn't used
-        faux1 = axes[num, 0].plot([], [], marker="o", ms=8, color="green", mec="k", mew=0.3,
-                                  linewidth=0, label="Clear")
+        axes[num, 0].plot([], [], marker="o", ms=8, color="green", mec="k", mew=0.3,
+                          linewidth=0, label="Clear")
 
         # There's only ever one item in the *_points lists-a PathCollection artist-but it makes it easier to use with
         # the 2D Lines because those are lists too.  See the plotwindow.py module.
         artist_map[obs_points[0]] = [data.dates_in[total_mask], plot_data[b][0][data.date_mask][total_mask], b]
 
-        # ---- Observed values outside of the PyCCD time range ----
+        """ ---- Observed values outside of the PyCCD time range ---- """
         out_points.append(axes[num, 0].scatter(x=data.dates_out[data.fill_out],
                                                y=plot_data[b][0][~data.date_mask][data.fill_out], s=21, color="red",
                                                marker="o",
                                                edgecolors="black", picker=3))
 
         # Generate legend line for the obs. outside time range; faux2 contains the line-artist but isn't used
-        faux2 = axes[num, 0].plot([], [], marker="o", ms=4, color="red", mec="black", mew=0.3, linewidth=0,
-                                  label="Unused")
+        axes[num, 0].plot([], [], marker="o", ms=4, color="red", mec="black", mew=0.3, linewidth=0,
+                          label="Unused")
 
         artist_map[out_points[0]] = [data.dates_out[data.fill_out], plot_data[b][0][~data.date_mask][data.fill_out], b]
 
@@ -153,8 +198,8 @@ def draw_figure(data, items):
                                                 marker="o", picker=2))
 
         # Generate legend line for the masked observations; faux3 contains the line-artist but isn't used
-        faux3 = axes[num, 0].plot([], [], marker="o", ms=4, color="0.65", linewidth=0,
-                                  label="Masked")
+        axes[num, 0].plot([], [], marker="o", ms=4, color="0.65", linewidth=0,
+                          label="Masked")
 
         artist_map[mask_points[0]] = [data.dates_in[~data.ccd_mask],
                                       plot_data[b][0][data.date_mask][~data.ccd_mask], b]
@@ -163,7 +208,6 @@ def draw_figure(data, items):
         axes[num, 0].set_title('{}'.format(b))
 
         # ---- plot the model start, end, and break dates ----
-        # TODO potentially remove plotting of match_dates
         match_dates = [b for b in data.break_dates for s in data.start_dates if b == s]
 
         for ind, e in enumerate(data.end_dates):
@@ -174,7 +218,6 @@ def draw_figure(data, items):
 
             else:
                 # Plot without a label to remove duplicates in the legend
-                # TODO is there a more efficient way of doing this?
                 lines1 = axes[num, 0].axvline(e, color="maroon", linewidth=1.5)
 
                 end_lines.append(lines1)
@@ -252,18 +295,9 @@ def draw_figure(data, items):
         # Set the y-axis limits
         axes[num, 0].set_ylim([ymin, ymax])
 
-        # ---- Add x-ticks and x-tick_labels ----
-        """I think that commenting this out is for the best.  By not specifying x-labels and x-ticks, the plot will
-        generate them automatically which allows for rescaling and relabeling automatically when zooming in."""
-
-        # axes[num, 0].set_xticks(ord_time)
-
-        # axes[num, 0].set_xticklabels(x_labels, rotation=70, horizontalalignment="right")
-
         # ---- Display the x and y values where the cursor is placed on a subplot ----
         axes[num, 0].format_coord = lambda xcoord, ycoord: "({0:f}, ".format(ycoord) + \
                                                            "{0:%Y-%m-%d})".format(dt.datetime.fromordinal(int(xcoord)))
-
         # ---- Plot a vertical line at January 1 of each year on the time series ----
         for y in t_:
             if y == t_[0]:
@@ -286,8 +320,8 @@ def draw_figure(data, items):
             lines = [empty_point[0], obs_points, out_points, mask_points, end_lines, break_lines, start_lines,
                      model_lines, date_lines]
         else:
-            lines = [empty_point[0], obs_points, out_points, mask_points, end_lines, break_lines, start_lines, match_lines,
-                     model_lines, date_lines]
+            lines = [empty_point[0], obs_points, out_points, mask_points, end_lines, break_lines, start_lines,
+                     match_lines, model_lines, date_lines]
 
         # Map the legend lines to their original artists so the event picker can interact with them
         for legline, origline in zip(leg.get_lines(), lines):
@@ -299,7 +333,6 @@ def draw_figure(data, items):
 
         # With sharex=True, set all x-axis tick labels to visible
         axes[num, 0].tick_params(axis='both', which='both', labelsize=12, labelbottom=True)
-
 
     # Fill in the figure canvas
     fig.tight_layout()

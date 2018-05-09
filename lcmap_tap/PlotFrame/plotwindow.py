@@ -1,8 +1,8 @@
 """Generate a matplotlib canvas and add it to a QWidget contained in a QMainWindow.  This will provide the
 display and interactions for the PyCCD plots."""
 
+import sys
 import datetime as dt
-
 import matplotlib
 import numpy as np
 from PyQt5 import QtWidgets, QtCore
@@ -13,6 +13,29 @@ from matplotlib.collections import PathCollection
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+
+from lcmap_tap.logger import log
+
+
+def exc_handler(exc_type, exc_value, exc_traceback):
+    """
+    Customized handling of top-level exceptions
+    Args:
+        exc_type: exception class
+        exc_value: exception instance
+        exc_traceback: traceback object
+
+    Returns:
+
+    """
+    # if issubclass(exc_type, KeyboardInterrupt):
+    #     sys.__excepthook__(exc_type, exc_value, exc_traceback)
+    #     return
+
+    log.critical("Uncaught Exception: ", exc_info=(exc_type, exc_value, exc_traceback))
+
+
+sys.excepthook = exc_handler
 
 
 class MplCanvas(FigureCanvas):
@@ -224,6 +247,7 @@ class PlotWindow(QtWidgets.QMainWindow):
             y = self.artist_map[artist][1]
             b = self.artist_map[artist][2]
 
+            # <class 'matplotlib.lines.Line2D'>
             highlight = self.artist_map[b]
 
             self.prev_highlight = highlight
@@ -311,7 +335,7 @@ class PlotWindow(QtWidgets.QMainWindow):
         Source: https://gist.github.com/tacaswell/3144287
 
         Args:
-            event: <scroll-event> Signal went when the scroll wheel is used inside of a plot window
+            event: <scroll-event> Signal sent when the scroll wheel is used inside of a plot window
             base_scale: <float> Default is 2, the re-scaling factor.
 
         Returns:

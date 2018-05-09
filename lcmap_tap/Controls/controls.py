@@ -14,6 +14,8 @@ import yaml
 import matplotlib
 import matplotlib.pyplot as plt
 
+from lcmap_tap.logger import log
+
 try:
     import ogr
     import osr
@@ -26,8 +28,7 @@ except ImportError:
 
     gdal_found = False
 
-    # TODO Enable logging
-    print("GDAL not found, can't generate point shapefile.")
+    log.error("GDAL not found, cannot generate point shapefile")
 
 # Tell matplotlib to use the QT5Agg Backend
 matplotlib.use('Qt5Agg')
@@ -42,20 +43,40 @@ from lcmap_tap.RetrieveData.retrieve_data import CCDReader, GeoInfo
 
 # Import the PlotWindow class defined in the plotwindow.py module
 from lcmap_tap.PlotFrame.plotwindow import PlotWindow
-
 from lcmap_tap.Plotting import make_plots
-
 from lcmap_tap.RetrieveData.ard_info import ARDInfo
-
 from lcmap_tap.Auxiliary import projections
-
 from lcmap_tap.Visualization.ard_viewer_qpixelmap import ARDViewerX
-
 from lcmap_tap.Visualization.maps_viewer import MapsViewer
 
 # Load in some necessary file paths - commenting this out for now
-# with open('helper.yaml', 'r') as stream:
-#     helper = yaml.load(stream)
+if os.path.exists('helper.yaml'):
+    with open('helper.yaml', 'r') as stream:
+        helper = yaml.load(stream)
+
+else:
+    helper = None
+
+
+def exc_handler(exc_type, exc_value, exc_traceback):
+    """
+    Customized handling of top-level exceptions
+    Args:
+        exc_type: exception class
+        exc_value: exception instance
+        exc_traceback: traceback object
+
+    Returns:
+
+    """
+    # if issubclass(exc_type, KeyboardInterrupt):
+    #     sys.__excepthook__(exc_type, exc_value, exc_traceback)
+    #     return
+
+    log.critical("Uncaught Exception: ", exc_info=(exc_type, exc_value, exc_traceback))
+
+
+sys.excepthook = exc_handler
 
 
 class MainControls(QMainWindow):
@@ -65,7 +86,6 @@ class MainControls(QMainWindow):
 
         # self.ard_directory = helper['ard_dir']
 
-        self.ard_directory = None
         self.extracted_data = None
         self.plot_window = None
         self.maps_window = None
@@ -119,10 +139,11 @@ class MainControls(QMainWindow):
         # self.ui.browseoutputline.setText(helper['test_output'])
         # self.ui.browsejsonline.setText(helper['test_json'])
         # self.ui.browsecacheline.setText(helper['test_cache'])
+        # self.ui.browseARDline.setText(helper['ard_dir'])
         # self.ui.x1line.setText(helper['test_x'])
         # self.ui.y1line.setText(helper['test_y'])
 
-        self.check_values()
+        # self.check_values()
 
         # *** Connect the various widgets to the methods they interact with ***
         self.ui.browsecachebutton.clicked.connect(self.browsecache)
@@ -231,8 +252,10 @@ class MainControls(QMainWindow):
     def save_fig(self):
         """
         Save the current matplotlib figure to a PNG file
+
         Returns:
             None
+
         """
         if not os.path.exists(self.ui.browseoutputline.text()):
             os.makedirs(self.ui.browseoutputline.text())
@@ -245,21 +268,21 @@ class MainControls(QMainWindow):
                 os.remove(fname)
 
             except IOError:
-                # TODO Enable logging
                 return None
 
         plt.savefig(fname, bbox_inches="tight", dpi=150)
 
-        # TODO Enable logging
-        print("\nplt object saved to file {}\n".format(fname))
+        log.debug("Plot figure saved to file {}".format(fname))
 
         return None
 
     def check_values(self):
         """
         Check to make sure all of the required parameters have been entered before enabling certain buttons
+
         Returns:
             None
+
         """
         # <int> A container to keep track of how many parameters have been entered
         counter = 0
@@ -315,9 +338,9 @@ class MainControls(QMainWindow):
         Returns:
 
         """
-        self.ard_directory = QFileDialog.getExistingDirectory(self)
+        ard_directory = QFileDialog.getExistingDirectory(self)
 
-        self.ui.browseARDline.setText(self.ard_directory)
+        self.ui.browseARDline.setText(ard_directory)
 
         return None
 
@@ -356,7 +379,6 @@ class MainControls(QMainWindow):
         Returns:
             None
         """
-        # TODO Enable logging
         self.ui.plainTextEdit_results.clear()
 
         self.ui.plainTextEdit_results.appendPlainText(data.message)
@@ -364,31 +386,45 @@ class MainControls(QMainWindow):
         if data.duplicates:
             self.ui.plainTextEdit_results.appendPlainText("\n***Duplicate dates***\n{}".format(data.duplicates))
 
+            log.debug("Duplicate dates: {}".format(data.duplicates))
+
+        log.info("Plotting for tile H{:02}V{:02} at point ({}, {}) meters".format(data.geo_info.H, data.geo_info.V,
+                                                                    data.geo_info.coord.x, data.geo_info.coord.y))
+
         self.ui.plainTextEdit_results.appendPlainText("\n\nBegin Date: {}".format(data.BEGIN_DATE))
+        log.info("Begin Date: {}".format(data.BEGIN_DATE))
 
         self.ui.plainTextEdit_results.appendPlainText("End Date: {}\n".format(data.END_DATE))
+        log.info("End Date: {}".format(data.END_DATE))
 
         for num, result in enumerate(data.results["change_models"]):
             self.ui.plainTextEdit_results.appendPlainText("Result: {}".format(num + 1))
+            log.info("Result: {}".format(num+1))
 
             self.ui.plainTextEdit_results.appendPlainText(
                 "Start Date: {}".format(dt.datetime.fromordinal(result["start_day"])))
+            log.info("Start Date: {}".format(dt.datetime.fromordinal(result["start_day"])))
 
             self.ui.plainTextEdit_results.appendPlainText(
                 "End Date: {}".format(dt.datetime.fromordinal(result["end_day"])))
+            log.info("End Date: {}".format(dt.datetime.fromordinal(result["end_day"])))
 
             self.ui.plainTextEdit_results.appendPlainText(
                 "Break Date: {}".format(dt.datetime.fromordinal(result["break_day"])))
+            log.info("Break Date: {}".format(dt.datetime.fromordinal(result["break_day"])))
 
             self.ui.plainTextEdit_results.appendPlainText("QA: {}".format(result["curve_qa"]))
+            log.info("QA: {}".format(result["curve_qa"]))
 
             self.ui.plainTextEdit_results.appendPlainText("Change prob: {}\n".format(result["change_probability"]))
+            log.info("Change prob: {}".format(result["change_probability"]))
 
         return None
 
     def plot(self):
         """
         Instantiate the CCDReader class that retrieves the plotting data and generate the plots
+
         Returns:
             None
         """
@@ -412,11 +448,10 @@ class MainControls(QMainWindow):
                                             cache_dir=str(self.ui.browsecacheline.text()),
                                             json_dir=str(self.ui.browsejsonline.text()))
 
-        except (IndexError, AttributeError, TypeError, ValueError):
+        except (IndexError, AttributeError, TypeError, ValueError) as e:
             # Clear the results window
             self.ui.plainTextEdit_results.clear()
 
-            # TODO Enable logging
             # Show which exception was raised
             self.ui.plainTextEdit_results.appendPlainText("***Plotting Error***\
                                                           \n\nType of Exception: {}\
@@ -426,10 +461,12 @@ class MainControls(QMainWindow):
                                                                                        traceback.print_tb(
                                                                                            sys.exc_info()[2])))
 
+            log.error("Plotting Raised Exception: ")
+            log.error(e, exc_info=True)
+
             return None
 
-        # TODO Add a source image directory in the GUI
-        self.ard_specs = ARDInfo(self.ard_directory,
+        self.ard_specs = ARDInfo(self.ui.browseARDline.text(),
                                  self.extracted_data.geo_info.H,
                                  self.extracted_data.geo_info.V)
 
@@ -442,6 +479,7 @@ class MainControls(QMainWindow):
         # fig <matplotlib.figure> Matplotlib figure object containing all of the artists
         # artist_map <dict> mapping each specific PathCollection artist to it's underlying dataset
         # lines_map <dict> mapping artist lines and points to the legend lines
+        # axes <n
         self.fig, artist_map, lines_map, axes = make_plots.draw_figure(data=self.extracted_data, items=item_list)
 
         if not os.path.exists(self.ui.browseoutputline.text()):
@@ -489,7 +527,8 @@ class MainControls(QMainWindow):
                 os.makedirs(os.path.split(out_shp)[0])
 
             except PermissionError:
-                # TODO Enable logging
+
+                log.warning("Generating shapefile raised exception: ", sys.exc_info)
 
                 return None
 
@@ -538,9 +577,6 @@ class MainControls(QMainWindow):
         Returns:
             None
         """
-        # Close the previous ARDViewerX instance if one exists
-        # print("point clicked: ", clicked_item)
-
         try:
             # Don't include the processing date in the scene ID
             sceneID = clicked_item.text().split()[2][:23]
@@ -553,8 +589,9 @@ class MainControls(QMainWindow):
                 self.ard = ARDViewerX(ard_file=scene_files[0:7],
                                       ccd=self.extracted_data,
                                       sensor=sensor,
-                                      gui=self, # Provide backwards interactions with the main GUI
-                                      # current_view=self.current_view # Send the previous view rectangle to the new image
+                                      gui=self,  # Provide backwards interactions with the main GUI
+                                      # Send the previous view rectangle to the new image
+                                      # current_view=self.current_view
                                       )
 
             else:
@@ -568,14 +605,8 @@ class MainControls(QMainWindow):
 
                 self.ard.display_img()
 
-
-        # TODO Enable logging
         except (AttributeError, IndexError):
-            print(sys.exc_info()[0])
-
-            print(sys.exc_info()[1])
-
-            traceback.print_tb(sys.exc_info()[2])
+            log.warning("Display ARD rasied exception: ", sys.exc_info)
 
     def show_maps(self):
         """
