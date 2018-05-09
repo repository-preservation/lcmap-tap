@@ -1,4 +1,6 @@
 """Retrieve data, make it accessible via attributes of the CCDReader class"""
+
+import sys
 import datetime as dt
 import json
 import os
@@ -13,8 +15,15 @@ from osgeo import osr
 import numpy as np
 
 from lcmap_tap.Plotting import plot_functions
-
 from lcmap_tap.Auxiliary import projections
+from lcmap_tap.logger import log
+
+
+def exc_handler(exception):
+    log.exception("Exception Occurred: {}".format(str(exception[1])))
+
+
+sys.excepthook = exc_handler
 
 # Define some helper methods and data structures
 GeoExtent = namedtuple("GeoExtent", ["x_min", "y_max", "x_max", "y_min"])
@@ -286,6 +295,7 @@ class CCDReader:
         self.temp_thermal[self.fill_mask] = self.temp_thermal[self.fill_mask] * 10 - 27315
         self.data[6] = np.copy(self.temp_thermal)
 
+        # This naming convention was chosen so as to match that which is used in merlin chipmunk
         self.bands = ('blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'thermal')
         self.indices = ('ndvi', 'msavi', 'evi', 'savi', 'ndmi', 'nbr', 'nbr2')
 
