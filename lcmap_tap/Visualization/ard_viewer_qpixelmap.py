@@ -16,8 +16,27 @@ from lcmap_tap.Visualization.rescale import Rescale
 # Import the CCDReader class which retrieves json and cache data
 from lcmap_tap.RetrieveData.retrieve_data import CCDReader, GeoInfo
 from lcmap_tap.RetrieveData.retrieve_data import RowColumn
-
 from lcmap_tap.Plotting import plot_functions
+from lcmap_tap.logger import log
+
+
+def exc_handler(type, value, tb):
+    """
+    Customized handling of top-level exceptions
+    Args:
+        type: exception class
+        value: exception instance
+        tb: traceback object
+
+    Returns:
+
+    """
+    log.warning("Uncaught Exception Type: {}".format(str(type)))
+    log.warning("Uncaught Exception Value: {}".format(str(value)))
+    log.warning("Uncaught Exception Traceback: {}".format(traceback.print_tb(tb)))
+
+
+sys.excepthook = exc_handler
 
 
 class ImageViewer(QtWidgets.QGraphicsView):
@@ -578,11 +597,11 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
         func = index_calc[name]["func"]
 
-        self.index = func(**vars(index_calc[name]["args"]))
-
         # Read in the arrays required for the selected index function
         for key in index_calc[name]["args"].keys():
             index_calc[name]["args"][key] = gdal.Open(index_calc[name]["args"][key]).ReadAsArray()
+
+        self.index = func(**index_calc[name]["args"])
 
         if isinstance(self.qa, type(None)):
             self.qa = gdal.Open(self.ard_file[-1]).ReadAsArray()

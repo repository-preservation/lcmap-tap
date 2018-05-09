@@ -1,8 +1,9 @@
 """Generate a matplotlib canvas and add it to a QWidget contained in a QMainWindow.  This will provide the
 display and interactions for the PyCCD plots."""
 
+import sys
+import traceback
 import datetime as dt
-
 import matplotlib
 import numpy as np
 from PyQt5 import QtWidgets, QtCore
@@ -13,6 +14,26 @@ from matplotlib.collections import PathCollection
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+
+from lcmap_tap.logger import log
+
+def exc_handler(type, value, tb):
+    """
+    Customized handling of top-level exceptions
+    Args:
+        type: exception class
+        value: exception instance
+        tb: traceback object
+
+    Returns:
+
+    """
+    log.warning("Uncaught Exception Type: {}".format(str(type)))
+    log.warning("Uncaught Exception Value: {}".format(str(value)))
+    log.warning("Uncaught Exception Traceback: {}".format(traceback.print_tb(tb)))
+
+
+sys.excepthook = exc_handler
 
 
 class MplCanvas(FigureCanvas):

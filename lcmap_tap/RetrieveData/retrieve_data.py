@@ -1,6 +1,7 @@
 """Retrieve data, make it accessible via attributes of the CCDReader class"""
 
 import sys
+import traceback
 import datetime as dt
 import json
 import os
@@ -19,8 +20,20 @@ from lcmap_tap.Auxiliary import projections
 from lcmap_tap.logger import log
 
 
-def exc_handler(exception):
-    log.exception("Exception Occurred: {}".format(str(exception[1])))
+def exc_handler(type, value, tb):
+    """
+    Customized handling of top-level exceptions
+    Args:
+        type: exception class
+        value: exception instance
+        tb: traceback object
+
+    Returns:
+
+    """
+    log.warning("Uncaught Exception Type: {}".format(str(type)))
+    log.warning("Uncaught Exception Value: {}".format(str(value)))
+    log.warning("Uncaught Exception Traceback: {}".format(traceback.print_tb(tb)))
 
 
 sys.excepthook = exc_handler
