@@ -2,7 +2,16 @@
 useful data structures that house sceneIDs mapped to tar files and the bands contained within"""
 
 import os
+import sys
 import re
+from lcmap_tap.logger import log
+
+
+def exc_handler(exception):
+    log.exception("Exception Occurred: {}".format(str(exception[1])))
+
+
+sys.excepthook = exc_handler
 
 # <dict> Used to look-up the sensor-specific bands stored in a scene tarball.
 band_specs = {
