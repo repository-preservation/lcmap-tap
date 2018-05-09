@@ -1,18 +1,31 @@
 import sys
+import traceback
 from lcmap_tap.logger import log
 from PyQt5.QtWidgets import QApplication
 from lcmap_tap.Controls.controls import MainControls
 
 
-def exc_handler(exception):
-    log.exception("Exception Occurred: {}".format(str(exception[1])))
+def exc_handler(type, value, tb):
+    """
+    Customized handling of top-level exceptions
+    Args:
+        type: exception class
+        value: exception instance
+        tb: traceback object
 
+    Returns:
+
+    """
+    log.warning("Uncaught Exception Type: {}".format(str(type)))
+    log.warning("Uncaught Exception Value: {}".format(str(value)))
+    log.warning("Uncaught Exception Traceback: {}".format(traceback.print_tb(tb)))
+
+
+sys.excepthook = exc_handler
 
 def main():
     # Create a QApplication object, necessary to manage the GUI control flow and settings
     app = QApplication(sys.argv)
-
-    sys.excepthook = exc_handler
 
     # session_id = "session_{}".format(MainControls.get_time())
 
