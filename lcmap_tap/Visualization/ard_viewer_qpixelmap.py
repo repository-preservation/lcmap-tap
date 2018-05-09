@@ -17,6 +17,7 @@ from lcmap_tap.Visualization.rescale import Rescale
 from lcmap_tap.RetrieveData.retrieve_data import CCDReader, GeoInfo
 from lcmap_tap.RetrieveData.retrieve_data import RowColumn
 from lcmap_tap.Plotting import plot_functions
+from lcmap_tap.Visualization import tc_calculations
 from lcmap_tap.logger import log
 
 
@@ -280,6 +281,8 @@ class ARDViewerX(QtWidgets.QMainWindow):
         self.ui.actionNDMI.triggered.connect(lambda: self.get_index("ndmi"))
         self.ui.actionNBR.triggered.connect(lambda: self.get_index("nbr"))
         self.ui.actionNBR_2.triggered.connect(lambda: self.get_index("nbr2"))
+
+        self.ui.actionTC.triggered.connect(self.get_tc)
 
         self.ui.update_button.clicked.connect(self.update_image)
 
@@ -608,6 +611,33 @@ class ARDViewerX(QtWidgets.QMainWindow):
         self.rgb[:, :, 0] = index_rescale.rescaled
         self.rgb[:, :, 1] = index_rescale.rescaled
         self.rgb[:, :, 2] = index_rescale.rescaled
+
+        self.img = QImage(self.rgb.data, self.rgb[:, :, 0].shape[0], self.rgb[:, :, 0].shape[0],
+                          self.rgb.strides[0], QImage.Format_RGB888)
+
+        self.img.ndarray = self.rgb
+
+        self.display_img()
+
+    def get_tc(self):
+        """
+
+        Returns:
+
+        """
+        self.bright, self.green, self.wet = tc_calculations.get_tc_bands(self.sensor, self.ard_file)
+
+        self.bright_rs = Rescale(self.sensor, self.bright, self.qa)
+
+        self.green_rs = Rescale(self.sensor, self.green, self.qa)
+
+        self.wet_rs = Rescale(self.sensor, self.wet, self.qa)
+
+        self.rgb = np.zeros((self.r.shape[0], self.r.shape[0], 3), dtype=np.uint8)
+
+        self.rgb[:, :, 0] = self.bright_rs.rescaled
+        self.rgb[:, :, 1] = self.green_rs.rescaled
+        self.rgb[:, :, 2] = self.wet_rs.rescaled
 
         self.img = QImage(self.rgb.data, self.rgb[:, :, 0].shape[0], self.rgb[:, :, 0].shape[0],
                           self.rgb.strides[0], QImage.Format_RGB888)
