@@ -145,12 +145,10 @@ class ImageViewer(QtWidgets.QGraphicsView):
         self._mouse_button = event.button()
 
         if event.button() == QtCore.Qt.RightButton:
-
             self.toggle_drag()
 
         if self._image.isUnderMouse() and event.button() == QtCore.Qt.LeftButton \
                 and self.dragMode() == QtWidgets.QGraphicsView.NoDrag:
-
             point = self.mapToScene(event.pos())
 
             self.image_clicked.emit(QtCore.QPointF(point))
@@ -197,6 +195,7 @@ class ARDViewerX(QtWidgets.QMainWindow):
         self.qa = None
         self.img = None
         self.rgb = None
+        self.index = None
         self.current_pixel = None
         self.new_ccd = None
 
@@ -336,7 +335,6 @@ class ARDViewerX(QtWidgets.QMainWindow):
             elif os.path.splitext(browse)[1] != '':
 
                 if not any([f == os.path.splitext(browse)[1] for f in fmts]):
-
                     # If the file extension isn't valid, set it to .png instead
                     browse = os.path.splitext(browse)[0] + default_fmt
 
@@ -362,7 +360,6 @@ class ARDViewerX(QtWidgets.QMainWindow):
             self.graphics_view.set_image(self.pixel_map)
 
             if self.current_view:
-
                 view_rect = self.graphics_view.viewport().rect()
 
                 scene_rect = self.graphics_view.transform().mapRect(self.current_view)
@@ -381,6 +378,7 @@ class ARDViewerX(QtWidgets.QMainWindow):
         Returns:
 
         """
+
         def check_upper(val, limit=0):
             for i in range(50, -1, -1):
                 val_ul = val - i
@@ -569,51 +567,52 @@ class ARDViewerX(QtWidgets.QMainWindow):
             None
 
         """
+
+        def get_array(in_file):
+            return gdal.Open(in_file, gdal.GA_ReadOnly).ReadAsArray()
+
         index_calc = {"ndvi": {"func": plot_functions.ndvi,
-                               "args": {"R": self.ard_file[2],
-                                        "NIR": self.ard_file[3]}},
+                               "args": {"R": get_array(self.ard_file[2]),
+                                        "NIR": get_array(self.ard_file[3])}},
                       "msavi": {"func": plot_functions.msavi,
-                                "args": {"R": self.ard_file[2],
-                                         "NIR": self.ard_file[3]}},
+                                "args": {"R": get_array(self.ard_file[2]),
+                                         "NIR": get_array(self.ard_file[3])}},
                       "savi": {"func": plot_functions.savi,
-                               "args": {"R": self.ard_file[2],
-                                        "NIR": self.ard_file[3]}},
+                               "args": {"R": get_array(self.ard_file[2]),
+                                        "NIR": get_array(self.ard_file[3])}},
                       "evi": {"func": plot_functions.evi,
-                              "args": {"B": self.ard_file[0],
-                                       "R": self.ard_file[2],
-                                       "NIR": self.ard_file[3]}},
+                              "args": {"B": get_array(self.ard_file[0]),
+                                       "R": get_array(self.ard_file[2]),
+                                       "NIR": get_array(self.ard_file[3])}},
                       "ndmi": {"func": plot_functions.ndmi,
-                               "args": {"NIR": self.ard_file[3],
-                                        "SWIR1": self.ard_file[4]}},
+                               "args": {"NIR": get_array(self.ard_file[3]),
+                                        "SWIR1": get_array(self.ard_file[4])}},
                       "nbr": {"func": plot_functions.nbr,
-                              "args": {"NIR": self.ard_file[3],
-                                       "SWIR2": self.ard_file[5]}},
+                              "args": {"NIR": get_array(self.ard_file[3]),
+                                       "SWIR2": get_array(self.ard_file[5])}},
                       "nbr2": {"func": plot_functions.nbr2,
-                               "args": {"SWIR1": self.ard_file[4],
-                                        "SWIR2": self.ard_file[5]}                               }
+                               "args": {"SWIR1": get_array(self.ard_file[4]),
+                                        "SWIR2": get_array(self.ard_file[5])}}
                       }
 
         func = index_calc[name]["func"]
 
-        # Read in the arrays required for the selected index function
-        for key in index_calc[name]["args"].keys():
-            index_calc[name]["args"][key] = gdal.Open(index_calc[name]["args"][key]).ReadAsArray()
-
         self.index = func(**index_calc[name]["args"])
 
-        if isinstance(self.qa, type(None)):
-            self.qa = gdal.Open(self.ard_file[-1]).ReadAsArray()
-
-        self.index_vis = np.zeros((self.r.shape[0], self.r.shape[0], 1), dtype=np.uint8)
+        self.qa = get_array(self.ard_file[-1])
 
         index_rescale = Rescale(sensor=self.sensor, array=self.index, qa=self.qa)
 
-        self.index_vis[:, :, 0] = index_rescale.rescaled
+        self.rgb = np.zeros((self.r.shape[0], self.r.shape[0], 3), dtype=np.uint8)
 
-        self.img = QImage(self.index_vis.data, self.r.shape[0], self.r.shape[0], self.index_vis.strides[0],
-                          QImage.Format_RGB888)
+        self.rgb[:, :, 0] = index_rescale.rescaled
+        self.rgb[:, :, 1] = index_rescale.rescaled
+        self.rgb[:, :, 2] = index_rescale.rescaled
 
-        self.img.ndarray = self.index_vis
+        self.img = QImage(self.rgb.data, self.rgb[:, :, 0].shape[0], self.rgb[:, :, 0].shape[0],
+                          self.rgb.strides[0], QImage.Format_RGB888)
+
+        self.img.ndarray = self.rgb
 
         self.display_img()
 
