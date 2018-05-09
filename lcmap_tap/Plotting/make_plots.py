@@ -148,7 +148,7 @@ def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure,
                                              linewidth=0))
 
         axes[num, 0].plot([], [], marker="D", ms=8, color="none", mec="lime", mew=1.75,
-                                  linewidth=0, label="Selected")
+                          linewidth=0, label="Selected")
 
         # Store a reference to the empty point which will be used to display clicked points on the plot
         artist_map[b] = empty_point[0][0]
@@ -161,7 +161,7 @@ def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure,
 
         # Generate legend line for the observations used by pyccd; faux1 contains the line-artist but isn't used
         axes[num, 0].plot([], [], marker="o", ms=8, color="green", mec="k", mew=0.3,
-                                  linewidth=0, label="Clear")
+                          linewidth=0, label="Clear")
 
         # There's only ever one item in the *_points lists-a PathCollection artist-but it makes it easier to use with
         # the 2D Lines because those are lists too.  See the plotwindow.py module.
@@ -175,7 +175,7 @@ def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure,
 
         # Generate legend line for the obs. outside time range; faux2 contains the line-artist but isn't used
         axes[num, 0].plot([], [], marker="o", ms=4, color="red", mec="black", mew=0.3, linewidth=0,
-                                  label="Unused")
+                          label="Unused")
 
         artist_map[out_points[0]] = [data.dates_out[data.fill_out], plot_data[b][0][~data.date_mask][data.fill_out], b]
 
@@ -186,7 +186,7 @@ def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure,
 
         # Generate legend line for the masked observations; faux3 contains the line-artist but isn't used
         axes[num, 0].plot([], [], marker="o", ms=4, color="0.65", linewidth=0,
-                                  label="Masked")
+                          label="Masked")
 
         artist_map[mask_points[0]] = [data.dates_in[~data.ccd_mask],
                                       plot_data[b][0][data.date_mask][~data.ccd_mask], b]
