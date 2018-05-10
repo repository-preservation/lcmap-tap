@@ -135,15 +135,16 @@ class MainControls(QMainWindow):
         Returns:
             None
         """
-        # *** some temporary default values to make testing easier ***
-        # self.ui.browseoutputline.setText(helper['test_output'])
-        # self.ui.browsejsonline.setText(helper['test_json'])
-        # self.ui.browsecacheline.setText(helper['test_cache'])
-        # self.ui.browseARDline.setText(helper['ard_dir'])
-        # self.ui.x1line.setText(helper['test_x'])
-        # self.ui.y1line.setText(helper['test_y'])
+        if helper:
+            # *** some temporary default values to make testing easier ***
+            self.ui.browseoutputline.setText(helper['test_output'])
+            self.ui.browsejsonline.setText(helper['test_json'])
+            self.ui.browsecacheline.setText(helper['test_cache'])
+            self.ui.browseARDline.setText(helper['ard_dir'])
+            self.ui.x1line.setText(helper['test_x'])
+            self.ui.y1line.setText(helper['test_y'])
 
-        # self.check_values()
+            self.check_values()
 
         # *** Connect the various widgets to the methods they interact with ***
         self.ui.browsecachebutton.clicked.connect(self.browsecache)
@@ -477,10 +478,15 @@ class MainControls(QMainWindow):
         # <list> The bands and/or indices selected for plotting
         item_list = [str(i.text()) for i in self.ui.listitems.selectedItems()]
 
-        # fig <matplotlib.figure> Matplotlib figure object containing all of the artists
-        # artist_map <dict> mapping each specific PathCollection artist to it's underlying dataset
-        # lines_map <dict> mapping artist lines and points to the legend lines
-        # axes <n
+        """ 
+        fig <matplotlib.figure> Matplotlib figure object containing all of the artists
+        
+        artist_map <dict> mapping each specific PathCollection artist to it's underlying dataset
+        
+        lines_map <dict> mapping artist lines and points to the legend lines
+        
+        axes <ndarray> 2D array of matplotlib.axes.Axes objects
+        """
         self.fig, artist_map, lines_map, axes = make_plots.draw_figure(data=self.extracted_data, items=item_list)
 
         if not os.path.exists(self.ui.browseoutputline.text()):
