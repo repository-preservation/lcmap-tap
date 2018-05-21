@@ -1,7 +1,5 @@
 """
-
-set the controls.py for the heart of the sun
-
+Establish the main GUI Window using PyQt and make ready the controls for the user.
 """
 
 import datetime as dt
@@ -9,10 +7,10 @@ import os
 import sys
 import time
 import traceback
-import yaml
 
 import matplotlib
 import matplotlib.pyplot as plt
+import yaml
 
 from lcmap_tap.logger import log
 
@@ -28,7 +26,7 @@ except ImportError:
 
     gdal_found = False
 
-    log.error("GDAL not found, cannot generate point shapefile")
+    log.critical("GDAL not installed, TAP Tool will not function without GDAL")
 
 # Tell matplotlib to use the QT5Agg Backend
 matplotlib.use('Qt5Agg')
@@ -36,7 +34,7 @@ matplotlib.use('Qt5Agg')
 from PyQt5.QtWidgets import QMainWindow, QFileDialog
 
 # Import the main GUI built in QTDesigner, compiled into python with pyuic5.bat
-from lcmap_tap.UserInterface import ui_main
+from lcmap_tap.UserInterface import ui_main_dev as ui_main
 
 # Import the CCDReader class which retrieves json and cache data
 from lcmap_tap.RetrieveData.retrieve_data import CCDReader, GeoInfo
@@ -84,24 +82,6 @@ class MainControls(QMainWindow):
 
         super(MainControls, self).__init__()
 
-        # self.ard_directory = helper['ard_dir']
-
-        self.extracted_data = None
-        self.plot_window = None
-        self.maps_window = None
-        self.ard_specs = None
-        self.ard = None
-        self.fig = None
-        self.current_view = None
-
-        # Create an instance of a class that builds the user-interface, created in QT Designer and compiled with pyuic5
-        self.ui = ui_main.Ui_TAPTool()
-
-        # Call the method that adds all of the widgets to the GUI
-        self.ui.setupUi(self)
-
-        self.selected_units = self.ui.comboBoxUnits.currentText()
-
         self.units = {"Projected - Meters - Albers CONUS WGS 84": {"unit": "meters",
                                                                    "label_x1": "X (meters)",
                                                                    "label_y1": "Y (meters)",
@@ -118,6 +98,31 @@ class MainControls(QMainWindow):
                                                                                           "Albers CONUS WGS 84"}
                       }
 
+        self.extracted_data = None
+        self.plot_window = None
+        self.maps_window = None
+        self.ard_specs = None
+        self.ard = None
+        self.fig = None
+        self.current_view = None
+        self.tile = None
+        self.version = None
+        self.highlighted = None
+
+        # Create an instance of a class that builds the user-interface, created in QT Designer and compiled with pyuic5
+        self.ui = ui_main.Ui_TAPTool()
+
+        # Call the method that adds all of the widgets to the GUI
+        self.ui.setupUi(self)
+
+        self.selected_units = self.ui.comboBoxUnits.currentText()
+
+        self.drive_letter = self.ui.driveLetter_comboBox.currentText()
+
+        # Don't try to generate a shapefile if GDAL isn't installed
+        if gdal_found is False:
+            self.ui.radioshp.setEnabled(False)
+
         self.connect_widgets()
 
         self.init_ui()
@@ -125,18 +130,22 @@ class MainControls(QMainWindow):
     def init_ui(self):
         """
         Show the user interface
-        :return:
+
+        Returns:
+            None
+
         """
         self.show()
 
     def connect_widgets(self):
         """
         Connect the various widgets to the methods they interact with
+
         Returns:
             None
         """
         if helper:
-            # *** some temporary default values to make testing easier ***
+            """For testing, use some preset values if helper.yaml is found"""
             self.ui.browseoutputline.setText(helper['test_output'])
             self.ui.browsejsonline.setText(helper['test_json'])
             self.ui.browsecacheline.setText(helper['test_cache'])
@@ -147,13 +156,13 @@ class MainControls(QMainWindow):
             self.check_values()
 
         # *** Connect the various widgets to the methods they interact with ***
-        self.ui.browsecachebutton.clicked.connect(self.browsecache)
+        self.ui.browsecachebutton.clicked.connect(self.browse_cache)
 
-        self.ui.browsejsonbutton.clicked.connect(self.browsejson)
+        self.ui.browsejsonbutton.clicked.connect(self.browse_json)
 
-        self.ui.browseoutputbutton.clicked.connect(self.browseoutput)
+        self.ui.browseoutputbutton.clicked.connect(self.browse_output)
 
-        self.ui.browseardbutton.clicked.connect(self.browseard)
+        self.ui.browseardbutton.clicked.connect(self.browse_ard)
 
         self.ui.browsecacheline.textChanged.connect(self.check_values)
 
@@ -183,9 +192,73 @@ class MainControls(QMainWindow):
 
         self.ui.comboBoxUnits.currentIndexChanged.connect(self.set_units)
 
+        self.ui.driveLetter_comboBox.currentIndexChanged.connect(self.get_drive_letter)
+
+        self.ui.version_comboBox.currentIndexChanged.connect(self.set_version)
+
         self.ui.mapButton.clicked.connect(self.show_maps)
 
         return None
+
+    def get_drive_letter(self):
+        """
+        Obtain the drive letter that points to the eval server
+
+        Returns:
+            None
+
+        """
+        self.drive_letter = self.ui.driveLetter_comboBox.currentText()
+
+        log.info("Selected Drive Letter: %s" % self.drive_letter)
+
+        # Get the PyCCD Versions now that the appropriate drive letter has been selected
+        self.get_version()
+
+        # Assemble the paths to the required datasets with the version provided
+        self.assemble_paths()
+
+        # Check that the fields are populated and activate the Plot button
+        self.check_values()
+
+    def get_version(self):
+        """
+        Make a list of available PyCCD versions that exist for the current point and add them to the version_comboBox
+
+        Returns:
+            None
+
+        """
+        path = os.path.join(self.drive_letter + os.sep, 'bulk', 'tiles', self.tile, 'change')
+
+        log.info("Looking for versions in %s" % path)
+
+        if self.tile is not None:
+            # use version[1:] to strip the leading 'v' from the version string.
+            versions_present = [version[1:] for version in MapsViewer.versions
+                                if os.path.exists(os.path.join(path, version[1:]))]
+
+            log.info("PyCCD versions found: %s" % str(versions_present))
+
+            for version in versions_present:
+                self.ui.version_comboBox.addItem(version)
+
+            self.version = self.ui.version_comboBox.currentText()
+
+    def set_version(self):
+        """
+        Set the PyCCD version for creating a path to the JSON files and automatically update the path to the
+        JSON directory with the selected version
+
+        Returns:
+            None
+
+        """
+        self.version = self.ui.version_comboBox.currentText()
+
+        # Update the browsejsonline field with the selected version
+        self.ui.browsejsonline.setText(os.path.join(self.drive_letter + os.sep,
+                                                    'bulk', 'tiles', self.tile, 'change', self.version, 'json'))
 
     def clear(self):
         """
@@ -232,6 +305,7 @@ class MainControls(QMainWindow):
                                        dest=self.units[self.ui.label_units2.text()]["unit"])
 
         self.ui.x2line.setText(str(temp.x))
+
         self.ui.y2line.setText(str(temp.y))
 
     def fname_generator(self, ext=".png"):
@@ -277,6 +351,32 @@ class MainControls(QMainWindow):
 
         return None
 
+    def assemble_paths(self):
+        """
+        Generate the paths to the various required data
+
+        Returns:
+            None
+
+        """
+        geocoord = GeoInfo.get_geocoordinate(xstring=self.ui.x1line.text(),
+                                             ystring=self.ui.y1line.text())
+
+        h, v = GeoInfo.get_hv(geocoord.x, geocoord.y)
+
+        self.tile = "h{:02}v{:02}".format(h, v)
+
+        self.ui.browsecacheline.setText(os.path.join(self.drive_letter + os.sep, 'bulk', 'cache', self.tile))
+
+        self.ui.browseARDline.setText(os.path.join(self.drive_letter + os.sep, 'perf', 'production', self.tile))
+
+        if self.version is not None:
+
+            self.ui.browsejsonline.setText(os.path.join(self.drive_letter + os.sep,
+                                                        'bulk', 'tiles', self.tile, 'change', self.version, 'json'))
+
+        return None
+
     def check_values(self):
         """
         Check to make sure all of the required parameters have been entered before enabling certain buttons
@@ -296,8 +396,12 @@ class MainControls(QMainWindow):
                   self.ui.y1line.text(),
                   self.ui.browseoutputline.text()]
 
+        # If a point has been entered, attempt to assemble the necessary paths
+        if checks[3] is not "" and checks[4] is not "":
+            self.assemble_paths()
+
         # Parse through the checks list to check for entered text
-        for check in checks:
+        for ind, check in enumerate(checks):
             if check == "":
                 self.ui.plotbutton.setEnabled(False)
 
@@ -305,22 +409,35 @@ class MainControls(QMainWindow):
 
                 self.ui.savefigpushButton.setEnabled(False)
 
+            elif ind in (0, 1, 2) and not os.path.exists(check):
+                log.warning("The path %s cannot be found" % check)
+
+                self.ui.plotbutton.setEnabled(False)
+
+                self.ui.clearpushButton.setEnabled(False)
+
+                self.ui.savefigpushButton.setEnabled(False)
+
+            elif ind == 5 and not os.path.exists(check):
+                try:
+                    os.makedirs(check)
+
+                except PermissionError:
+                    log.error("Output directory does not exist and an attempt to create it raised a Permission Error."
+                              "Specify a directory where user has write privileges.")
+
             else:
                 counter += 1
 
-        # If all parameters are entered, then counter will equal 6
+        # If all parameters are entered and valid, then counter will equal 6
         if counter == 6:
             self.ui.plotbutton.setEnabled(True)
 
             self.set_units()
 
-        # Don't try to generate a shapefile if GDAL isn't installed
-        if gdal_found is False:
-            self.ui.radioshp.setEnabled(False)
-
         return None
 
-    def browsecache(self):
+    def browse_cache(self):
         """
         Open QFileDialog to manually browse to and retrieve the full path to the directory containing ARD cache files
         Returns:
@@ -333,7 +450,7 @@ class MainControls(QMainWindow):
 
         return None
 
-    def browseard(self):
+    def browse_ard(self):
         """
         Open QFileDialog to manually browse to the directory containing ARD tarballs
         Returns:
@@ -345,7 +462,7 @@ class MainControls(QMainWindow):
 
         return None
 
-    def browsejson(self):
+    def browse_json(self):
         """
         Open a QFileDialog to manually browse to and retrieve the full path to the PyCCD results directory
         Returns:
@@ -358,7 +475,7 @@ class MainControls(QMainWindow):
 
         return None
 
-    def browseoutput(self):
+    def browse_output(self):
         """
         Open a QFileDialog to manually browse to and retrieve the full path to the output directory
         Returns:
@@ -429,6 +546,7 @@ class MainControls(QMainWindow):
 
         Returns:
             None
+
         """
         # <bool> If True, generate a point shapefile for the entered coordinates
         shp_on = self.ui.radioshp.isChecked()
@@ -533,9 +651,10 @@ class MainControls(QMainWindow):
             try:
                 os.makedirs(os.path.split(out_shp)[0])
 
-            except PermissionError:
+            except PermissionError as e:
 
-                log.warning("Generating shapefile raised exception: ", sys.exc_info)
+                log.warning("Generating shapefile raised exception: ")
+                log.warning(e, exc_info=True)
 
                 return None
 
@@ -578,6 +697,7 @@ class MainControls(QMainWindow):
     def show_ard(self, clicked_item):
         """
         Display the ARD image clicked on the plot
+
         Args:
             clicked_item: <QListWidgetItem> Passed automatically by the itemClicked method of the QListWidget
 
@@ -612,23 +732,33 @@ class MainControls(QMainWindow):
 
                 self.ard.display_img()
 
-        except (AttributeError, IndexError):
-            log.warning("Display ARD rasied exception: ", sys.exc_info)
+        except (AttributeError, IndexError) as e:
+            log.warning("Display ARD raised an exception: ")
+            log.warning(e, exc_info=True)
 
     def show_maps(self):
         """
         Display the mapped products viewer
+
         Returns:
+            None
 
         """
+        version = "v" + self.version
+
+        path = os.path.join(self.drive_letter + os.sep, 'bulk', 'tiles', self.tile, 'eval')
+
         if self.ard_specs:
-            self.maps_window = MapsViewer(tile=self.ard_specs.tile_name)
+            self.maps_window = MapsViewer(tile=self.ard_specs.tile_name, root=path, ccd=self.extracted_data,
+                                          version=self.version)
 
     def exit_plot(self):
         """
         Close the GUI
+
         Returns:
             None
+
         """
         self.close()
 
