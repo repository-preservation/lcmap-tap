@@ -296,8 +296,9 @@ def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure,
         axes[num, 0].set_ylim([ymin, ymax])
 
         # ---- Display the x and y values where the cursor is placed on a subplot ----
-        axes[num, 0].format_coord = lambda xcoord, ycoord: "({0:f}, ".format(ycoord) + \
-                                                           "{0:%Y-%m-%d})".format(dt.datetime.fromordinal(int(xcoord)))
+        axes[num, 0].format_coord = lambda xcoord, ycoord: "({0:%Y-%m-%d}, ".format(
+            dt.datetime.fromordinal(int(xcoord))) + "{0:f})".format(ycoord)
+
         # ---- Plot a vertical line at January 1 of each year on the time series ----
         for y in t_:
             if y == t_[0]:
