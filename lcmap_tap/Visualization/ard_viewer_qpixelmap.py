@@ -14,7 +14,7 @@ from lcmap_tap.Visualization.ui_ard_viewer import Ui_ARDViewer
 from lcmap_tap.Visualization.rescale import Rescale
 
 # Import the CCDReader class which retrieves json and cache data
-from lcmap_tap.RetrieveData.retrieve_data import CCDReader, GeoInfo
+from lcmap_tap.RetrieveData.retrieve_data import GeoInfo
 from lcmap_tap.RetrieveData.retrieve_data import RowColumn
 from lcmap_tap.Plotting import plot_functions
 from lcmap_tap.Visualization import tc_calculations
@@ -24,12 +24,14 @@ from lcmap_tap.logger import log
 def exc_handler(exc_type, exc_value, exc_traceback):
     """
     Customized handling of top-level exceptions
+
     Args:
         exc_type: exception class
         exc_value: exception instance
         exc_traceback: traceback object
 
     Returns:
+        None
 
     """
     log.critical("Uncaught Exception: ", exc_info=(exc_type, exc_value, exc_traceback))
@@ -54,6 +56,10 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
         self._mouse_button = None
 
+        self.view_holder = None
+
+        self.rect = None
+
         self.scene.addItem(self._image)
 
         self.setScene(self.scene)
@@ -74,10 +80,10 @@ class ImageViewer(QtWidgets.QGraphicsView):
         return not self._empty
 
     def fitInView(self, scale=True, **kwargs):
-        rect = QtCore.QRectF(self._image.pixmap().rect())
+        self.rect = QtCore.QRectF(self._image.pixmap().rect())
 
-        if not rect.isNull():
-            self.setSceneRect(rect)
+        if not self.rect.isNull():
+            self.setSceneRect(self.rect)
 
             if self.has_image():
                 unity = self.transform().mapRect(QtCore.QRectF(0, 0, 1, 1))
@@ -86,17 +92,19 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
                 view_rect = self.viewport().rect()
 
-                scene_rect = self.transform().mapRect(rect)
+                scene_rect = self.transform().mapRect(self.rect)
 
                 factor = min(view_rect.width() / scene_rect.width(),
                              view_rect.height() / scene_rect.height())
 
                 self.scale(factor, factor)
 
+                self.view_holder = None
+
             self._zoom = 0
 
     def set_image(self, pixmap=None):
-        self._zoom = 0
+        # self._zoom = 0
 
         if pixmap and not pixmap.isNull():
             self._empty = False
@@ -110,15 +118,28 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
             self._image.setPixmap(QtGui.QPixmap())
 
-        self.fitInView()
+        if self.view_holder is None:
+            self.fitInView()
+
+        else:
+            view_rect = self.viewport().rect()
+
+            scene_rect = self.transform().mapRect(self.view_holder)
+
+            factor = min(view_rect.width() / scene_rect.width(),
+                         view_rect.height() / scene_rect.height())
+
+            self.scale(factor, factor)
 
     def wheelEvent(self, event: QtGui.QWheelEvent):
         if self.has_image():
             if event.angleDelta().y() > 0:
+                # angleDelta is (+), wheel is rotated forwards away from the user, zoom in
                 factor = 1.25
                 self._zoom += 1
 
             else:
+                # angleDelta is (-), wheel is rotated backwards towards the user, zoom out
                 factor = 0.8
                 self._zoom -= 1
 
@@ -297,6 +318,8 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
         self.make_rect()
 
+        self.graphics_view.fitInView()
+
         self.ui.zoom_button.clicked.connect(self.zoom_to_point)
 
         self.graphics_view.image_clicked.connect(self.update_rect)
@@ -311,11 +334,29 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
     def exit(self):
         """
-        Close the map-viewer window
+        Close the map-viewer window using File -> Exit, reset self.gui.ard to None so that clicking an observation
+        invokes a new ARD viewer window.
+
         Returns:
 
         """
+        self.gui.ard = None
+
         self.close()
+
+    def closeEvent(self, event):
+        """
+        Override the close event to perform an action when the window is closed.  In this case, it is desired to have
+        self.gui.ard be reset to None if the ARD viewer window is closed.  This way a new window will be invoked if
+        a new observation is selected for display.
+
+        Returns:
+            None
+
+        """
+        self.gui.ard = None
+
+        event.accept()
 
     def save_img(self):
         """
@@ -355,6 +396,11 @@ class ARDViewerX(QtWidgets.QMainWindow):
         Returns:
 
         """
+        # Grab the current extent of the scene view so that the next image that gets opened is in the same extent
+        self.graphics_view.view_holder = QtCore.QRectF(self.graphics_view.mapToScene(0, 0),
+                                                       self.graphics_view.mapToScene(self.graphics_view.width(),
+                                                                                     self.graphics_view.height()))
+
         try:
             self.sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Ignored)
 
@@ -362,15 +408,21 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
             self.graphics_view.set_image(self.pixel_map)
 
-            if self.current_view:
-                view_rect = self.graphics_view.viewport().rect()
+            view_rect = self.graphics_view.viewport().rect()
 
-                scene_rect = self.graphics_view.transform().mapRect(self.current_view)
+            scene_rect = self.graphics_view.transform().mapRect(self.graphics_view.view_holder)
 
-                factor = min(view_rect.width() / scene_rect.width(),
-                             view_rect.height() / scene_rect.height())
+            factor = min(view_rect.width() / scene_rect.width(),
+                         view_rect.height() / scene_rect.height())
 
-                self.graphics_view.scale(factor, factor)
+            self.graphics_view.scale(factor, factor)
+
+            # Set the scene rectangle to the original image size, which may be larger than the current view rect
+
+            if not self.graphics_view.rect.isNull():
+                self.graphics_view.setSceneRect(self.graphics_view.rect)
+
+                log.debug("self.graphics_view.rect used to set SceneRect")
 
         except AttributeError:
             pass
@@ -378,10 +430,11 @@ class ARDViewerX(QtWidgets.QMainWindow):
     def zoom_to_point(self):
         """
         Zoom to the selected point
+
         Returns:
+            None
 
         """
-
         def check_upper(val, limit=0):
             for i in range(50, -1, -1):
                 val_ul = val - i
@@ -431,9 +484,15 @@ class ARDViewerX(QtWidgets.QMainWindow):
         self.graphics_view.centerOn(self.current_pixel)
 
         # Arbitrary number of times to zoom out with the mouse wheel before full extent is reset, based on a guess
-        self.graphics_view._zoom = 12
+        self.graphics_view._zoom = 18
 
-        self.current_view = self.graphics_view.sceneRect()
+        self.graphics_view.view_holder = QtCore.QRectF(self.graphics_view.mapToScene(0, 0),
+                                                       self.graphics_view.mapToScene(self.width(),
+                                                                                     self.graphics_view.height()))
+
+        # Set the scene rectangle to the original image size, which may be larger than the current view rect
+        if not self.graphics_view.rect.isNull():
+            self.graphics_view.setSceneRect(self.graphics_view.rect)
 
     def get_R(self, band):
         """
@@ -700,49 +759,66 @@ class ARDViewerX(QtWidgets.QMainWindow):
         Returns:
 
         """
-        # Remove the previous rectangle from the scene
-        if self.current_pixel:
-            self.graphics_view.scene.removeItem(self.current_pixel)
+        # Only draw a new plot and update the rectangle if this option is selected
+        if self.ui.radioPlot.isChecked():
+            # Remove the previous rectangle from the scene
+            if self.current_pixel:
+                self.graphics_view.scene.removeItem(self.current_pixel)
 
-        pen = QtGui.QPen(QtCore.Qt.magenta)
-        pen.setWidthF(0.1)
+            pen = QtGui.QPen(QtCore.Qt.magenta)
+            pen.setWidthF(0.1)
 
-        self.row = int(pos.y())
-        self.col = int(pos.x())
+            self.row = int(pos.y())
+            self.col = int(pos.x())
 
-        upper_left = QtCore.QPointF(self.col, self.row)
-        bottom_right = QtCore.QPointF(self.col + 1, self.row + 1)
+            upper_left = QtCore.QPointF(self.col, self.row)
+            bottom_right = QtCore.QPointF(self.col + 1, self.row + 1)
 
-        # self.rect = QtCore.QRectF(upper_left, bottom_right)
-        self.current_pixel = QtWidgets.QGraphicsRectItem(QtCore.QRectF(upper_left, bottom_right))
-        self.current_pixel.setPen(pen)
+            # self.rect = QtCore.QRectF(upper_left, bottom_right)
+            self.current_pixel = QtWidgets.QGraphicsRectItem(QtCore.QRectF(upper_left, bottom_right))
+            self.current_pixel.setPen(pen)
 
-        # self.graphics_view.scene.addRect(self.rect, pen)
-        self.graphics_view.scene.addItem(self.current_pixel)
+            # self.graphics_view.scene.addRect(self.rect, pen)
+            self.graphics_view.scene.addItem(self.current_pixel)
 
-        time.sleep(1)
+            time.sleep(1)
 
-        self.update_plot()
+            self.update_plot()
 
     def update_plot(self):
+        """
+        Generate a new plot for the clicked point location
+
+        Returns:
+            None
+
+        """
+        prev_highlight = self.gui.plot_window.prev_highlight
+        log.debug("Prev highlight: %s" % prev_highlight)
+
+        prev_artist_data = self.gui.plot_window.artist_data
+        log.debug("Prev Artist Data: %s" % prev_artist_data)
 
         rowcol = RowColumn(row=self.row, column=self.col)
 
         coords = GeoInfo.rowcol_to_geo(affine=self.ccd.geo_info.PIXEL_AFFINE,
                                        rowcol=rowcol)
 
-        print("coords", coords)
-        print("coords type", type(coords), type(coords.x), type(coords.y))
-
-        self.new_ccd = CCDReader(x=coords.x,
-                                 y=coords.y,
-                                 units="meters",
-                                 cache_dir=self.ccd.cache_dir,
-                                 json_dir=self.ccd.json_dir)
+        log.info("New point selected: %s" % str(coords))
 
         self.gui.ui.x1line.setText(str(coords.x))
+
         self.gui.ui.y1line.setText(str(coords.y))
 
         self.gui.check_values()
 
         self.gui.plot()
+
+        self.gui.plot_window.prev_highlight = prev_highlight
+
+        self.gui.plot_window.prev_highlight.set_data(prev_artist_data[0],
+                                                     prev_artist_data[1][0])
+
+        self.gui.plot_window.canvas.draw()
+
+
