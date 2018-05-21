@@ -101,7 +101,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
             self._zoom = 0
 
     def set_image(self, pixmap=None):
-        self._zoom = 0
+        # self._zoom = 0
 
         if pixmap and not pixmap.isNull():
             self._empty = False
@@ -639,7 +639,7 @@ class MapsViewer(QMainWindow):
         self.graphics_view.centerOn(self.current_pixel)
 
         # Arbitrary number of times to zoom out with the mouse wheel before full extent is reset, based on a guess
-        self.graphics_view._zoom = 12
+        self.graphics_view._zoom = 18
 
         # self.current_view = self.graphics_view.sceneRect()
 
