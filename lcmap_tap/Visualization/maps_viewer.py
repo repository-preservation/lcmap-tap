@@ -9,13 +9,13 @@ import glob
 # matplotlib.use("Qt5Agg")
 
 from PyQt5 import QtCore, QtWidgets, QtGui
-from PyQt5.QtGui import QPixmap  # , QImage, QActionEvent
+from PyQt5.QtGui import QPixmap, QImage, QActionEvent
 from PyQt5.QtWidgets import QMainWindow, QSlider  # QFileDialog, QSizePolicy, QLabel, QAction
 
 # import matplotlib.pyplot as plt
 # from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
-from lcmap_tap.Visualization.ui_maps_viewer import Ui_MapViewer
+from lcmap_tap.Visualization.ui_maps_viewer_dev import Ui_MapViewer
 from lcmap_tap.logger import log
 
 
@@ -53,6 +53,8 @@ class ImageViewer(QtWidgets.QGraphicsView):
         self._image = QtWidgets.QGraphicsPixmapItem()
 
         self._mouse_button = None
+
+        self.view_holder = None
 
         self.scene.addItem(self._image)
 
@@ -93,6 +95,9 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
                 self.scale(factor, factor)
 
+                # Reset the view holder to None
+                self.view_holder = None
+
             self._zoom = 0
 
     def set_image(self, pixmap=None):
@@ -110,7 +115,18 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
             self._image.setPixmap(QtGui.QPixmap())
 
-        self.fitInView()
+        if not self.view_holder:
+            self.fitInView()
+
+        else:
+            view_rect = self.viewport().rect()
+
+            scene_rect = self.transform().mapRect(self.view_holder)
+
+            factor = min(view_rect.width() / scene_rect.width(),
+                         view_rect.height() / scene_rect.height())
+
+            self.scale(factor, factor)
 
     def wheelEvent(self, event: QtGui.QWheelEvent):
         if self.has_image():
@@ -131,6 +147,8 @@ class ImageViewer(QtWidgets.QGraphicsView):
             else:
                 self._zoom = 0
 
+        self.view_holder = QtCore.QRectF(self.mapToScene(0, 0), self.mapToScene(self.width(), self.height()))
+
     def toggle_drag(self):
         if self.dragMode() == QtWidgets.QGraphicsView.ScrollHandDrag:
             self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
@@ -146,15 +164,13 @@ class ImageViewer(QtWidgets.QGraphicsView):
         self._mouse_button = event.button()
 
         if event.button() == QtCore.Qt.RightButton:
-
             self.toggle_drag()
 
         if self._image.isUnderMouse() and event.button() == QtCore.Qt.LeftButton \
                 and self.dragMode() == QtWidgets.QGraphicsView.NoDrag:
-
             point = self.mapToScene(event.pos())
 
-            print("point", point)
+            log.debug("point %s" % str(point))
 
             self.image_clicked.emit(QtCore.QPointF(point))
 
@@ -168,6 +184,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
 
 class MapsViewer(QMainWindow):
+    """A dict used to reference the various products that were generated for LCMAP evaluations"""
     products = {"Change DOY": {"type": "ChangeMaps",
                                "alias": "ChangeMap_color",
                                "root": ""},
@@ -204,19 +221,44 @@ class MapsViewer(QMainWindow):
                                                     "alias": "CoverConfSec_color",
                                                     "root": ""}
                 }
+    """ Versions listed from highest to lowest priority.  Getting away from this so that the user can specify
+    which version they want to use.  Need to handle the presence of the 'v' in these names because it's only
+    there for the eval -> products.  The version subdirectories located in change don't contain the 'v'. 
+    """
+    versions = ["v2017.08.18", "v2017.8.18", "v2017.6.20-a", "v2017.6.20", "v2017.06.20", "v2017.6.8", "v1.4.0"]
 
-    # versions listed from highest to lowest priority
-    versions = ["v2017.08.18", "v2017.8.18", "v2017.6.20-a", "v2017.6.20", "v2017.6.8", "v1.4.0"]
-
-    def __init__(self, tile, begin_year=1984, end_year=2015, root=r"Z:\bulk\tiles"):
+    def __init__(self, tile, root, ccd, version, begin_year=1984, end_year=2015):
 
         super(MapsViewer, self).__init__()
 
         self.tile = tile
 
-        self.root_dir = root + os.sep + self.tile + os.sep + "eval"
+        self.root = root
 
-        self.version = self.get_version()
+        self.ccd = ccd
+
+        self.current_pixel = None
+
+        self.pixel_rowcol = self.ccd.geo_info.geo_to_rowcol(affine=self.ccd.geo_info.PIXEL_AFFINE,
+                                                            coord=self.ccd.geo_info.coord)
+
+        self.row = self.pixel_rowcol.row
+
+        self.col = self.pixel_rowcol.column
+
+        log.debug("MAP VIEWER, pixel_rowcol: %s" % str(self.pixel_rowcol))
+
+        if not os.path.exists(os.path.join(self.root, version)):
+            self.version = self.get_version()
+
+        else:
+            self.version = version
+
+        self.root = os.path.join(self.root, self.version)
+
+        log.info("MAP VIEWER using version %s" % self.version)
+
+        log.debug("MAP VIEWER, root: %s" % self.root)
 
         self.get_product_root_directories()
 
@@ -230,15 +272,7 @@ class MapsViewer(QMainWindow):
 
         self.img_list1 = list()
 
-        self.img_list2 = list()
-
-        self.img_list3 = list()
-
-        self.pixel_map1 = None
-
-        self.pixel_map2 = None
-
-        self.pixel_map3 = None
+        self.pixel_map = None
 
         self.ui.date_slider.setMinimum(begin_year)
 
@@ -257,13 +291,13 @@ class MapsViewer(QMainWindow):
 
         self.ui.date_slider.valueChanged.connect(self.date_changed)
 
-        # self.ui.comboBox.activated.connect(self.show_image)
+        self.ui.pushButton_zoom.clicked.connect(self.zoom_to_point)
 
-        self.ui.comboBox_map1.currentIndexChanged.connect(self.browse_map1)
+        self.ui.comboBox_map1.currentIndexChanged.connect(self.browse_map)
 
-        # self.ui.comboBox_map2.currentIndexChanged.connect(self.browse_map2)
-        #
-        # self.ui.comboBox_map3.currentIndexChanged.connect(self.browse_map3)
+        self.ui.exit_QPush.clicked.connect(self.exit)
+
+        self.make_rect()
 
         self.init_ui()
 
@@ -276,17 +310,19 @@ class MapsViewer(QMainWindow):
 
     def get_version(self) -> str:
         """
-        Determine which version of pyccd products to use
+        Determine which version of pyccd products to use if the selected version doesn't match with what's present
+
         Returns:
             version: The version identifier
+
         """
         for version in self.versions:
-            temp_look = self.root_dir + os.sep + version
+            temp_look = os.path.join(self.root, version)
 
             if os.path.exists(temp_look):
 
-                change_test = temp_look + os.sep + "ChangeMaps"
-                cover_test = temp_look + os.sep + "CoverMaps"
+                change_test = os.path.join(temp_look, "ChangeMaps")
+                cover_test = os.path.join(temp_look, "CoverMaps")
 
                 if os.path.exists(change_test) and os.path.exists(cover_test):
 
@@ -308,15 +344,22 @@ class MapsViewer(QMainWindow):
 
         """
         for product in self.products.keys():
-            self.products[product]["root"] = self.root_dir + os.sep + self.version + os.sep + \
-                                             self.products[product]["type"] + os.sep + self.products[product]["alias"]
+            # self.products[product]["root"] = self.root_dir + os.sep + self.version + os.sep + \
+            #                                  self.products[product]["type"] + os.sep + self.products[product]["alias"]
+
+            self.products[product]["root"] = os.path.join(self.root, self.products[product]["type"],
+                                                          self.products[product]["alias"])
+
+            log.debug("MAPS VIEWER, %s root dir: %s" % (str(product), str(self.products[product]["root"])))
 
         return None
 
     def move_left(self):
         """
         Move the slider one increment to the left
-        :return:
+
+        Returns:
+
         """
         try:
             val = self.ui.date_slider.value()
@@ -329,7 +372,9 @@ class MapsViewer(QMainWindow):
     def move_right(self):
         """
         Move the slider one increment to the right
-        :return:
+
+        Returns:
+
         """
         try:
             val = self.ui.date_slider.value()
@@ -339,32 +384,31 @@ class MapsViewer(QMainWindow):
         except (ValueError, AttributeError, KeyError):
             pass
 
-    # def root_browse(self):
-    #     """
-    #     Select a root menu that contains the different mapped products in subfolders
-    #     :return:
-    #     """
-    #     self.root_dir = QFileDialog.getExistingDirectory(self)
-    #
-    #     self.get_items()
-
     def get_items(self):
         """
         Populate the Maps Menu with the available products
-        :return:
+
+        Returns:
+            None
+
         """
         # Get the subfolders
-        product_folders = []
-        for root, folders, files in os.walk(self.root_dir):
-            for folder in folders:
-                if folder == "ChangeMaps" or folder == "CoverMaps":
-                    product_folders.append(os.path.join(root, folder))
+        product_folders = list()
 
-        sub_folders = []
+        for x in os.listdir(self.root):
+            if os.path.isdir(x) and (x == "ChangeMaps" or x == "CoverMaps"):
+                product_folders.append(os.path.join(self.root, x))
+
+        log.debug("MAPS VIEWER, product_folders: %s" % str(product_folders))
+
+        sub_folders = list()
+
         for prod_folder in product_folders:
             for root, folders, files in os.walk(prod_folder):
                 for folder in folders:
                     sub_folders.append(os.path.join(root, folder))
+
+        log.debug("MAPS VIEWER, sub_folders: %s" % str(sub_folders))
 
     def show_image(self, key, imgs=None):
         """
@@ -380,16 +424,20 @@ class MapsViewer(QMainWindow):
 
         input_dir = self.action_mapper1[key][1]
 
+        log.debug("MAPS VIEWER, show_image-> input_dir: %s" % input_dir)
+
         if imgs is None:
             imgs = glob.glob(input_dir + os.sep + "*.tif")
 
-        self.pixel_map1 = QPixmap(imgs[0])
+        log.debug("MAPS VIEWER, show_image-> imgs: %s" % str(imgs))
 
-        # self.ui.map1_QLabel.setPixmap(self.pixel_map1.scaled(self.ui.map1_QLabel.size(),
+        self.pixel_map = QPixmap(imgs[0])
+
+        # self.ui.map1_QLabel.setPixmap(self.pixel_map.scaled(self.ui.map1_QLabel.size(),
         #                                                      QtCore.Qt.KeepAspectRatio,
         #                                                      transformMode=QtCore.Qt.SmoothTransformation))
 
-        self.graphics_view.set_image(self.pixel_map1)
+        self.graphics_view.set_image(self.pixel_map)
 
     def date_changed(self, value):
         """
@@ -400,37 +448,33 @@ class MapsViewer(QMainWindow):
         """
         self.ui.show_date.setText(str(value))
 
+        # Grab the current extent of the scene view so that the next image that gets opened is in the same extent
+        self.graphics_view.view_holder = QtCore.QRectF(self.graphics_view.mapToScene(0, 0),
+                                                       self.graphics_view.mapToScene(self.graphics_view.width(),
+                                                                                     self.graphics_view.height()))
+
         try:
             temp1 = [img for img in self.img_list1 if str(value) in img][0]
-            self.pixel_map1 = QPixmap(temp1)
+            self.pixel_map = QPixmap(temp1)
 
-            # self.ui.map1_QLabel.setPixmap(self.pixel_map1.scaled(self.ui.map1_QLabel.size(),
+            # self.ui.map1_QLabel.setPixmap(self.pixel_map.scaled(self.ui.map1_QLabel.size(),
             #                                                      QtCore.Qt.KeepAspectRatio,
             #                                                      transformMode=QtCore.Qt.SmoothTransformation))
 
-            self.graphics_view.set_image(self.pixel_map1)
+            self.graphics_view.set_image(self.pixel_map)
+
+            if self.graphics_view.view_holder:
+                view_rect = self.graphics_view.viewport().rect()
+
+                scene_rect = self.graphics_view.transform().mapRect(self.graphics_view.view_holder)
+
+                factor = min(view_rect.width() / scene_rect.width(),
+                             view_rect.height() / scene_rect.height())
+
+                self.graphics_view.scale(factor, factor)
 
         except (TypeError, IndexError, AttributeError):
             pass
-
-        # try:
-        #     temp2 = [img for img in self.img_list2 if str(value) in img][0]
-        #     self.pixel_map2 = QPixmap(temp2)
-        #     self.ui.map2_QLabel.setPixmap(self.pixel_map2.scaled(self.ui.map2_QLabel.size(),
-        #                                                          QtCore.Qt.KeepAspectRatio,
-        #                                                          transformMode=QtCore.Qt.SmoothTransformation))
-        # except (TypeError, IndexError, AttributeError):
-        #     pass
-        #
-        # try:
-        #     temp3 = [img for img in self.img_list3 if str(value) in img][0]
-        #     self.pixel_map3 = QPixmap(temp3)
-        #     self.ui.map3_QLabel.setPixmap(self.pixel_map3.scaled(self.ui.map3_QLabel.size(),
-        #                                                          QtCore.Qt.KeepAspectRatio,
-        #                                                          transformMode=QtCore.Qt.SmoothTransformation))
-        #
-        # except (TypeError, IndexError, AttributeError):
-        #     pass
 
     def get_product_specs(self, product):
         """
@@ -476,14 +520,23 @@ class MapsViewer(QMainWindow):
             else:
                 return cat, folder, temp_folder
 
-    def browse_map1(self):
+    def browse_map(self):
         """
-        Load the mapped product for Map 1
+        Load the mapped product
+
         Returns:
             None
+
         """
         # <str> Represents the currently selected text in the combo box
         product = self.ui.comboBox_map1.currentText()
+
+        log.debug("MAPS VIEWER, browse_map-> product: %s" % product)
+
+        # Grab the current extent of the scene view so that the next image that gets opened is in the same extent
+        self.graphics_view.view_holder = QtCore.QRectF(self.graphics_view.mapToScene(0, 0),
+                                                       self.graphics_view.mapToScene(self.graphics_view.width(),
+                                                                                     self.graphics_view.height()))
 
         if product is not "":
 
@@ -492,66 +545,26 @@ class MapsViewer(QMainWindow):
 
                 temp = [img for img in self.img_list1 if str(self.ui.date_slider.value()) in img][0]
 
-                self.pixel_map1 = QPixmap(temp)
+                self.pixel_map = QPixmap(temp)
 
-                # self.ui.map1_QLabel.setPixmap(self.pixel_map1.scaled(self.ui.map1_QLabel.size(),
+                # self.ui.map1_QLabel.setPixmap(self.pixel_map.scaled(self.ui.map1_QLabel.size(),
                 #                                                      QtCore.Qt.KeepAspectRatio,
                 #                                                      transformMode=QtCore.Qt.SmoothTransformation))
 
-                self.graphics_view.set_image(self.pixel_map1)
+                self.graphics_view.set_image(self.pixel_map)
+
+                if self.graphics_view.view_holder:
+                    view_rect = self.graphics_view.viewport().rect()
+
+                    scene_rect = self.graphics_view.transform().mapRect(self.graphics_view.view_holder)
+
+                    factor = min(view_rect.width() / scene_rect.width(),
+                                 view_rect.height() / scene_rect.height())
+
+                    self.graphics_view.scale(factor, factor)
 
             except IndexError:
                 pass
-
-    # def browse_map2(self, index):
-    #     """
-    #     Load the mapped product for Map 2
-    #     Args:
-    #         index: comboBox index, signal automatically sent
-    #
-    #     Returns:
-    #         None
-    #     """
-    #     # <str> Represents the currently selected text in the combo box
-    #     product = self.ui.comboBox_map2.currentText()
-    #
-    #     try:
-    #         self.img_list2 = glob.glob(self.products[product]["root"] + os.sep + "*.tif")
-    #
-    #         temp = [img for img in self.img_list2 if str(self.ui.date_slider.value()) in img][0]
-    #
-    #         self.pixel_map2 = QPixmap(temp)
-    #
-    #         self.ui.map2_QLabel.setPixmap(self.pixel_map2.scaled(self.ui.map2_QLabel.size(),
-    #                                                              QtCore.Qt.KeepAspectRatio,
-    #                                                              transformMode=QtCore.Qt.SmoothTransformation))
-    #     except IndexError:
-    #         pass
-    #
-    # def browse_map3(self, index):
-    #     """
-    #     Load the mapped product for Map 3
-    #     Args:
-    #         index: comboBox index, signal automatically sent
-    #
-    #     Returns:
-    #         None
-    #     """
-    #     # <str> Represents the currently selected text in the combo box
-    #     product = self.ui.comboBox_map3.currentText()
-    #
-    #     try:
-    #         self.img_list3 = glob.glob(self.products[product]["root"] + os.sep + "*.tif")
-    #
-    #         temp = [img for img in self.img_list3 if str(self.ui.date_slider.value()) in img][0]
-    #
-    #         self.pixel_map3 = QPixmap(temp)
-    #
-    #         self.ui.map3_QLabel.setPixmap(self.pixel_map3.scaled(self.ui.map3_QLabel.size(),
-    #                                                              QtCore.Qt.KeepAspectRatio,
-    #                                                              transformMode=QtCore.Qt.SmoothTransformation))
-    #     except IndexError:
-    #         pass
 
     def resizeEvent(self, event):
         """
@@ -559,26 +572,104 @@ class MapsViewer(QMainWindow):
 
         """
         try:
-            # self.ui.map1_QLabel.setPixmap(self.pixel_map1.scaled(self.ui.map1_QLabel.size(),
-            #                                                      QtCore.Qt.KeepAspectRatio,
-            #                                                      transformMode=QtCore.Qt.SmoothTransformation))
-
             sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Ignored)
 
             self.graphics_view.setSizePolicy(sizePolicy)
 
-            self.graphics_view.set_image(self.pixel_map1)
-
-            # self.ui.map2_QLabel.setPixmap(self.pixel_map2.scaled(self.ui.map2_QLabel.size(),
-            #                                                      QtCore.Qt.KeepAspectRatio,
-            #                                                      transformMode=QtCore.Qt.SmoothTransformation))
-            #
-            # self.ui.map3_QLabel.setPixmap(self.pixel_map3.scaled(self.ui.map3_QLabel.size(),
-            #                                                      QtCore.Qt.KeepAspectRatio,
-            #                                                      transformMode=QtCore.Qt.SmoothTransformation))
+            self.graphics_view.set_image(self.pixel_map)
 
         except AttributeError:
             pass
+
+    def zoom_to_point(self):
+        """
+        Zoom to the selected point
+
+        Returns:
+            None
+
+        """
+
+        def check_upper(val, limit=0):
+            for i in range(50, -1, -1):
+                val_ul = val - i
+
+                if val_ul > limit:
+                    return val_ul
+
+                elif val_ul < limit:
+                    continue
+
+                else:
+                    return limit
+
+        def check_lower(val, limit=5000):
+            for i in range(50, -1, -1):
+                val_lr = val + i
+
+                if val_lr < limit:
+                    return val_lr
+
+                elif val_lr > limit:
+                    continue
+
+                else:
+                    return limit
+
+        row_ul = check_upper(self.row)
+        col_ul = check_upper(self.col)
+
+        row_lr = check_lower(self.row)
+        col_lr = check_lower(self.col)
+
+        upper_left = QtCore.QPointF(col_ul, row_ul)
+        bottom_right = QtCore.QPointF(col_lr, row_lr)
+
+        rect = QtCore.QRectF(upper_left, bottom_right)
+
+        view_rect = self.graphics_view.viewport().rect()
+
+        scene_rect = self.graphics_view.transform().mapRect(rect)
+
+        factor = min(view_rect.width() / scene_rect.width(),
+                     view_rect.height() / scene_rect.height())
+
+        self.graphics_view.scale(factor, factor)
+
+        self.graphics_view.centerOn(self.current_pixel)
+
+        # Arbitrary number of times to zoom out with the mouse wheel before full extent is reset, based on a guess
+        self.graphics_view._zoom = 12
+
+        # self.current_view = self.graphics_view.sceneRect()
+
+        self.graphics_view.view_holder = QtCore.QRectF(self.graphics_view.mapToScene(0, 0),
+                                                       self.graphics_view.mapToScene(self.width(),
+                                                                                     self.graphics_view.height()))
+
+    def make_rect(self):
+        """
+        Create a rectangle on the image where the selected pixel location is located
+
+        Returns:
+            None
+
+        """
+        pen = QtGui.QPen(QtCore.Qt.magenta)
+        pen.setWidthF(0.1)
+
+        # self.row = self.pixel_rowcol.row
+        # self.col = self.pixel_rowcol.column
+
+        upper_left = QtCore.QPointF(self.col, self.row)
+        bottom_right = QtCore.QPointF(self.col + 1, self.row + 1)
+
+        # self.rect = QtCore.QRectF(upper_left, bottom_right)
+        self.current_pixel = QtWidgets.QGraphicsRectItem(QtCore.QRectF(upper_left, bottom_right))
+        self.current_pixel.setPen(pen)
+
+        # self.graphics_view.scene.addRect(self.rect, pen)
+        self.graphics_view.scene.addItem(self.current_pixel)
 
     def exit(self):
         """
