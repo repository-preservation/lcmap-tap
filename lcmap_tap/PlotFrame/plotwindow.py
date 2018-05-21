@@ -28,10 +28,6 @@ def exc_handler(exc_type, exc_value, exc_traceback):
     Returns:
 
     """
-    # if issubclass(exc_type, KeyboardInterrupt):
-    #     sys.__excepthook__(exc_type, exc_value, exc_traceback)
-    #     return
-
     log.critical("Uncaught Exception: ", exc_info=(exc_type, exc_value, exc_traceback))
 
 
@@ -94,6 +90,8 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.scenes = scenes
 
         self.prev_highlight = None
+        self.ind = None
+        self.artist = None
 
         self.fig = fig
         self.canvas = MplCanvas(fig=self.fig)
@@ -179,16 +177,16 @@ class PlotWindow(QtWidgets.QMainWindow):
                 nearest_x = dt.datetime.fromordinal(int(np.take(x, ind)))
                 nearest_y = np.take(y, ind)
 
-                artist_data = [nearest_x, nearest_y]
+                self.artist_data = [nearest_x, nearest_y]
 
-                self.value_holder["temp"] = [point_clicked, artist_data]
+                self.value_holder["temp"] = [point_clicked, self.artist_data]
 
                 test_str = "{:%Y%m%d}".format(self.value_holder["temp"][1][0])
 
-                print("point clicked: {}\n\
-                      nearest artist: {}\n\
-                      artist data: {}\n\
-                      subplot: {}".format(point_clicked, self.value_holder, artist_data, b))
+                log.debug("Point clicked: %s" % point_clicked)
+                log.debug("Nearest artist: %s" % self.value_holder)
+                log.debug("Artist data: %s" % self.artist_data)
+                log.debug("Subplot: %s" % b)
 
                 # Look through the scene IDs to find which one corresponds to the selected obs. date
                 for scene in self.scenes:
@@ -227,11 +225,11 @@ class PlotWindow(QtWidgets.QMainWindow):
         mouse_event = event.mouseevent
 
         # This references which object on the plot was hit by the pick
-        artist = event.artist
+        self.artist = event.artist
 
         # Only works using left-click (event.mouseevent.button==1)
         # and on any of the scatter point series (PathCollection artists)
-        if isinstance(artist, PathCollection) and mouse_event.button == 1:
+        if isinstance(self.artist, PathCollection) and mouse_event.button == 1:
             # Remove the highlight from the previously selected point
             try:
                 self.prev_highlight.set_data([], [])
@@ -240,19 +238,19 @@ class PlotWindow(QtWidgets.QMainWindow):
                 pass
 
             # Return the index value of the artist (i.e. which data point in the series was hit)
-            ind = event.ind
+            self.ind = event.ind
 
             # Retrieve the appropriate data series based on the clicked artist
-            x = self.artist_map[artist][0]
-            y = self.artist_map[artist][1]
-            b = self.artist_map[artist][2]
+            x = self.artist_map[self.artist][0]
+            y = self.artist_map[self.artist][1]
+            b = self.artist_map[self.artist][2]
 
             # <class 'matplotlib.lines.Line2D'>
             highlight = self.artist_map[b]
 
             self.prev_highlight = highlight
 
-            highlight.set_data(np.take(x, ind), np.take(y, ind))
+            highlight.set_data(np.take(x, self.ind), np.take(y, self.ind))
 
             self.canvas.draw()
 
