@@ -22,13 +22,17 @@ def get_time():
 
 
 log = logging.getLogger()
-stream_handler = logging.StreamHandler(sys.stdout)
+
+stdout_handler = logging.StreamHandler(sys.stdout)
 file_handler = logging.FileHandler(os.path.join(HOME, "lcmap_tap_{}.log".format(get_time())))
+stderr_handler = logging.StreamHandler(sys.stderr)
+
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(processName)s: %(message)s')
 
-stream_handler.setFormatter(formatter)
+stdout_handler.setFormatter(formatter)
 file_handler.setFormatter(formatter)
+stderr_handler.setFormatter(formatter)
 
-log.addHandler(stream_handler)
+log.addHandler(stdout_handler)
 log.addHandler(file_handler)
-log.setLevel(logging.INFO)
+log.setLevel(logging.DEBUG)
