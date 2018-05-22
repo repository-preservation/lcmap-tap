@@ -220,6 +220,11 @@ class ARDViewerX(QtWidgets.QMainWindow):
         self.index = None
         self.current_pixel = None
         self.new_ccd = None
+        self.date_x = None
+        self.data_y = None
+        self.x_series = None
+        self.y_series = None
+        self.ax = None
 
         self.graphics_view = ImageViewer()
 
@@ -435,6 +440,7 @@ class ARDViewerX(QtWidgets.QMainWindow):
             None
 
         """
+
         def check_upper(val, limit=0):
             for i in range(50, -1, -1):
                 val_ul = val - i
@@ -734,7 +740,7 @@ class ARDViewerX(QtWidgets.QMainWindow):
             None
 
         """
-        pen = QtGui.QPen(QtCore.Qt.magenta)
+        pen = QtGui.QPen(QtCore.Qt.yellow)
         pen.setWidthF(0.1)
 
         self.row = self.pixel_rowcol.row
@@ -765,7 +771,7 @@ class ARDViewerX(QtWidgets.QMainWindow):
             if self.current_pixel:
                 self.graphics_view.scene.removeItem(self.current_pixel)
 
-            pen = QtGui.QPen(QtCore.Qt.magenta)
+            pen = QtGui.QPen(QtCore.Qt.yellow)
             pen.setWidthF(0.1)
 
             self.row = int(pos.y())
@@ -793,12 +799,16 @@ class ARDViewerX(QtWidgets.QMainWindow):
             None
 
         """
-        prev_highlight = self.gui.plot_window.prev_highlight
-        log.debug("Prev highlight: %s" % prev_highlight)
+        # Before generating the new plot, create a reference to the previously clicked date and subplot
+        if self.gui.plot_window.b is not None:
+            self.ax = self.gui.plot_window.b  # Subplot name
+        log.debug("self.ax = %s" % self.ax)
 
-        prev_artist_data = self.gui.plot_window.artist_data
-        log.debug("Prev Artist Data: %s" % prev_artist_data)
+        if self.gui.plot_window.x is not None:
+            self.date_x = self.gui.plot_window.x  # Date in ordinal datetime format, the x coordinate
+        log.debug("self.date_x = %s" % self.date_x)
 
+        # Gather information to retrieve necessary data for the new plot
         rowcol = RowColumn(row=self.row, column=self.col)
 
         coords = GeoInfo.rowcol_to_geo(affine=self.ccd.geo_info.PIXEL_AFFINE,
@@ -806,19 +816,52 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
         log.info("New point selected: %s" % str(coords))
 
+        # Update the X and Y coordinates in the GUI with the new point
         self.gui.ui.x1line.setText(str(coords.x))
 
         self.gui.ui.y1line.setText(str(coords.y))
 
+        # Do the plotting and generate a new figure
         self.gui.check_values()
 
         self.gui.plot()
 
-        self.gui.plot_window.prev_highlight = prev_highlight
+        x_look_thru = {"obs_points": self.gui.extracted_data.dates_in[self.gui.extracted_data.total_mask],
+                       "out_points": self.gui.extracted_data.dates_out[self.gui.extracted_data.fill_out],
+                       "mask_points": self.gui.extracted_data.dates_in[~self.gui.extracted_data.ccd_mask]}
 
-        self.gui.plot_window.prev_highlight.set_data(prev_artist_data[0],
-                                                     prev_artist_data[1][0])
+        y_look_thru = {"obs_points": self.gui.extracted_data.all_lookup[self.ax][0][self.gui.extracted_data.date_mask]
+                       [self.gui.extracted_data.total_mask],
+
+                       "out_points": self.gui.extracted_data.all_lookup[self.ax][0][~self.gui.extracted_data.date_mask]
+                       [self.gui.extracted_data.fill_out],
+
+                       "mask_points": self.gui.extracted_data.all_lookup[self.ax][0][self.gui.extracted_data.date_mask]
+                       [~self.gui.extracted_data.ccd_mask]}
+
+        for x in x_look_thru.items():
+            if self.date_x in x[1]:
+                log.debug("Found date clicked %s in %s" % (self.date_x, x[0]))
+                self.x_series = x[1]
+                self.y_series = y_look_thru[x[0]]
+                break
+
+        ind = np.where(self.x_series == self.date_x)
+        log.debug("Numpy Where returned index value %s" % ind)
+
+        self.data_y = np.take(self.y_series, ind)
+        log.debug("Y-series value returned: %s" % self.data_y)
+
+        # if hasattr(self.gui.plot_window, 'x_series') and hasattr(self.gui.plot_window, 'y_series'):
+        #     self.x_series = self.gui.plot_window.x_series
+        #     self.y_series = self.gui.plot_window.y_series
+
+        log.debug("From plot_window X: %s" % self.date_x)
+        log.debug("From plot_window Y: %s" % self.data_y)
+
+        # Get a reference to the subplot in the new figure
+        highlight = self.gui.plot_window.artist_map[self.ax]
+
+        highlight.set_data(self.date_x[0], self.data_y[0])
 
         self.gui.plot_window.canvas.draw()
-
-
