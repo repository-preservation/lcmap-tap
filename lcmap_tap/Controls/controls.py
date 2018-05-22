@@ -34,7 +34,7 @@ matplotlib.use('Qt5Agg')
 from PyQt5.QtWidgets import QMainWindow, QFileDialog
 
 # Import the main GUI built in QTDesigner, compiled into python with pyuic5.bat
-from lcmap_tap.UserInterface import ui_main_dev as ui_main
+from lcmap_tap.UserInterface import ui_main
 
 # Import the CCDReader class which retrieves json and cache data
 from lcmap_tap.RetrieveData.retrieve_data import CCDReader, GeoInfo
@@ -108,6 +108,9 @@ class MainControls(QMainWindow):
         self.tile = None
         self.version = None
         self.highlighted = None
+        self.artist_map = None
+        self.lines_map = None
+        self.axes = None
 
         # Create an instance of a class that builds the user-interface, created in QT Designer and compiled with pyuic5
         self.ui = ui_main.Ui_TAPTool()
@@ -181,6 +184,8 @@ class MainControls(QMainWindow):
         self.ui.browseoutputline.textChanged.connect(self.check_values)
 
         self.ui.plotbutton.clicked.connect(self.plot)
+
+        self.ui.plotbutton.clicked.connect(self.close_ard)
 
         self.ui.clearpushButton.clicked.connect(self.clear)
 
@@ -605,7 +610,8 @@ class MainControls(QMainWindow):
         
         axes <ndarray> 2D array of matplotlib.axes.Axes objects
         """
-        self.fig, artist_map, lines_map, axes = make_plots.draw_figure(data=self.extracted_data, items=item_list)
+        self.fig, self.artist_map, self.lines_map, self.axes = make_plots.draw_figure(data=self.extracted_data,
+                                                                                      items=item_list)
 
         if not os.path.exists(self.ui.browseoutputline.text()):
             os.makedirs(self.ui.browseoutputline.text())
@@ -621,9 +627,9 @@ class MainControls(QMainWindow):
 
         # Show the figure in an interactive window
         self.plot_window = PlotWindow(fig=self.fig,
-                                      axes=axes,
-                                      artist_map=artist_map,
-                                      lines_map=lines_map,
+                                      axes=self.axes,
+                                      artist_map=self.artist_map,
+                                      lines_map=self.lines_map,
                                       gui=self,
                                       scenes=self.extracted_data.image_ids)
 
@@ -736,6 +742,20 @@ class MainControls(QMainWindow):
             log.warning("Display ARD raised an exception: ")
             log.warning(e, exc_info=True)
 
+    def close_ard(self):
+        """
+        If plotting for a new HV tile, close the previous ARD Viewer window if one was previously opened
+
+        Returns:
+            None
+
+        """
+        try:
+            self.ard.exit()
+
+        except AttributeError:
+            pass
+
     def show_maps(self):
         """
         Display the mapped products viewer
@@ -744,8 +764,6 @@ class MainControls(QMainWindow):
             None
 
         """
-        version = "v" + self.version
-
         path = os.path.join(self.drive_letter + os.sep, 'bulk', 'tiles', self.tile, 'eval')
 
         if self.ard_specs:
