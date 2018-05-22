@@ -95,7 +95,7 @@ the LCMAP TAP tool and its dependencies.
 
 #### Retrieving and installing LCMAP_TAP code 
 
-* [Download](https://github.com/USGS-EROS/LCMAP_TAP/archive/master.zip) lcmap_tap as a zipped folder.
+* [Download](https://github.com/USGS-EROS/lcmap-tap/archive/master.zip) lcmap_tap as a zipped folder.
 
 * Unzip, then using the command prompt enter into the unzipped folder:
     ```bash

@@ -26,7 +26,7 @@
          <x>0</x>
          <y>0</y>
          <width>633</width>
-         <height>597</height>
+         <height>574</height>
         </rect>
        </property>
       </widget>
@@ -36,6 +36,13 @@
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <widget class="QRadioButton" name="radioPlot">
+          <property name="text">
+           <string>Enable Plot on Click</string>
+          </property>
+         </widget>
+        </item>
         <item alignment="Qt::AlignLeft">
          <widget class="QLabel" name="label">
           <property name="text">

@@ -22,6 +22,7 @@ def exc_handler(type, value, tb):
         tb: traceback object
 
     Returns:
+        None
 
     """
     log.warning("Uncaught Exception Type: {}".format(str(type)))
@@ -32,17 +33,17 @@ def exc_handler(type, value, tb):
 sys.excepthook = exc_handler
 
 
-def get_plot_items(data, items):
+def get_plot_items(data: CCDReader, items: dict) -> dict:
     """
     Check to see which bands and/or indices were selected to plot.
-    :data: <class>
-    :items: <dict>
-    :return: <dict>
-    """
-    # set_lists = {"All Bands and Indices": data.all_lookup, "All Bands": data.band_lookup,
-    #              "All Indices": data.index_lookup}
+    Args:
+        data: An instance of the CCDReader class
+        items: A dict containing the selected bands/indices to plot
 
-    # Use OrderedDict
+    Returns:
+        temp_dict:
+
+    """
     set_lists = [("All Bands and Indices", data.all_lookup),
                  ("All Bands", data.band_lookup),
                  ("All Indices", data.index_lookup)]
@@ -50,8 +51,6 @@ def get_plot_items(data, items):
     set_lists = OrderedDict(set_lists)
 
     if len(items) > 0:
-        # temp_dict = {i: data.all_lookup[i] for i in items if i in data.all_lookup.keys()}
-        # Use OrderedDict
         temp_dict = [(i, data.all_lookup[i]) for i in items if i in data.all_lookup.keys()]
         temp_dict = OrderedDict(temp_dict)  # Turn list of tuples into an OrderedDict
 
@@ -61,7 +60,6 @@ def get_plot_items(data, items):
                 # temp_dict = {**temp_dict, **set_lists[a]}
                 temp_dict = plot_functions.merge_dicts(temp_dict, set_lists[a])
 
-        # print(temp_dict.keys())
         return temp_dict
 
     else:
@@ -152,14 +150,15 @@ def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure,
 
         # ---- Create an empty plot to use for displaying which point is clicked later on ----
         empty_point.append(axes[num, 0].plot([], [],
-                                             ms=12,
-                                             c="none",
-                                             marker="D",
-                                             mec="lime",
-                                             mew=1.75,
-                                             picker=3,
-                                             linewidth=0))
+                                                ms=12,
+                                                c="none",
+                                                marker="D",
+                                                mec="lime",
+                                                mew=1.75,
+                                                picker=3,
+                                                linewidth=0))
 
+        # Generate legend line for the selected observation
         axes[num, 0].plot([], [], marker="D", ms=8, color="none", mec="lime", mew=1.75,
                           linewidth=0, label="Selected")
 
@@ -172,7 +171,7 @@ def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure,
                                                marker="o",
                                                edgecolors="black", picker=3))
 
-        # Generate legend line for the observations used by pyccd; faux1 contains the line-artist but isn't used
+        # Generate legend line for the observations used by pyccd
         axes[num, 0].plot([], [], marker="o", ms=8, color="green", mec="k", mew=0.3,
                           linewidth=0, label="Clear")
 
@@ -186,18 +185,18 @@ def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure,
                                                marker="o",
                                                edgecolors="black", picker=3))
 
-        # Generate legend line for the obs. outside time range; faux2 contains the line-artist but isn't used
+        # Generate legend line for the obs. outside time range
         axes[num, 0].plot([], [], marker="o", ms=4, color="red", mec="black", mew=0.3, linewidth=0,
                           label="Unused")
 
         artist_map[out_points[0]] = [data.dates_out[data.fill_out], plot_data[b][0][~data.date_mask][data.fill_out], b]
 
-        # ---- Plot the observed values masked out by PyCCD ----
+        """ ---- Plot the observed values masked out by PyCCD ---- """
         mask_points.append(axes[num, 0].scatter(x=data.dates_in[~data.ccd_mask],
                                                 y=plot_data[b][0][data.date_mask][~data.ccd_mask], s=21, color="0.65",
                                                 marker="o", picker=2))
 
-        # Generate legend line for the masked observations; faux3 contains the line-artist but isn't used
+        # Generate legend line for the masked observations
         axes[num, 0].plot([], [], marker="o", ms=4, color="0.65", linewidth=0,
                           label="Masked")
 
@@ -296,8 +295,9 @@ def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure,
         axes[num, 0].set_ylim([ymin, ymax])
 
         # ---- Display the x and y values where the cursor is placed on a subplot ----
-        axes[num, 0].format_coord = lambda xcoord, ycoord: "({0:f}, ".format(ycoord) + \
-                                                           "{0:%Y-%m-%d})".format(dt.datetime.fromordinal(int(xcoord)))
+        axes[num, 0].format_coord = lambda xcoord, ycoord: "({0:%Y-%m-%d}, ".format(
+            dt.datetime.fromordinal(int(xcoord))) + "{0:f})".format(ycoord)
+
         # ---- Plot a vertical line at January 1 of each year on the time series ----
         for y in t_:
             if y == t_[0]:
