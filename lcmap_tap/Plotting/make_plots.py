@@ -171,8 +171,6 @@ def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure,
                                                marker="o",
                                                edgecolors="black", picker=3))
 
-        # log.debug("DATES IN: %s" % list(data.dates_in[total_mask]))
-
         # Generate legend line for the observations used by pyccd
         axes[num, 0].plot([], [], marker="o", ms=8, color="green", mec="k", mew=0.3,
                           linewidth=0, label="Clear")
@@ -204,11 +202,6 @@ def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure,
 
         artist_map[mask_points[0]] = [data.dates_in[~data.ccd_mask],
                                       plot_data[b][0][data.date_mask][~data.ccd_mask], b]
-        #
-        # log.debug("empty point: %s" % empty_point)
-        # log.debug("obs points: %s" % obs_points)
-        # log.debug("out points: %s" % out_points)
-        # log.debug("mask points: %s" % mask_points)
 
         # Give each subplot a title
         axes[num, 0].set_title('{}'.format(b))
