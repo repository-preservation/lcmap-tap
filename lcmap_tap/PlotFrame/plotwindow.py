@@ -92,6 +92,8 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.prev_highlight = None
         self.ind = None
         self.artist = None
+        self.x = None
+        self.b = None  # The clicked axis (subplot name)
 
         self.fig = fig
         self.canvas = MplCanvas(fig=self.fig)
@@ -213,12 +215,13 @@ class PlotWindow(QtWidgets.QMainWindow):
 
     def highlight_pick(self, event=None):
         """
-        Change the symbology of the clicked point
+        Change the symbology of the clicked point so that it is visible on the plot
 
         Args:
             event:
 
         Returns:
+            None
 
         """
         # Reference useful information about the pick location
@@ -241,16 +244,19 @@ class PlotWindow(QtWidgets.QMainWindow):
             self.ind = event.ind
 
             # Retrieve the appropriate data series based on the clicked artist
-            x = self.artist_map[self.artist][0]
-            y = self.artist_map[self.artist][1]
-            b = self.artist_map[self.artist][2]
+            self.x_series = self.artist_map[self.artist][0]
+            self.y_series = self.artist_map[self.artist][1]
+            self.b = self.artist_map[self.artist][2]
 
-            # <class 'matplotlib.lines.Line2D'>
-            highlight = self.artist_map[b]
+            self.x = np.take(self.x_series, self.ind)
+            self.y = np.take(self.y_series, self.ind)
+
+            # <class 'matplotlib.lines.Line2D'> This points to the Line2D curve that will contain the highlighted point
+            highlight = self.artist_map[self.b]
 
             self.prev_highlight = highlight
 
-            highlight.set_data(np.take(x, self.ind), np.take(y, self.ind))
+            highlight.set_data(self.x, self.y)
 
             self.canvas.draw()
 
@@ -261,6 +267,7 @@ class PlotWindow(QtWidgets.QMainWindow):
             event: A mouse-click event
 
         Returns:
+            None
 
         """
         mouseevent = event.mouseevent
