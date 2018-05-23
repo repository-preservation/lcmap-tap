@@ -5,6 +5,7 @@ import traceback
 import datetime as dt
 import matplotlib
 from matplotlib import pyplot as plt
+from matplotlib.figure import Figure
 from collections import OrderedDict
 from typing import Tuple
 from numpy import ndarray
@@ -13,27 +14,27 @@ from lcmap_tap.Plotting import plot_functions
 from lcmap_tap.logger import log
 
 
-def exc_handler(type, value, tb):
+def exc_handler(exc_type, exc_value, exc_traceback):
     """
     Customized handling of top-level exceptions
     Args:
-        type: exception class
-        value: exception instance
-        tb: traceback object
+        exc_type: exception class
+        exc_value: exception instance
+        exc_traceback: traceback object
 
     Returns:
         None
 
     """
-    log.warning("Uncaught Exception Type: {}".format(str(type)))
-    log.warning("Uncaught Exception Value: {}".format(str(value)))
-    log.warning("Uncaught Exception Traceback: {}".format(traceback.print_tb(tb)))
+    log.warning("Uncaught Exception Type: {}".format(str(exc_type)))
+    log.warning("Uncaught Exception Value: {}".format(str(exc_value)))
+    log.warning("Uncaught Exception Traceback: {}".format(traceback.print_tb(exc_traceback)))
 
 
 sys.excepthook = exc_handler
 
 
-def get_plot_items(data: CCDReader, items: dict) -> dict:
+def get_plot_items(data: CCDReader, items: list) -> dict:
     """
     Check to see which bands and/or indices were selected to plot.
     Args:
@@ -150,13 +151,13 @@ def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure,
 
         # ---- Create an empty plot to use for displaying which point is clicked later on ----
         empty_point.append(axes[num, 0].plot([], [],
-                                                ms=12,
-                                                c="none",
-                                                marker="D",
-                                                mec="lime",
-                                                mew=1.75,
-                                                picker=3,
-                                                linewidth=0))
+                                             ms=12,
+                                             c="none",
+                                             marker="D",
+                                             mec="lime",
+                                             mew=1.75,
+                                             picker=3,
+                                             linewidth=0))
 
         # Generate legend line for the selected observation
         axes[num, 0].plot([], [], marker="D", ms=8, color="none", mec="lime", mew=1.75,
