@@ -175,9 +175,17 @@ class MainControls(QMainWindow):
 
         self.ui.x1line.textChanged.connect(self.set_units)
 
+        self.ui.x1line.textChanged.connect(self.get_version)
+
+        self.ui.x1line.textChanged.connect(self.assemble_paths)
+
         self.ui.x1line.textChanged.connect(self.check_values)
 
         self.ui.y1line.textChanged.connect(self.set_units)
+
+        self.ui.y1line.textChanged.connect(self.get_version)
+
+        self.ui.y1line.textChanged.connect(self.assemble_paths)
 
         self.ui.y1line.textChanged.connect(self.check_values)
 
@@ -196,6 +204,8 @@ class MainControls(QMainWindow):
         self.ui.clicked_listWidget.itemClicked.connect(self.show_ard)
 
         self.ui.comboBoxUnits.currentIndexChanged.connect(self.set_units)
+
+        self.ui.comboBoxUnits.currentIndexChanged.connect(self.get_version)
 
         self.ui.driveLetter_comboBox.currentIndexChanged.connect(self.get_drive_letter)
 
@@ -217,6 +227,9 @@ class MainControls(QMainWindow):
 
         log.info("Selected Drive Letter: %s" % self.drive_letter)
 
+        # Assemble the paths to the required datasets with the version provided
+        self.assemble_paths()
+
         # Get the PyCCD Versions now that the appropriate drive letter has been selected
         self.get_version()
 
@@ -234,21 +247,29 @@ class MainControls(QMainWindow):
             None
 
         """
+        num_items = self.ui.version_comboBox.count()
+
+        for n in range(0, num_items):
+            try:
+                self.ui.version_comboBox.removeItem(n)
+
+            except IndexError:
+                continue
+
         path = os.path.join(self.drive_letter + os.sep, 'bulk', 'tiles', self.tile, 'change')
 
         log.info("Looking for versions in %s" % path)
 
-        if self.tile is not None:
-            # use version[1:] to strip the leading 'v' from the version string.
-            versions_present = [version[1:] for version in MapsViewer.versions
-                                if os.path.exists(os.path.join(path, version[1:]))]
+        # use version[1:] to strip the leading 'v' from the version string.
+        versions_present = [version[1:] for version in MapsViewer.versions
+                            if os.path.exists(os.path.join(path, version[1:]))]
 
-            log.info("PyCCD versions found: %s" % str(versions_present))
+        log.info("PyCCD versions found: %s" % str(versions_present))
 
-            for version in versions_present:
-                self.ui.version_comboBox.addItem(version)
+        for version in versions_present:
+            self.ui.version_comboBox.addItem(version)
 
-            self.version = self.ui.version_comboBox.currentText()
+        self.version = self.ui.version_comboBox.currentText()
 
     def set_version(self):
         """
@@ -405,10 +426,6 @@ class MainControls(QMainWindow):
                   self.ui.x1line.text(),
                   self.ui.y1line.text(),
                   self.ui.browseoutputline.text()]
-
-        # If a point has been entered, attempt to assemble the necessary paths
-        if checks[3] is not "" and checks[4] is not "":
-            self.assemble_paths()
 
         # Parse through the checks list to check for entered text
         for ind, check in enumerate(checks):
