@@ -225,7 +225,10 @@ class MapsViewer(QMainWindow):
     which version they want to use.  Need to handle the presence of the 'v' in these names because it's only
     there for the eval -> products.  The version subdirectories located in change don't contain the 'v'. 
     """
-    versions = ["v2017.08.18", "v2017.8.18", "v2017.6.20-a", "v2017.6.20", "v2017.06.20", "v2017.6.8", "v1.4.0"]
+    versions = ["v2017.08.18", "v2017.8.18",
+                "v2017.6.20-a", "v2017.6.20",
+                "v2017.06.20", "v2017.06.20b", "v2017.06.20-b",
+                "v2017.6.8", "v1.4.0"]
 
     def __init__(self, tile, root, ccd, version, begin_year=1984, end_year=2015):
 
