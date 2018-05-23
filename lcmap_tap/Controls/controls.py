@@ -173,13 +173,13 @@ class MainControls(QMainWindow):
 
         self.ui.browseARDline.textChanged.connect(self.check_values)
 
-        self.ui.x1line.textChanged.connect(self.check_values)
-
         self.ui.x1line.textChanged.connect(self.set_units)
 
-        self.ui.y1line.textChanged.connect(self.check_values)
+        self.ui.x1line.textChanged.connect(self.check_values)
 
         self.ui.y1line.textChanged.connect(self.set_units)
+
+        self.ui.y1line.textChanged.connect(self.check_values)
 
         self.ui.browseoutputline.textChanged.connect(self.check_values)
 
@@ -364,8 +364,13 @@ class MainControls(QMainWindow):
             None
 
         """
-        geocoord = GeoInfo.get_geocoordinate(xstring=self.ui.x1line.text(),
-                                             ystring=self.ui.y1line.text())
+        if self.units[self.selected_units]["unit"] == "meters":
+            geocoord = GeoInfo.get_geocoordinate(xstring=self.ui.x1line.text(),
+                                                 ystring=self.ui.y1line.text())
+
+        else:
+            geocoord = GeoInfo.get_geocoordinate(xstring=self.ui.x2line.text(),
+                                                 ystring=self.ui.y2line.text())
 
         h, v = GeoInfo.get_hv(geocoord.x, geocoord.y)
 
@@ -422,14 +427,6 @@ class MainControls(QMainWindow):
                 self.ui.clearpushButton.setEnabled(False)
 
                 self.ui.savefigpushButton.setEnabled(False)
-
-            elif ind == 5 and not os.path.exists(check):
-                try:
-                    os.makedirs(check)
-
-                except PermissionError:
-                    log.error("Output directory does not exist and an attempt to create it raised a Permission Error."
-                              "Specify a directory where user has write privileges.")
 
             else:
                 counter += 1
