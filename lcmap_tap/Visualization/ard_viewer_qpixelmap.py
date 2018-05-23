@@ -817,9 +817,19 @@ class ARDViewerX(QtWidgets.QMainWindow):
         log.info("New point selected: %s" % str(coords))
 
         # Update the X and Y coordinates in the GUI with the new point
-        self.gui.ui.x1line.setText(str(coords.x))
+        if self.gui.units[self.gui.selected_units]["unit"] == "meters":
 
-        self.gui.ui.y1line.setText(str(coords.y))
+            self.gui.ui.x1line.setText(str(coords.x))
+
+            self.gui.ui.y1line.setText(str(coords.y))
+
+        # Convert to lat/long before updating the coordinate text on the GUI
+        else:
+            _coords = GeoInfo.unit_conversion(coords)
+
+            self.gui.ui.x1line.setText(str(_coords.x))
+
+            self.gui.ui.y1line.setText(str(_coords.y))
 
         # Do the plotting and generate a new figure
         self.gui.check_values()
