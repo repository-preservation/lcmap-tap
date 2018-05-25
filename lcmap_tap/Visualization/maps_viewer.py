@@ -4,18 +4,13 @@ import os
 import sys
 import traceback
 import glob
-# import matplotlib
-
-# matplotlib.use("Qt5Agg")
 
 from PyQt5 import QtCore, QtWidgets, QtGui
-from PyQt5.QtGui import QPixmap, QImage, QActionEvent
-from PyQt5.QtWidgets import QMainWindow, QSlider  # QFileDialog, QSizePolicy, QLabel, QAction
+from PyQt5.QtCore import pyqtSignal, QPointF, QRectF
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QMainWindow, QSlider
 
-# import matplotlib.pyplot as plt
-# from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-
-from lcmap_tap.Visualization.ui_maps_viewer_dev import Ui_MapViewer
+from lcmap_tap.Visualization.ui_maps_viewer import Ui_MapViewer
 from lcmap_tap.logger import log
 
 
@@ -39,7 +34,7 @@ sys.excepthook = exc_handler
 
 
 class ImageViewer(QtWidgets.QGraphicsView):
-    image_clicked = QtCore.pyqtSignal(QtCore.QPointF)
+    image_clicked = pyqtSignal(QPointF)
 
     def __init__(self):
         super(ImageViewer, self).__init__()
@@ -76,13 +71,13 @@ class ImageViewer(QtWidgets.QGraphicsView):
         return not self._empty
 
     def fitInView(self, scale=True, **kwargs):
-        rect = QtCore.QRectF(self._image.pixmap().rect())
+        rect = QRectF(self._image.pixmap().rect())
 
         if not rect.isNull():
             self.setSceneRect(rect)
 
             if self.has_image():
-                unity = self.transform().mapRect(QtCore.QRectF(0, 0, 1, 1))
+                unity = self.transform().mapRect(QRectF(0, 0, 1, 1))
 
                 self.scale(1 / unity.width(), 1 / unity.height())
 
@@ -101,8 +96,6 @@ class ImageViewer(QtWidgets.QGraphicsView):
             self._zoom = 0
 
     def set_image(self, pixmap=None):
-        # self._zoom = 0
-
         if pixmap and not pixmap.isNull():
             self._empty = False
 
@@ -147,7 +140,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
             else:
                 self._zoom = 0
 
-        self.view_holder = QtCore.QRectF(self.mapToScene(0, 0), self.mapToScene(self.width(), self.height()))
+        self.view_holder = QRectF(self.mapToScene(0, 0), self.mapToScene(self.width(), self.height()))
 
     def toggle_drag(self):
         if self.dragMode() == QtWidgets.QGraphicsView.ScrollHandDrag:
@@ -157,7 +150,6 @@ class ImageViewer(QtWidgets.QGraphicsView):
             self.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
 
     def mousePressEvent(self, event: QtGui.QMouseEvent):
-
         # 1 -> Left-click
         # 2 -> Right-click
         # 4 -> Wheel-click
@@ -168,16 +160,16 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
         if self._image.isUnderMouse() and event.button() == QtCore.Qt.LeftButton \
                 and self.dragMode() == QtWidgets.QGraphicsView.NoDrag:
+
             point = self.mapToScene(event.pos())
 
             log.debug("point %s" % str(point))
 
-            self.image_clicked.emit(QtCore.QPointF(point))
+            self.image_clicked.emit(QPointF(point))
 
         super(ImageViewer, self).mousePressEvent(event)
 
     def mouseReleaseEvent(self, event: QtGui.QMouseEvent):
-
         # self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
 
         super(ImageViewer, self).mouseReleaseEvent(event)
@@ -347,9 +339,6 @@ class MapsViewer(QMainWindow):
 
         """
         for product in self.products.keys():
-            # self.products[product]["root"] = self.root_dir + os.sep + self.version + os.sep + \
-            #                                  self.products[product]["type"] + os.sep + self.products[product]["alias"]
-
             self.products[product]["root"] = os.path.join(self.root, self.products[product]["type"],
                                                           self.products[product]["alias"])
 
@@ -424,7 +413,6 @@ class MapsViewer(QMainWindow):
         Returns:
 
         """
-
         input_dir = self.action_mapper1[key][1]
 
         log.debug("MAPS VIEWER, show_image-> input_dir: %s" % input_dir)
@@ -435,10 +423,6 @@ class MapsViewer(QMainWindow):
         log.debug("MAPS VIEWER, show_image-> imgs: %s" % str(imgs))
 
         self.pixel_map = QPixmap(imgs[0])
-
-        # self.ui.map1_QLabel.setPixmap(self.pixel_map.scaled(self.ui.map1_QLabel.size(),
-        #                                                      QtCore.Qt.KeepAspectRatio,
-        #                                                      transformMode=QtCore.Qt.SmoothTransformation))
 
         self.graphics_view.set_image(self.pixel_map)
 
@@ -452,17 +436,13 @@ class MapsViewer(QMainWindow):
         self.ui.show_date.setText(str(value))
 
         # Grab the current extent of the scene view so that the next image that gets opened is in the same extent
-        self.graphics_view.view_holder = QtCore.QRectF(self.graphics_view.mapToScene(0, 0),
-                                                       self.graphics_view.mapToScene(self.graphics_view.width(),
-                                                                                     self.graphics_view.height()))
+        self.graphics_view.view_holder = QRectF(self.graphics_view.mapToScene(0, 0),
+                                                self.graphics_view.mapToScene(self.graphics_view.width(),
+                                                                              self.graphics_view.height()))
 
         try:
             temp1 = [img for img in self.img_list1 if str(value) in img][0]
             self.pixel_map = QPixmap(temp1)
-
-            # self.ui.map1_QLabel.setPixmap(self.pixel_map.scaled(self.ui.map1_QLabel.size(),
-            #                                                      QtCore.Qt.KeepAspectRatio,
-            #                                                      transformMode=QtCore.Qt.SmoothTransformation))
 
             self.graphics_view.set_image(self.pixel_map)
 
@@ -537,9 +517,9 @@ class MapsViewer(QMainWindow):
         log.debug("MAPS VIEWER, browse_map-> product: %s" % product)
 
         # Grab the current extent of the scene view so that the next image that gets opened is in the same extent
-        self.graphics_view.view_holder = QtCore.QRectF(self.graphics_view.mapToScene(0, 0),
-                                                       self.graphics_view.mapToScene(self.graphics_view.width(),
-                                                                                     self.graphics_view.height()))
+        self.graphics_view.view_holder = QRectF(self.graphics_view.mapToScene(0, 0),
+                                                self.graphics_view.mapToScene(self.graphics_view.width(),
+                                                                              self.graphics_view.height()))
 
         if product is not "":
 
@@ -549,10 +529,6 @@ class MapsViewer(QMainWindow):
                 temp = [img for img in self.img_list1 if str(self.ui.date_slider.value()) in img][0]
 
                 self.pixel_map = QPixmap(temp)
-
-                # self.ui.map1_QLabel.setPixmap(self.pixel_map.scaled(self.ui.map1_QLabel.size(),
-                #                                                      QtCore.Qt.KeepAspectRatio,
-                #                                                      transformMode=QtCore.Qt.SmoothTransformation))
 
                 self.graphics_view.set_image(self.pixel_map)
 
@@ -644,11 +620,9 @@ class MapsViewer(QMainWindow):
         # Arbitrary number of times to zoom out with the mouse wheel before full extent is reset, based on a guess
         self.graphics_view._zoom = 18
 
-        # self.current_view = self.graphics_view.sceneRect()
-
-        self.graphics_view.view_holder = QtCore.QRectF(self.graphics_view.mapToScene(0, 0),
-                                                       self.graphics_view.mapToScene(self.width(),
-                                                                                     self.graphics_view.height()))
+        self.graphics_view.view_holder = QRectF(self.graphics_view.mapToScene(0, 0),
+                                                self.graphics_view.mapToScene(self.width(),
+                                                                              self.graphics_view.height()))
 
     def make_rect(self):
         """
@@ -661,17 +635,12 @@ class MapsViewer(QMainWindow):
         pen = QtGui.QPen(QtCore.Qt.magenta)
         pen.setWidthF(0.1)
 
-        # self.row = self.pixel_rowcol.row
-        # self.col = self.pixel_rowcol.column
+        upper_left = QPointF(self.col, self.row)
+        bottom_right = QPointF(self.col + 1, self.row + 1)
 
-        upper_left = QtCore.QPointF(self.col, self.row)
-        bottom_right = QtCore.QPointF(self.col + 1, self.row + 1)
-
-        # self.rect = QtCore.QRectF(upper_left, bottom_right)
-        self.current_pixel = QtWidgets.QGraphicsRectItem(QtCore.QRectF(upper_left, bottom_right))
+        self.current_pixel = QtWidgets.QGraphicsRectItem(QRectF(upper_left, bottom_right))
         self.current_pixel.setPen(pen)
 
-        # self.graphics_view.scene.addRect(self.rect, pen)
         self.graphics_view.scene.addItem(self.current_pixel)
 
     def exit(self):

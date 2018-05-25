@@ -1,38 +1,6 @@
 """
 Establish the main GUI Window using PyQt and make ready the controls for the user.
 """
-
-import datetime as dt
-import os
-import sys
-import time
-import traceback
-
-import matplotlib
-import matplotlib.pyplot as plt
-import yaml
-
-from lcmap_tap.logger import log
-
-try:
-    import ogr
-    import osr
-
-    gdal_found = True
-
-except ImportError:
-    import ogr
-    import osr
-
-    gdal_found = False
-
-    log.critical("GDAL not installed, TAP Tool will not function without GDAL")
-
-# Tell matplotlib to use the QT5Agg Backend
-matplotlib.use('Qt5Agg')
-
-from PyQt5.QtWidgets import QMainWindow, QFileDialog
-
 # Import the main GUI built in QTDesigner, compiled into python with pyuic5.bat
 from lcmap_tap.UserInterface import ui_main
 
@@ -46,6 +14,21 @@ from lcmap_tap.RetrieveData.ard_info import ARDInfo
 from lcmap_tap.Auxiliary import projections
 from lcmap_tap.Visualization.ard_viewer_qpixelmap import ARDViewerX
 from lcmap_tap.Visualization.maps_viewer import MapsViewer
+from lcmap_tap.logger import log
+import datetime as dt
+import os
+import sys
+import time
+import traceback
+import matplotlib
+import matplotlib.pyplot as plt
+import yaml
+from osgeo import ogr, osr
+from PyQt5.QtWidgets import QMainWindow, QFileDialog
+
+# Tell matplotlib to use the QT5Agg Backend
+matplotlib.use('Qt5Agg')
+
 
 # Load in some necessary file paths - commenting this out for now
 if os.path.exists('helper.yaml'):
@@ -67,10 +50,6 @@ def exc_handler(exc_type, exc_value, exc_traceback):
     Returns:
 
     """
-    # if issubclass(exc_type, KeyboardInterrupt):
-    #     sys.__excepthook__(exc_type, exc_value, exc_traceback)
-    #     return
-
     log.critical("Uncaught Exception: ", exc_info=(exc_type, exc_value, exc_traceback))
 
 
@@ -81,6 +60,12 @@ class MainControls(QMainWindow):
     def __init__(self):
 
         super(MainControls, self).__init__()
+
+        # Create an instance of a class that builds the user-interface, created in QT Designer and compiled with pyuic5
+        self.ui = ui_main.Ui_TAPTool()
+
+        # Call the method that adds all of the widgets to the GUI
+        self.ui.setupUi(self)
 
         self.units = {"Projected - Meters - Albers CONUS WGS 84": {"unit": "meters",
                                                                    "label_x1": "X (meters)",
@@ -112,19 +97,9 @@ class MainControls(QMainWindow):
         self.lines_map = None
         self.axes = None
 
-        # Create an instance of a class that builds the user-interface, created in QT Designer and compiled with pyuic5
-        self.ui = ui_main.Ui_TAPTool()
-
-        # Call the method that adds all of the widgets to the GUI
-        self.ui.setupUi(self)
-
         self.selected_units = self.ui.comboBoxUnits.currentText()
 
         self.drive_letter = self.ui.driveLetter_comboBox.currentText()
-
-        # Don't try to generate a shapefile if GDAL isn't installed
-        if gdal_found is False:
-            self.ui.radioshp.setEnabled(False)
 
         self.connect_widgets()
 
@@ -518,7 +493,7 @@ class MainControls(QMainWindow):
         """
         self.ui.plainTextEdit_results.clear()
 
-        self.ui.plainTextEdit_results.appendPlainText(data.message)
+        log.info("%s" % data.message)
 
         if data.duplicates:
             self.ui.plainTextEdit_results.appendPlainText("\n***Duplicate dates***\n{}".format(data.duplicates))
@@ -631,7 +606,7 @@ class MainControls(QMainWindow):
             os.makedirs(self.ui.browseoutputline.text())
 
         # Generate the ESRI point shapefile
-        if shp_on is True and gdal_found is True:
+        if shp_on is True:
             temp_shp = self.fname_generator(ext=".shp")
             root, name = os.path.split(temp_shp)
             root = root + os.sep + "shp"

@@ -45,8 +45,8 @@ def get_plot_items(data: CCDReader, items: list) -> dict:
         temp_dict:
 
     """
-    set_lists = [("All Bands and Indices", data.all_lookup),
-                 ("All Bands", data.band_lookup),
+    set_lists = [("All Spectral Bands and Indices", data.all_lookup),
+                 ("All Spectral Bands", data.band_lookup),
                  ("All Indices", data.index_lookup)]
 
     set_lists = OrderedDict(set_lists)

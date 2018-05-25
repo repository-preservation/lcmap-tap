@@ -53,7 +53,7 @@ docs/_build/
 # JetBrains and Notebooks and more
 .idea/
 .ipynb_checkpoints/
-# *.UI
+*.UI
 Notebooks/Working/
 *.ipynb
 
