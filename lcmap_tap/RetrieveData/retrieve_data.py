@@ -37,24 +37,19 @@ sys.excepthook = exc_handler
 
 # Define some helper methods and data structures
 GeoExtent = namedtuple("GeoExtent", ["x_min", "y_max", "x_max", "y_min"])
+
 GeoAffine = namedtuple("GeoAffine", ["ul_x", "x_res", "rot_1", "ul_y", "rot_2", "y_res"])
+
 GeoCoordinate = namedtuple("GeoCoordinate", ["x", "y"])
+
 RowColumn = namedtuple("RowColumn", ["row", "column"])
+
 RowColumnExtent = namedtuple("RowColumnExtent", ["start_row", "start_col", "end_row", "end_col"])
+
 CONUS_EXTENT = GeoExtent(x_min=-2565585,
                          y_min=14805,
                          x_max=2384415,
                          y_max=3314805)
-
-COLORS = {0: (1.0, 0.0, 0.0),
-          1: (1.0, 0.6470588235294118, 0.0),
-          2: (1.0, 1.0, 0.0),
-          3: (0.0, 0.5490196078431373, 0.0),
-          4: (0.0, 0.0, 1.0),
-          5: (0.0, 1.0, 1.0),
-          6: (1.0, 1.0, 1.0),
-          7: (0.39215686274509803, 0.39215686274509803, 0.39215686274509803),
-          8: (1.0, 0.0, 1.0)}
 
 
 class GeoInfo:
