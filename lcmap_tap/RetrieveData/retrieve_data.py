@@ -5,7 +5,7 @@ import datetime as dt
 import json
 import os
 import re
-
+import pickle
 from collections import Counter
 from collections import OrderedDict
 from collections import namedtuple
@@ -49,6 +49,16 @@ CONUS_EXTENT = GeoExtent(x_min=-2565585,
                          y_min=14805,
                          x_max=2384415,
                          y_max=3314805)
+
+COLORS = {0: (1.0, 0.0, 0.0),
+          1: (1.0, 0.6470588235294118, 0.0),
+          2: (1.0, 1.0, 0.0),
+          3: (0.0, 0.5490196078431373, 0.0),
+          4: (0.0, 0.0, 1.0),
+          5: (0.0, 1.0, 1.0),
+          6: (1.0, 1.0, 1.0),
+          7: (0.39215686274509803, 0.39215686274509803, 0.39215686274509803),
+          8: (1.0, 0.0, 1.0)}
 
 
 class GeoInfo:
@@ -669,3 +679,63 @@ class CCDReader:
             pixelqa_mask[pixelqa_in == val] = True
 
         return pixelqa_mask
+
+
+class SegmentClasses:
+    def __init__(self, x, y, units, class_dir):
+        """
+        Read in the classification results for the given coordinate
+
+        Args:
+            x: <str> X-coordinate
+            y: <str> Y-coordinate
+            units: <str> coordinate units (meters or lat/long dec. degrees)
+            class_dir: <str> Directory containing the classification results as pickle files
+
+        """
+        self.class_dir = class_dir
+        self.geo_specs = GeoInfo(x, y, units)
+
+        self.files = self.get_files()
+        self.file = self.find_file(self.files, "H{:02d}V{:02d}_{}_{}_class.p".format(self.geo_specs.H,
+                                                                                     self.geo_specs.V,
+                                                                                     self.geo_specs.chip_coord.x,
+                                                                                     self.geo_specs.chip_coord.y))
+        self.results = self.extract_results()
+
+        log.info("Classification results for (%s, %s):\n\t%s" % (x, y, list(self.results)))
+
+    def get_files(self):
+        """
+        Return a list of all files in the given directory
+
+        """
+        return [os.path.join(self.class_dir, f) for f in os.listdir(self.class_dir)]
+
+    @staticmethod
+    def find_file(file_ls, string):
+        """
+        Find the target file
+        Args:
+            file_ls: <list> all files in the given directory
+            string: <str> pattern to match
+
+        Returns:
+            <str>
+        """
+        gen = filter(lambda x: string in x, file_ls)
+
+        return next(gen, None)
+
+    def extract_results(self):
+        """
+        Load the data from the pickle file, slice out the location-specific data
+        Returns:
+
+        """
+        with open(self.file, "rb") as f:
+            results = pickle.load(f)
+
+            r = np.reshape(results, (100, 100))
+
+        return r[self.geo_specs.chip_pixel_rowcol.row, self.geo_specs.chip_pixel_rowcol.column]
