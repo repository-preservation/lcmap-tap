@@ -84,18 +84,29 @@ class GeoInfo:
                                                             h=self.H,
                                                             v=self.V)
 
-        self.CHIP_AFFINE = GeoAffine(ul_x=self.PIXEL_AFFINE.ul_x,
-                                     x_res=3000,
-                                     rot_1=0,
-                                     ul_y=self.PIXEL_AFFINE.ul_y,
-                                     rot_2=0,
-                                     y_res=-3000)
+        self.TILE_CHIP_AFFINE = GeoAffine(ul_x=self.PIXEL_AFFINE.ul_x,
+                                          x_res=3000,
+                                          rot_1=0,
+                                          ul_y=self.PIXEL_AFFINE.ul_y,
+                                          rot_2=0,
+                                          y_res=-3000)
 
         self.pixel_rowcol = self.geo_to_rowcol(self.PIXEL_AFFINE, self.coord)
         self.pixel_coord = self.rowcol_to_geo(self.PIXEL_AFFINE, self.pixel_rowcol)
 
-        self.chip_rowcol = self.geo_to_rowcol(self.CHIP_AFFINE, self.coord)
-        self.chip_coord = self.rowcol_to_geo(self.CHIP_AFFINE, self.chip_rowcol)
+        self.chip_rowcol = self.geo_to_rowcol(self.TILE_CHIP_AFFINE, self.coord)
+        self.chip_coord = self.rowcol_to_geo(self.TILE_CHIP_AFFINE, self.chip_rowcol)
+
+        self.PIXEL_CHIP_AFFINE = GeoAffine(ul_x=self.chip_coord.x,
+                                           x_res=30,
+                                           rot_1=0,
+                                           ul_y=self.chip_coord.y,
+                                           rot_2=0,
+                                           y_res=-30)
+
+        self.chip_pixel_rowcol = self.geo_to_rowcol(self.PIXEL_CHIP_AFFINE, self.pixel_coord)
+
+        self.chip_pixel_coord = self.rowcol_to_geo(self.PIXEL_CHIP_AFFINE, self.chip_pixel_rowcol)
 
         self.rowcol = self.geo_to_rowcol(self.PIXEL_AFFINE, self.coord)
 
