@@ -30,10 +30,6 @@ def exc_handler(exc_type, exc_value, exc_traceback):
     Returns:
 
     """
-    # if issubclass(exc_type, KeyboardInterrupt):
-    #     sys.__excepthook__(exc_type, exc_value, exc_traceback)
-    #     return
-
     log.critical("Uncaught Exception: ", exc_info=(exc_type, exc_value, exc_traceback))
 
 
@@ -499,31 +495,17 @@ class CCDReader:
         Extract the spectral values from the cache file
         :return:
         """
-        # rowcol = self.geo_to_rowcol(self.PIXEL_AFFINE, coord)
-
-        # data, image_ids = self.load_cache(self.find_file(self.CACHE_INV, "r{}".format(rowcol.row)))
         data, image_ids = self.load_cache(self.find_file(self.CACHE_INV,
                                                          "r{}".format(self.geo_info.rowcol.row)))
 
         dates = self.imageid_date(image_ids)
 
-        # return data[:, :, rowcol.column], dates, image_ids
         return data[:, :, self.geo_info.rowcol.column], dates, image_ids
 
     def extract_jsoncurve(self):
         """
         Extract the pyccd information from the json file representing a chip of results.
         """
-        # pixel_rowcol = self.geo_to_rowcol(self.PIXEL_AFFINE, coord)
-        # pixel_coord = self.rowcol_to_geo(self.PIXEL_AFFINE, pixel_rowcol)
-        #
-        # chip_rowcol = self.geo_to_rowcol(self.CHIP_AFFINE, coord)
-        # chip_coord = self.rowcol_to_geo(self.CHIP_AFFINE, chip_rowcol)
-
-        # file = self.find_file(self.JSON_INV,
-        #                       "H{:02d}V{:02d}_{}_{}.json".format(self.H, self.V, chip_coord.x, chip_coord.y))
-        # result = self.find_chipcurve(file, pixel_coord)
-
         file = self.find_file(self.JSON_INV,
                               "H{:02d}V{:02d}_{}_{}.json".format(self.geo_info.H,
                                                                  self.geo_info.V,
