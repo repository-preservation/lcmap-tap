@@ -5,6 +5,7 @@ from collections import namedtuple
 import numpy as np
 from osgeo import gdal
 import time
+import pkg_resources
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QPixmap, QImage
@@ -19,6 +20,13 @@ from lcmap_tap.RetrieveData.retrieve_data import RowColumn
 from lcmap_tap.Plotting import plot_functions
 from lcmap_tap.Visualization import tc_calculations
 from lcmap_tap.logger import log
+
+DATA_PATH = pkg_resources.resource_filename('lcmap_tap', 'Auxiliary')
+PNG_FILE = pkg_resources.resource_filename('lcmap_tap', os.path.join('Auxiliary', 'locator.png'))
+
+log.debug("DATA PATH: %s" % DATA_PATH)
+log.debug("PNG FILE: %s" % PNG_FILE)
+log.debug(os.path.exists(PNG_FILE))
 
 
 def exc_handler(exc_type, exc_value, exc_traceback):
@@ -225,12 +233,13 @@ class ARDViewerX(QtWidgets.QMainWindow):
         self.x_series = None
         self.y_series = None
         self.ax = None
+        self.marker = None
 
         self.graphics_view = ImageViewer()
 
         self.ui.scrollArea.setWidget(self.graphics_view)
 
-        self.current_view = current_view
+        # self.current_view = current_view
 
         self.ard_file = ard_file
 
@@ -322,6 +331,8 @@ class ARDViewerX(QtWidgets.QMainWindow):
         self.display_img()
 
         self.make_rect()
+
+        self.add_marker()
 
         self.graphics_view.fitInView()
 
@@ -489,7 +500,7 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
         self.graphics_view.centerOn(self.current_pixel)
 
-        # Arbitrary number of times to zoom out with the mouse wheel before full extent is reset, based on a guess
+        # Arbitrary number of times to zoom out with the mouse wheel before full extent is reset
         self.graphics_view._zoom = 18
 
         self.graphics_view.view_holder = QtCore.QRectF(self.graphics_view.mapToScene(0, 0),
@@ -740,7 +751,7 @@ class ARDViewerX(QtWidgets.QMainWindow):
             None
 
         """
-        pen = QtGui.QPen(QtCore.Qt.yellow)
+        pen = QtGui.QPen(QtCore.Qt.cyan)
         pen.setWidthF(0.1)
 
         self.row = self.pixel_rowcol.row
@@ -749,12 +760,47 @@ class ARDViewerX(QtWidgets.QMainWindow):
         upper_left = QtCore.QPointF(self.col, self.row)
         bottom_right = QtCore.QPointF(self.col + 1, self.row + 1)
 
-        # self.rect = QtCore.QRectF(upper_left, bottom_right)
         self.current_pixel = QtWidgets.QGraphicsRectItem(QtCore.QRectF(upper_left, bottom_right))
         self.current_pixel.setPen(pen)
 
-        # self.graphics_view.scene.addRect(self.rect, pen)
         self.graphics_view.scene.addItem(self.current_pixel)
+
+    def add_marker(self):
+        """
+        Add the marker icon to show where in the image the highlighted pixel is located
+
+        TODO: make the icon scalable
+        TODO: only display the icon when zoomed out a specific level from the highlighted pixel
+
+        Returns:
+
+        """
+        # Use the png file to create a QPixmap object
+        self.marker = QtWidgets.QGraphicsPixmapItem(QPixmap(PNG_FILE))
+
+        # Get the bounding rectangle of the QPixmap object
+        marker_rect = self.marker.boundingRect()
+
+        # Create a QPointF object based on the highlighted pixel row and column that represents the
+        # center of the bottom edge of the QPixmap bounding rectangle
+        marker_placement = QtCore.QPointF(self.col - marker_rect.width() / 2, self.row - marker_rect.height())
+
+        # Set the position of the marker
+        self.marker.setPos(marker_placement)
+
+        # Add the QPixmap to the QGraphicsScene on the QGraphicsView
+        # self.graphics_view.scene.addItem(self.marker)
+
+        # self.marker.setFlag(QtWidgets.QGraphicsPixmapItem.ItemIgnoresTransformations)
+
+    def remove_marker(self):
+        """
+        When the view port is at a certain zoom level, remove the marker
+        Returns:
+
+        """
+        if self.marker is not None:
+            self.graphics_view.scene.removeItem(self.marker)
 
     def update_rect(self, pos: QtCore.QPointF):
         """
@@ -771,7 +817,7 @@ class ARDViewerX(QtWidgets.QMainWindow):
             if self.current_pixel:
                 self.graphics_view.scene.removeItem(self.current_pixel)
 
-            pen = QtGui.QPen(QtCore.Qt.yellow)
+            pen = QtGui.QPen(QtCore.Qt.cyan)
             pen.setWidthF(0.1)
 
             self.row = int(pos.y())
@@ -800,12 +846,12 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
         """
         # Before generating the new plot, create a reference to the previously clicked date and subplot
-        if self.gui.plot_window.b is not None:
-            self.ax = self.gui.plot_window.b  # Subplot name
+        self.ax = self.gui.plot_window.b  # Subplot name
+
         log.debug("self.ax = %s" % self.ax)
 
-        if self.gui.plot_window.x is not None:
-            self.date_x = self.gui.plot_window.x  # Date in ordinal datetime format, the x coordinate
+        self.date_x = self.gui.plot_window.x  # Date in ordinal datetime format, the x coordinate
+
         log.debug("self.date_x = %s" % self.date_x)
 
         # Gather information to retrieve necessary data for the new plot
@@ -836,6 +882,8 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
         self.gui.plot()
 
+        """Need to determine the y-axis value for the new time series.  Can be done by determining the index within
+        the new time-series of the x-axis (i.e. date) value from the previous time series """
         x_look_thru = {"obs_points": self.gui.extracted_data.dates_in[self.gui.extracted_data.total_mask],
                        "out_points": self.gui.extracted_data.dates_out[self.gui.extracted_data.fill_out],
                        "mask_points": self.gui.extracted_data.dates_in[~self.gui.extracted_data.ccd_mask]}
@@ -849,29 +897,39 @@ class ARDViewerX(QtWidgets.QMainWindow):
                        "mask_points": self.gui.extracted_data.all_lookup[self.ax][0][self.gui.extracted_data.date_mask]
                        [~self.gui.extracted_data.ccd_mask]}
 
-        for x in x_look_thru.items():
-            if self.date_x in x[1]:
-                log.debug("Found date clicked %s in %s" % (self.date_x, x[0]))
-                self.x_series = x[1]
-                self.y_series = y_look_thru[x[0]]
+        for key, x in x_look_thru.items():
+            if self.date_x in x:
+                log.debug("Found date clicked %s in %s" % (self.date_x, key))
+
+                self.x_series = x
+
+                self.y_series = y_look_thru[key]
+
                 break
 
+        #: int: the location of the date in the new time series
         ind = np.where(self.x_series == self.date_x)
+
         log.debug("Numpy Where returned index value %s" % ind)
 
+        #: the reflectance or index value for the new time series
         self.data_y = np.take(self.y_series, ind)
+
         log.debug("Y-series value returned: %s" % self.data_y)
 
-        # if hasattr(self.gui.plot_window, 'x_series') and hasattr(self.gui.plot_window, 'y_series'):
-        #     self.x_series = self.gui.plot_window.x_series
-        #     self.y_series = self.gui.plot_window.y_series
-
         log.debug("From plot_window X: %s" % self.date_x)
+
         log.debug("From plot_window Y: %s" % self.data_y)
 
-        # Get a reference to the subplot in the new figure
-        highlight = self.gui.plot_window.artist_map[self.ax]
+        # Display the highlighted pixel in the new plot
+        highlight = self.gui.plot_window.artist_map[self.ax][0]
 
-        highlight.set_data(self.date_x[0], self.data_y[0])
+        log.debug("method update_plot, highlight=%s" % str(highlight))
+
+        # highlight.set_data(self.date_x[0], self.data_y[0])
+        highlight.set_data(self.date_x, self.data_y)
 
         self.gui.plot_window.canvas.draw()
+
+        # Clear the list of previously clicked ARD observations because they can't be referenced in the new time-series
+        self.gui.ui.clicked_listWidget.clear()
