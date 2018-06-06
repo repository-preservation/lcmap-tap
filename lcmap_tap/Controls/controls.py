@@ -96,6 +96,7 @@ class MainControls(QMainWindow):
         self.artist_map = None
         self.lines_map = None
         self.axes = None
+        self.class_dir = None
 
         self.selected_units = self.ui.comboBoxUnits.currentText()
 
@@ -381,6 +382,9 @@ class MainControls(QMainWindow):
             self.ui.browsejsonline.setText(os.path.join(self.drive_letter + os.sep,
                                                         'bulk', 'tiles', self.tile, 'change', self.version, 'json'))
 
+        self.class_dir = os.path.join(self.drive_letter + os.sep, 'bulk', 'tiles', self.tile, 'class',
+                                      'eval', 'pickles')
+
         return None
 
     def check_values(self):
@@ -560,7 +564,8 @@ class MainControls(QMainWindow):
                                             y=self.ui.y1line.text(),
                                             units=self.units[self.selected_units]["unit"],
                                             cache_dir=str(self.ui.browsecacheline.text()),
-                                            json_dir=str(self.ui.browsejsonline.text()))
+                                            json_dir=str(self.ui.browsejsonline.text()),
+                                            class_dir=self.class_dir)
 
         except (IndexError, AttributeError, TypeError, ValueError) as e:
             # Clear the results window
