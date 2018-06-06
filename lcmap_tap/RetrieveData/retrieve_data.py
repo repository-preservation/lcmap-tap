@@ -276,6 +276,9 @@ class SegmentClasses:
 
         """
         self.class_dir = class_dir
+
+        log.info("Looking for classification results in %s" % self.class_dir)
+
         self.geo_specs = GeoInfo(x, y, units)
 
         self.files = self.get_files()
@@ -283,6 +286,9 @@ class SegmentClasses:
                                                                                      self.geo_specs.V,
                                                                                      self.geo_specs.chip_coord.x,
                                                                                      self.geo_specs.chip_coord.y))
+
+        log.info("Found matching classification file: %s" % self.file)
+
         self.results = self.extract_results()
 
         log.info("Classification results for (%s, %s):\n\t%s" % (x, y, list(self.results)))
