@@ -5,13 +5,36 @@ import traceback
 import datetime as dt
 import matplotlib
 from matplotlib import pyplot as plt
+import matplotlib.lines as mlines
 from matplotlib.figure import Figure
 from collections import OrderedDict
 from typing import Tuple
+import numpy as np
 from numpy import ndarray
 from lcmap_tap.RetrieveData.retrieve_data import CCDReader
 from lcmap_tap.Plotting import plot_functions
 from lcmap_tap.logger import log
+
+
+COLORS = {'Developed': (1.0, 0.0, 0.0),
+          'Agriculture': (1.0, 0.6470588235294118, 0.0),
+          'Grass/Shrub': (1.0, 1.0, 0.0),
+          'Tree Cover': (0.0, 0.5490196078431373, 0.0),
+          'Water': (0.0, 0.0, 1.0),
+          'Wetlands': (0.0, 1.0, 1.0),
+          'Ice/Snow': (1.0, 1.0, 1.0),
+          'Barren': (0.39215686274509803, 0.39215686274509803, 0.39215686274509803),
+          'No Model-fit': (1.0, 0.0, 1.0)}
+
+NAMES = {0: 'Developed',
+         1: 'Agriculture',
+         2: 'Grass/Shrub',
+         3: 'Tree Cover',
+         4: 'Water',
+         5: 'Wetlands',
+         6: 'Ice/Snow',
+         7: 'Barren',
+         8: 'No Model-fit'}
 
 
 def exc_handler(exc_type, exc_value, exc_traceback):
@@ -58,7 +81,6 @@ def get_plot_items(data: CCDReader, items: list) -> dict:
         for a in set_lists.keys():
             if a in items:
                 # Update the dictionary to include the user-specified items
-                # temp_dict = {**temp_dict, **set_lists[a]}
                 temp_dict = plot_functions.merge_dicts(temp_dict, set_lists[a])
 
         return temp_dict
@@ -82,74 +104,124 @@ def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure,
         axes: Using squeeze=False, returns a 2D numpy array of matplotlib.axes.Axes objects
 
     """
+
+    def check_for_matches(starts: list, breaks: list):
+        """
+        Check if there are any instances of start date equalling break date
+
+        Args:
+            starts: list of ints: start dates in ordinal time
+            breaks: list of ints: break dates in ordinal time
+
+        Returns:
+            Either a list of match dates or None
+
+        """
+        matches = [b_ for b_ in breaks for s_ in starts if s_ == b_]
+
+        if len(matches) == 0:
+            return None
+
+        else:
+            return matches
+
+    def get_legend_handle(**kwargs):
+        """
+        kwargs: Line2D keyword arguments
+        """
+        return mlines.Line2D([], [], **kwargs)
+
     plt.style.use('ggplot')
 
     # get year values for labeling plots
     year1 = str(dt.datetime.fromordinal(data.dates[0]))[:4]
     year2 = str(dt.datetime.fromordinal(data.dates[-1]))[:4]
 
-    # List of every other year
-    # years = range(int(year1), int(year2) + 2, 2)
-
-    # List of every single year
-    years_ = range(int(year1), int(year2) + 2, 1)
-
-    # list of datetime objects with YYYY-MM-dd pattern using July 1 for month and day
-    # t = [dt.datetime(yx, 7, 1) for yx in years]
+    # List of years in time series
+    years = range(int(year1), int(year2) + 2, 1)
 
     # list of datetime objects with YYYY-MM-dd pattern using January 1 for month and day
-    t_ = [dt.datetime(yx, 1, 1) for yx in years_]
-
-    # list of ordinal time objects
-    # ord_time = [dt.datetime.toordinal(tx) for tx in t]
-
-    # list of datetime formatted strings
-    # x_labels = [str(dt.datetime.fromordinal(int(L)))[:10] if L != "0.0" and L != "" else "0" for L in ord_time]
+    datetimes = [dt.datetime(yx, 1, 1) for yx in years]
 
     total_mask = data.total_mask
 
+    class_results = dict()
+
+    for ind, result in enumerate(data.segment_classes.results):
+        class_ind = int(np.argmax(result['class_probs']))
+
+        class_label = NAMES[class_ind]
+
+        if class_label not in class_results:
+            class_results[class_label] = {'starts': [result['start_day']],
+                                          'ends': [result['end_day']]}
+
+        else:
+            class_results[class_label]['starts'].append(result['start_day'])
+            class_results[class_label]['ends'].append(result['end_day'])
+
     """plot_data is a dict whose keys are band names, index names, or a combination of both
-    
+
     plot_data[key][0] contains the observed values
-    
+
     plot_data[key][1] contains the model predicted values
     """
     plot_data = get_plot_items(data=data, items=items)
 
     """Create an empty dict to contain the mapping of data series to artists
-    
+
     artist_map[key][0] contains the x-series
-    
+
     artist_map[key][1] contains the y-series
-    
+
     artist_map[key][2] contains the subplot name
-    
+
     The keys that are subplot names will contain an empty point used for displaying which point is selected on the plot
-    
+
     All other keys are the PathCollections returned by matplotlib.axes.Axes.scatter
-    
+
     """
     artist_map = {}
 
     """Create an empty dict to contain the mapping of legend lines to plot artists"""
     lines_map = {}
 
-    # squeeze=False allows for plt.subplots to have a single subplot, must specify the column index as well
-    # when referencing a subplot because will always return a 2D array
-    # e.g. axes[num, 0] for plot number 'num' and column 0
+    """squeeze=False allows for plt.subplots to have a single subplot, must specify the column index as well
+    when referencing a subplot because will always return a 2D array
+    e.g. axes[num, 0] for subplot 'num'"""
     fig, axes = plt.subplots(nrows=len(plot_data), ncols=1, figsize=(18, len(plot_data) * 5),
                              dpi=65, squeeze=False, sharex='all', sharey='none')
 
+    """Define list objects that will contain the matplotlib artist objects within all subplots"""
+    end_lines = list()
+    break_lines = list()
+    start_lines = list()
+    match_lines = list()
+    model_lines = list()
+    date_lines = list()
+
+    all_obs_points = list()
+    all_out_points = list()
+    all_mask_points = list()
+    empty_point = None
+
+    match_dates = None
+
+    class_lines = dict()
+    class_handles = None
+
     for num, b in enumerate(plot_data.keys()):
-        """Make lists to contain references to the specific artist objects for the current subplot.
-        These lists are reset with each iteration, but their current items are stored in the artist_map and
-        lines_map dictionaries at the end of the for-loop."""
+        """Make lists to contain references to the specific artist objects for the current subplot."""
+        obs_points = list()
+        out_points = list()
+        mask_points = list()
+        empty_point = list()
+        class_handles = list()
 
-        end_lines, break_lines, start_lines, match_lines, model_lines, date_lines = [], [], [], [], [], []
+        # Give each subplot a title
+        axes[num, 0].set_title('{}'.format(b))
 
-        obs_points, out_points, mask_points, empty_point = [], [], [], []
-
-        # ---- Create an empty plot to use for displaying which point is clicked later on ----
+        """ ---- Create an empty plot to use for displaying which point is clicked later on ---- """
         empty_point.append(axes[num, 0].plot([], [],
                                              ms=12,
                                              c="none",
@@ -159,117 +231,120 @@ def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure,
                                              picker=3,
                                              linewidth=0))
 
-        # Generate legend line for the selected observation
-        axes[num, 0].plot([], [], marker="D", ms=8, color="none", mec="lime", mew=1.75,
-                          linewidth=0, label="Selected")
+        log.debug("empty_point created")
+        log.debug("empty_point=%s" % str(empty_point))
 
         # Store a reference to the empty point which will be used to display clicked points on the plot
-        artist_map[b] = empty_point[0][0]
+        artist_map[b] = empty_point[0]
+
+        log.debug("Referencing empty_point[0] which is %s for subplot %s" % (str(empty_point[0]), b))
 
         """ ---- Plot the observed values within the PyCCD time range ---- """
-        obs_points.append(axes[num, 0].scatter(x=data.dates_in[total_mask],
-                                               y=plot_data[b][0][data.date_mask][total_mask], s=44, c="green",
-                                               marker="o",
-                                               edgecolors="black", picker=3))
+        #: class matplotlib.collections.PathCollection:
+        obs = axes[num, 0].scatter(x=data.dates_in[total_mask],
+                                   y=plot_data[b][0][data.date_mask][total_mask],
+                                   s=44,
+                                   c="green",
+                                   marker="o",
+                                   edgecolors="black",
+                                   picker=3,
+                                   )
 
-        # Generate legend line for the observations used by pyccd
-        axes[num, 0].plot([], [], marker="o", ms=8, color="green", mec="k", mew=0.3,
-                          linewidth=0, label="Clear")
+        obs_points.append(obs)
+        all_obs_points.append(obs)
 
         # There's only ever one item in the *_points lists-a PathCollection artist-but it makes it easier to use with
         # the 2D Lines because those are lists too.  See the plotwindow.py module.
         artist_map[obs_points[0]] = [data.dates_in[total_mask], plot_data[b][0][data.date_mask][total_mask], b]
 
         """ ---- Observed values outside of the PyCCD time range ---- """
-        out_points.append(axes[num, 0].scatter(x=data.dates_out[data.fill_out],
-                                               y=plot_data[b][0][~data.date_mask][data.fill_out], s=21, color="red",
-                                               marker="o",
-                                               edgecolors="black", picker=3))
+        #: class matplotlib.collections.PathCollection:
+        out = axes[num, 0].scatter(x=data.dates_out[data.fill_out],
+                                   y=plot_data[b][0][~data.date_mask][data.fill_out],
+                                   s=21,
+                                   color="red",
+                                   marker="o",
+                                   edgecolors="black",
+                                   picker=3,
+                                   )
 
-        # Generate legend line for the obs. outside time range
-        axes[num, 0].plot([], [], marker="o", ms=4, color="red", mec="black", mew=0.3, linewidth=0,
-                          label="Unused")
+        out_points.append(out)
+        all_out_points.append(out)
 
         artist_map[out_points[0]] = [data.dates_out[data.fill_out], plot_data[b][0][~data.date_mask][data.fill_out], b]
 
         """ ---- Plot the observed values masked out by PyCCD ---- """
-        mask_points.append(axes[num, 0].scatter(x=data.dates_in[~data.ccd_mask],
-                                                y=plot_data[b][0][data.date_mask][~data.ccd_mask], s=21, color="0.65",
-                                                marker="o", picker=2))
+        #: class matplotlib.collections.PathCollection:
+        mask = axes[num, 0].scatter(x=data.dates_in[~data.ccd_mask],
+                                    y=plot_data[b][0][data.date_mask][~data.ccd_mask],
+                                    s=21,
+                                    color="0.65",
+                                    marker="o",
+                                    picker=2,
+                                    )
 
-        # Generate legend line for the masked observations
-        axes[num, 0].plot([], [], marker="o", ms=4, color="0.65", linewidth=0,
-                          label="Masked")
+        mask_points.append(mask)
+        all_mask_points.append(mask)
 
         artist_map[mask_points[0]] = [data.dates_in[~data.ccd_mask],
                                       plot_data[b][0][data.date_mask][~data.ccd_mask], b]
 
-        # Give each subplot a title
-        axes[num, 0].set_title('{}'.format(b))
-
-        # ---- plot the model start, end, and break dates ----
-        match_dates = [b for b in data.break_dates for s in data.start_dates if b == s]
+        """ # ---- plot the model start, end, and break dates ---- """
+        match_dates = check_for_matches(data.start_dates, data.break_dates)
 
         for ind, e in enumerate(data.end_dates):
-            if ind == 0:
-                lines1 = axes[num, 0].axvline(e, color="maroon", linewidth=1.5, label="End")
+            lines1 = axes[num, 0].axvline(e, color="maroon", linewidth=1.5)
 
-                end_lines.append(lines1)
-
-            else:
-                # Plot without a label to remove duplicates in the legend
-                lines1 = axes[num, 0].axvline(e, color="maroon", linewidth=1.5)
-
-                end_lines.append(lines1)
+            end_lines.append(lines1)
 
         for ind, br in enumerate(data.break_dates):
-            if ind == 0:
-                lines2 = axes[num, 0].axvline(br, color='r', linewidth=1.5, label="Break")
+            lines2 = axes[num, 0].axvline(br, color='r', linewidth=1.5)
 
-                break_lines.append(lines2)
-
-            else:
-                lines2 = axes[num, 0].axvline(br, color='r', linewidth=1.5)
-
-                break_lines.append(lines2)
+            break_lines.append(lines2)
 
         for ind, s in enumerate(data.start_dates):
-            if ind == 0:
-                lines3 = axes[num, 0].axvline(s, color='b', linewidth=1.5, label="Start")
+            lines3 = axes[num, 0].axvline(s, color='b', linewidth=1.5)
 
-                start_lines.append(lines3)
+            start_lines.append(lines3)
 
-            else:
-                lines3 = axes[num, 0].axvline(s, color='b')
+        if match_dates is not None:
 
-                start_lines.append(lines3)
-
-        for ind, m in enumerate(match_dates):
-            if ind == 0:
-                lines4 = axes[num, 0].axvline(m, color="magenta", linewidth=1.5, label="Break = Start")
-
-                match_lines.append(lines4)
-
-            else:
+            for ind, m in enumerate(match_dates):
                 lines4 = axes[num, 0].axvline(m, color="magenta", linewidth=1.5)
 
                 match_lines.append(lines4)
 
-        # ---- Draw the predicted curves ----
+        """ ---- Draw the predicted curves ---- """
         for c in range(0, len(data.results["change_models"])):
-            if c == 0:
-                lines5, = axes[num, 0].plot(data.prediction_dates[c * len(data.bands)], plot_data[b][1][c], "orange",
-                                            linewidth=3, alpha=0.8, label="Model Fit")
+            lines5, = axes[num, 0].plot(data.prediction_dates[c * len(data.bands)],
+                                        plot_data[b][1][c],
+                                        "orange",
+                                        linewidth=3,
+                                        alpha=0.8)
 
-                model_lines.append(lines5)
+            model_lines.append(lines5)
 
-            else:
-                lines5, = axes[num, 0].plot(data.prediction_dates[c * len(data.bands)], plot_data[b][1][c], "orange",
-                                            alpha=0.8, linewidth=3)
+        """ ---- Draw horizontal color bars representing class assignments ---- """
 
-                model_lines.append(lines5)
 
-        # Set values for the y-axis limits
+
+        for key in class_results.keys():
+            if key not in class_lines:
+                class_lines[key] = list()
+
+            for ind, item in enumerate(class_results[key]['starts']):
+                lines6 = axes[num, 0].hlines(y=0,
+                                             xmin=item,
+                                             xmax=class_results[key]['ends'][ind],
+                                             linewidth=6,
+                                             colors=COLORS[key])
+
+                class_lines[key].append(lines6)
+
+            class_handles.append(get_legend_handle(linewidth=6,
+                                                   color=COLORS[key], label=key))
+
+        """ Set values for the y-axis limits """
         if b in data.index_lookup.keys():
             # Potential dynamic range values
             # ymin = min(plot_data[b][0][data.date_mask][total_mask]) - 0.15
@@ -295,45 +370,87 @@ def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure,
         # Set the y-axis limits
         axes[num, 0].set_ylim([ymin, ymax])
 
-        # ---- Display the x and y values where the cursor is placed on a subplot ----
+        """ ---- Display the x and y values where the cursor is placed on a subplot ---- """
         axes[num, 0].format_coord = lambda xcoord, ycoord: "({0:%Y-%m-%d}, ".format(
             dt.datetime.fromordinal(int(xcoord))) + "{0:f})".format(ycoord)
 
-        # ---- Plot a vertical line at January 1 of each year on the time series ----
-        for y in t_:
-            if y == t_[0]:
-                lines6 = axes[num, 0].axvline(y, color="dimgray", linewidth=1.5, label="Datelines")
+        """ ---- Plot a vertical line at January 1 of each year on the time series ---- """
+        for date in datetimes:
+            lines7 = axes[num, 0].axvline(date, color='dimgray', linewidth=1.5)
 
-                date_lines.append(lines6)
-
-            else:
-                lines6 = axes[num, 0].axvline(y, color="dimgray", linewidth=1.5)
-
-                date_lines.append(lines6)
-
-        # ---- Generate the legend for the current subplot ----
-        leg = axes[num, 0].legend(ncol=1, loc="upper left", bbox_to_anchor=(1.00, 1.00),
-                                  borderaxespad=0.)
-
-        """Have to check for the possibility that match_lines is empty...might be worth considering not plotting this
-        at all"""
-        if len(match_lines) == 0:
-            lines = [empty_point[0], obs_points, out_points, mask_points, end_lines, break_lines, start_lines,
-                     model_lines, date_lines]
-        else:
-            lines = [empty_point[0], obs_points, out_points, mask_points, end_lines, break_lines, start_lines,
-                     match_lines, model_lines, date_lines]
-
-        # Map the legend lines to their original artists so the event picker can interact with them
-        for legline, origline in zip(leg.get_lines(), lines):
-            # Set a tolerance of 5 pixels
-            legline.set_picker(5)
-
-            # Map the artist to the corresponding legend line
-            lines_map[legline] = origline
+            date_lines.append(lines7)
 
         # With sharex=True, set all x-axis tick labels to visible
         axes[num, 0].tick_params(axis='both', which='both', labelsize=12, labelbottom=True)
+
+    """Create custom legend handles"""
+    empty_leg = get_legend_handle(marker="D", ms=8, color="none", mec="lime", mew=1.75, linewidth=0,
+                                  label="Selected")
+
+    obs_leg = get_legend_handle(marker="o", ms=8, color="green", mec="k", mew=0.3, linewidth=0,
+                                label="Clear")
+
+    mask_leg = get_legend_handle(marker="o", ms=4, color="0.65", linewidth=0,
+                                 label="Masked")
+
+    out_leg = get_legend_handle(marker="o", ms=4, color="red", mec="black", mew=0.3, linewidth=0,
+                                label="Unused")
+
+    end_leg = get_legend_handle(color="maroon", linewidth=1.5, label="End Date")
+
+    break_leg = get_legend_handle(color='r', linewidth=1.5, label="Break Date")
+
+    start_leg = get_legend_handle(color='b', linewidth=1.5, label="Start Date")
+
+    match_leg = get_legend_handle(color='magenta', linewidth=1.5, label="Start Date = Break Date")
+
+    model_leg = get_legend_handle(color="orange", linewidth=3, alpha=0.8, label="Model Fit")
+
+    date_leg = get_legend_handle(color='dimgray', linewidth=1.5, label="Datelines")
+
+    if match_dates is not None:
+
+        handles = [empty_leg, obs_leg, mask_leg, out_leg, end_leg, break_leg, start_leg,
+                   match_leg, model_leg, date_leg]
+
+        labels = ["Selected", "Clear", "Masked", "Unused", "End Date", "Break Date", "Start Date",
+                  "Start Date = Break Date", "Model Fit", "Datelines"]
+
+        lines = [empty_point[0], all_obs_points, all_mask_points, all_out_points, end_lines, break_lines, start_lines,
+                 match_lines, model_lines, date_lines]
+
+    else:
+        handles = [empty_leg, obs_leg, mask_leg, out_leg, end_leg, break_leg, start_leg,
+                   model_leg, date_leg]
+
+        labels = ["Selected", "Clear", "Masked", "Unused", "End Date", "Break Date", "Start Date",
+                  "Model Fit", "Datelines"]
+
+        lines = [empty_point[0], all_obs_points, all_mask_points, all_out_points, end_lines, break_lines, start_lines,
+                 model_lines, date_lines]
+
+    """Add whichever land cover classes are present to the legend handles and labels"""
+    for c in class_handles:
+        handles.append(c)
+
+    for cl in class_results.keys():
+        labels.append(cl)
+
+    leg = axes[0, 0].legend(handles=handles, labels=labels,
+                            ncol=1,
+                            loc="upper left",
+                            bbox_to_anchor=(1.00, 1.00),
+                            borderaxespad=0.)
+
+    for key in class_lines.keys():
+        lines.append(class_lines[key])
+
+    for legline, origline in zip(leg.get_lines(), lines):
+        # Set a tolerance of 5 pixels
+        legline.set_picker(5)
+
+        # Map the artist to the corresponding legend line
+        lines_map[legline] = origline
 
     # Fill in the figure canvas
     fig.tight_layout()

@@ -18,7 +18,7 @@ from setuptools import setup, find_packages
 setup(
     name='lcmap_tap',
 
-    version='0.1.3',
+    version='0.1.3d',
 
     packages=find_packages(),
 
@@ -31,9 +31,11 @@ setup(
 
     entry_points={'gui_scripts': ['lcmap_tap = lcmap_tap.__main__:main']},
 
-    # dependency_links=['https://github.com/conda-forge/gdal-feedstock/'],
-
     python_requires='>=3.5',
+
+    # package_data={'lcmap_tap': ['Auxiliary/*.png']},
+
+    include_package_data = True,
 
     author='Daniel Zelenak',
 
@@ -45,5 +47,5 @@ setup(
 
     license='Public Domain',
 
-    url='https://github.com/danzelenak-usgs/LCMAP_TAP'
+    url='https://github.com/USGS-EROS/lcmap-tap'
 )

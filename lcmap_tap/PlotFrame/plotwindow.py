@@ -3,14 +3,13 @@ display and interactions for the PyCCD plots."""
 
 import sys
 import datetime as dt
-import matplotlib
 import numpy as np
 from PyQt5 import QtWidgets, QtCore
+import matplotlib
 
 matplotlib.use("Qt5Agg")
-
 from matplotlib.collections import PathCollection
-
+from matplotlib.lines import Line2D
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
@@ -94,6 +93,7 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.artist = None
         self.x = None
         self.b = None  # The clicked axis (subplot name)
+        self.artist_data = None
 
         self.fig = fig
         self.canvas = MplCanvas(fig=self.fig)
@@ -125,9 +125,9 @@ class PlotWindow(QtWidgets.QMainWindow):
 
         self.canvas.mpl_connect("pick_event", self.point_pick)
 
-        self.canvas.mpl_connect("pick_event", self.leg_pick)
+        # self.canvas.mpl_connect("pick_event", self.leg_pick)
 
-        self.canvas.mpl_connect("pick_event", self.highlight_pick)
+        # self.canvas.mpl_connect("pick_event", self.highlight_pick)
 
         self.canvas.mpl_connect("axes_enter_event", self.enter_axes)
 
@@ -155,18 +155,18 @@ class PlotWindow(QtWidgets.QMainWindow):
         mouse_event = event.mouseevent
 
         # This references which object on the plot was hit by the pick
-        artist = event.artist
+        self.artist = event.artist
 
         # Only works using left-click (event.mouseevent.button==1)
         # and on any of the scatter point series (PathCollection artists)
-        if isinstance(artist, PathCollection) and mouse_event.button == 1:
+        if isinstance(self.artist, PathCollection) and mouse_event.button == 1:
             # Return the index value of the artist (i.e. which data point in the series was hit)
             ind = event.ind
 
             # Retrieve the appropriate data series based on the clicked artist
-            x = self.artist_map[artist][0]
-            y = self.artist_map[artist][1]
-            b = self.artist_map[artist][2]
+            x = self.artist_map[self.artist][0]
+            y = self.artist_map[self.artist][1]
+            self.b = self.artist_map[self.artist][2]
 
             try:
                 # Grab the date value at the clicked point
@@ -176,7 +176,10 @@ class PlotWindow(QtWidgets.QMainWindow):
 
                 # Retrieve the x-y data for the plotted point within a set tolerance to the
                 # clicked point if there is one
-                nearest_x = dt.datetime.fromordinal(int(np.take(x, ind)))
+                self.x = np.take(x, ind)  # The x-value in ordinal format
+
+                nearest_x = dt.datetime.fromordinal(int(self.x))
+
                 nearest_y = np.take(y, ind)
 
                 self.artist_data = [nearest_x, nearest_y]
@@ -188,7 +191,7 @@ class PlotWindow(QtWidgets.QMainWindow):
                 log.debug("Point clicked: %s" % point_clicked)
                 log.debug("Nearest artist: %s" % self.value_holder)
                 log.debug("Artist data: %s" % self.artist_data)
-                log.debug("Subplot: %s" % b)
+                log.debug("Subplot: %s" % self.b)
 
                 # Look through the scene IDs to find which one corresponds to the selected obs. date
                 for scene in self.scenes:
@@ -199,112 +202,112 @@ class PlotWindow(QtWidgets.QMainWindow):
                                                                "Obs. Date: {:%Y-%b-%d}\n"
                                                                "{}-Value: {}".format(scene,
                                                                                      self.value_holder['temp'][1][0],
-                                                                                     b,
+                                                                                     self.b,
                                                                                      self.value_holder['temp'][1][1][
                                                                                          0]))
                         break
+
+                self.highlight_pick()
 
             # I think the TypeError might occur when more than a single data point is returned with one click,
             # but need to investigate further.
             except TypeError:
                 pass
 
+        elif isinstance(self.artist, Line2D) and mouse_event.button == 1:
+            self.leg_pick()
+
         else:
             # Do this so nothing happens when the other mouse buttons are clicked while over a plot
             return False, dict()
 
-    def highlight_pick(self, event=None):
+    def highlight_pick(self):
         """
         Change the symbology of the clicked point so that it is visible on the plot
 
-        Args:
-            event:
-
         Returns:
             None
 
         """
-        # Reference useful information about the pick location
-        mouse_event = event.mouseevent
+        log.debug("highlight_pick method self.artist= %s" % str(self.artist))
 
-        # This references which object on the plot was hit by the pick
-        self.artist = event.artist
+        # Remove the highlight from the previously selected point
+        try:
+            self.prev_highlight.set_data([], [])
 
-        # Only works using left-click (event.mouseevent.button==1)
-        # and on any of the scatter point series (PathCollection artists)
-        if isinstance(self.artist, PathCollection) and mouse_event.button == 1:
-            # Remove the highlight from the previously selected point
-            try:
-                self.prev_highlight.set_data([], [])
+        except AttributeError:
+            pass
 
-            except AttributeError:
-                pass
+        # <class 'matplotlib.lines.Line2D'> This points to the Line2D curve that will contain the highlighted point
+        # Use index '0' because self.artist_map[b] is referencing a list of 1 item
+        highlight = self.artist_map[self.b][0]
 
-            # Return the index value of the artist (i.e. which data point in the series was hit)
-            self.ind = event.ind
+        log.debug("Method highlight_pick, highlight=%s" % str(highlight))
 
-            # Retrieve the appropriate data series based on the clicked artist
-            self.x_series = self.artist_map[self.artist][0]
-            self.y_series = self.artist_map[self.artist][1]
-            self.b = self.artist_map[self.artist][2]
+        self.prev_highlight = highlight
 
-            self.x = np.take(self.x_series, self.ind)
-            self.y = np.take(self.y_series, self.ind)
+        highlight.set_data(self.artist_data[0], self.artist_data[1])
 
-            # <class 'matplotlib.lines.Line2D'> This points to the Line2D curve that will contain the highlighted point
-            highlight = self.artist_map[self.b]
+        self.canvas.draw()
 
-            self.prev_highlight = highlight
-
-            highlight.set_data(self.x, self.y)
-
-            self.canvas.draw()
-
-    def leg_pick(self, event=None):
+    def leg_pick(self):
         """
         Define a picker method that allows toggling lines on/off by clicking them on the legend
-        Args:
-            event: A mouse-click event
 
         Returns:
             None
 
         """
-        mouseevent = event.mouseevent
 
-        # Only want this to work if the left mouse button is clicked (value == 1)
-        if mouseevent.button == 1:
+        def set_vis(visibility, line):
+            """
+            Change the transparency of the picked object in the legend so the user can see explicitly
+            which items are turned on/off.
+            TODO: Figure out how to make this work for the marker (no line) symbols
+            Args:
+                visibility: <bool> Whether or not the line is currently visible
+                line: <matplotlib.collections.PathCollection> Represents the clicked symbol from the plot legend
 
-            try:
-                legline = event.artist
+            Returns:
 
-                # The origlines is a list of lines mapped to the legline for that particular subplot
-                origlines = self.lines_map[legline]
+            """
+            if visibility:
+                line.set_alpha(1.0)
 
-                for l in origlines:
+            else:
+                line.set_alpha(0.2)
 
-                    # Reference the opposite of the line's current visibility
-                    vis = not l.get_visible()
+            return None
 
-                    # Make it so
-                    l.set_visible(vis)
+        legline = self.artist
 
-                    # Change the transparency of the picked object in the legend so the user can see explicitly
-                    # which items are turned on/off.  This doesn't work for the points in the legend currently.
-                    if vis:
-                        legline.set_alpha(1.0)
+        log.debug("method leg_pick called, legline=%s" % str(legline))
 
-                    else:
-                        legline.set_alpha(0.2)
+        # The origlines is a list of lines mapped to the legline for that particular subplot
+        origlines = self.lines_map[legline]
 
-                # Redraw the canvas with the line or points turned on/off
-                self.canvas.draw()
+        log.debug("method leg_pick, origlines referenced=%s" % str(origlines))
 
-            except KeyError:
-                return False, dict()
+        for l in origlines:
+            if type(l) is not list:
 
-        else:
-            return False, dict()
+                # Reference the opposite of the line's current visibility
+                vis = not l.get_visible()
+
+                l.set_visible(vis)
+
+                set_vis(vis, legline)
+
+            else:
+                for _l in l:
+                    vis = not _l.get_visible()
+
+                    _l.set_visible(vis)
+
+                    set_vis(vis, legline)
+
+        # Redraw the canvas with the line or points turned on/off
+        self.canvas.draw()
 
     def enter_axes(self, event=None):
         """
@@ -336,7 +339,7 @@ class PlotWindow(QtWidgets.QMainWindow):
 
     def zoom_event(self, event=None, base_scale=2.):
         """
-        Enable zooming in/out of the plots using the mouse scroll wheel.  Currently zoom on the x-axis only.
+        Enable zooming in/out of the plots using the mouse scroll wheel.  Current affects only the x-axis by design.
         Source: https://gist.github.com/tacaswell/3144287
 
         Args:
