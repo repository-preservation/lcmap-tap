@@ -18,7 +18,7 @@ from setuptools import setup, find_packages
 setup(
     name='lcmap_tap',
 
-    version='0.1.3c',
+    version='0.1.3d',
 
     packages=find_packages(),
 
