@@ -517,7 +517,7 @@ class CCDReader:
         :param string: 
         :return: 
         """
-        gen = filter(lambda x: string in x, file_ls)
+        gen = filter(lambda x: string.casefold() in x.casefold(), file_ls)
 
         return next(gen, None)
 
