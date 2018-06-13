@@ -220,7 +220,7 @@ class MapsViewer(QMainWindow):
     versions = ["v2017.08.18", "v2017.8.18",
                 "v2017.6.20-a", "v2017.6.20",
                 "v2017.06.20", "v2017.06.20b", "v2017.06.20-b",
-                "v2017.6.8", "v1.4.0", "1.4.0rc1"]
+                "v2017.6.8", "v1.4.0", "v1.4.0rc1"]
 
     def __init__(self, tile, root, ccd, version, begin_year=1984, end_year=2015):
 
