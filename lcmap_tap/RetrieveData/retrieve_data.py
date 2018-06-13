@@ -168,6 +168,7 @@ class GeoInfo:
 
         Returns:
             The x and y coordinates as float values stored in a GeoCoordinate type-object
+
         """
         if isinstance(xstring, int):
             xstring = str(xstring)
@@ -195,6 +196,7 @@ class GeoInfo:
         Convert between different units for a given coordinate system
         projected -> meters
         geographic -> dec. deg.
+
         Args:
             src: <str> Input units
             dest: <str> Output units
