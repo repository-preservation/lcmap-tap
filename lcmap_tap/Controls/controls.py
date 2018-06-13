@@ -135,20 +135,6 @@ class MainControls(QMainWindow):
             self.check_values()
 
         # *** Connect the various widgets to the methods they interact with ***
-        self.ui.browsecachebutton.clicked.connect(self.browse_cache)
-
-        self.ui.browsejsonbutton.clicked.connect(self.browse_json)
-
-        self.ui.browseoutputbutton.clicked.connect(self.browse_output)
-
-        self.ui.browseardbutton.clicked.connect(self.browse_ard)
-
-        self.ui.browsecacheline.textChanged.connect(self.check_values)
-
-        self.ui.browsejsonline.textChanged.connect(self.check_values)
-
-        self.ui.browseARDline.textChanged.connect(self.check_values)
-
         self.ui.x1line.textChanged.connect(self.set_units)
 
         self.ui.x1line.textChanged.connect(self.get_version)
@@ -165,6 +151,30 @@ class MainControls(QMainWindow):
 
         self.ui.y1line.textChanged.connect(self.check_values)
 
+        self.ui.comboBoxUnits.currentIndexChanged.connect(self.set_units)
+
+        self.ui.comboBoxUnits.currentIndexChanged.connect(self.get_version)
+
+        # Call the activated signal when the user clicks on any item (new or old) in the comboBox
+        # [str] calls the overloaded signal that passes the Qstring, not the index of the item
+        self.ui.version_comboBox.activated[str].connect(self.set_version)
+
+        self.ui.driveLetter_comboBox.currentIndexChanged.connect(self.get_drive_letter)
+
+        self.ui.browsecachebutton.clicked.connect(self.browse_cache)
+
+        self.ui.browsejsonbutton.clicked.connect(self.browse_json)
+
+        self.ui.browseoutputbutton.clicked.connect(self.browse_output)
+
+        self.ui.browseardbutton.clicked.connect(self.browse_ard)
+
+        self.ui.browsecacheline.textChanged.connect(self.check_values)
+
+        self.ui.browsejsonline.textChanged.connect(self.check_values)
+
+        self.ui.browseARDline.textChanged.connect(self.check_values)
+
         self.ui.browseoutputline.textChanged.connect(self.check_values)
 
         self.ui.plotbutton.clicked.connect(self.plot)
@@ -178,14 +188,6 @@ class MainControls(QMainWindow):
         self.ui.exitbutton.clicked.connect(self.exit_plot)
 
         self.ui.clicked_listWidget.itemClicked.connect(self.show_ard)
-
-        self.ui.comboBoxUnits.currentIndexChanged.connect(self.set_units)
-
-        self.ui.comboBoxUnits.currentIndexChanged.connect(self.get_version)
-
-        self.ui.driveLetter_comboBox.currentIndexChanged.connect(self.get_drive_letter)
-
-        self.ui.version_comboBox.currentIndexChanged.connect(self.set_version)
 
         self.ui.mapButton.clicked.connect(self.show_maps)
 
@@ -223,14 +225,8 @@ class MainControls(QMainWindow):
             None
 
         """
-        num_items = self.ui.version_comboBox.count()
-
-        for n in range(0, num_items):
-            try:
-                self.ui.version_comboBox.removeItem(n)
-
-            except IndexError:
-                continue
+        # Remove previous versions since they may not exist for the current coordinate
+        self.ui.version_comboBox.clear()
 
         path = os.path.join(self.drive_letter + os.sep, 'bulk', 'tiles', self.tile, 'change')
 
@@ -247,10 +243,13 @@ class MainControls(QMainWindow):
 
         self.version = self.ui.version_comboBox.currentText()
 
-    def set_version(self):
+    def set_version(self, version):
         """
         Set the PyCCD version for creating a path to the JSON files and automatically update the path to the
         JSON directory with the selected version
+
+        Args:
+            version <QString> the text sent automatically
 
         Returns:
             None
@@ -260,7 +259,7 @@ class MainControls(QMainWindow):
 
         # Update the browsejsonline field with the selected version
         self.ui.browsejsonline.setText(os.path.join(self.drive_letter + os.sep,
-                                                    'bulk', 'tiles', self.tile, 'change', self.version, 'json'))
+                                                    'bulk', 'tiles', self.tile, 'change', str(version), 'json'))
 
     def clear(self):
         """
@@ -282,7 +281,7 @@ class MainControls(QMainWindow):
 
     def set_units(self):
         """
-        Change the unit labels if the units are changed on the GUI
+        Change the unit labels if the units are changed on the GUI, display the converted units if values are entered
 
         Returns:
             None
@@ -300,15 +299,16 @@ class MainControls(QMainWindow):
 
         self.ui.label_units2.setText(self.units[self.selected_units]["label_unit2"])
 
-        # <GeoCoordinate> containing the converted coordinates to display
-        temp = GeoInfo.unit_conversion(coord=GeoInfo.get_geocoordinate(xstring=self.ui.x1line.text(),
-                                                                       ystring=self.ui.y1line.text()),
-                                       src=self.units[self.selected_units]["unit"],
-                                       dest=self.units[self.ui.label_units2.text()]["unit"])
+        if len(self.ui.x1line.text()) > 0 and len(self.ui.y1line.text()) > 0:
+            # <GeoCoordinate> containing the converted coordinates to display
+            temp = GeoInfo.unit_conversion(coord=GeoInfo.get_geocoordinate(xstring=self.ui.x1line.text(),
+                                                                           ystring=self.ui.y1line.text()),
+                                           src=self.units[self.selected_units]["unit"],
+                                           dest=self.units[self.ui.label_units2.text()]["unit"])
 
-        self.ui.x2line.setText(str(temp.x))
+            self.ui.x2line.setText(str(temp.x))
 
-        self.ui.y2line.setText(str(temp.y))
+            self.ui.y2line.setText(str(temp.y))
 
     def fname_generator(self, ext=".png"):
         """
@@ -377,10 +377,10 @@ class MainControls(QMainWindow):
 
         self.ui.browseARDline.setText(os.path.join(self.drive_letter + os.sep, 'perf', 'production', self.tile))
 
-        if self.version is not None:
-
-            self.ui.browsejsonline.setText(os.path.join(self.drive_letter + os.sep,
-                                                        'bulk', 'tiles', self.tile, 'change', self.version, 'json'))
+        # if self.version is not None:
+        #
+        #     self.ui.browsejsonline.setText(os.path.join(self.drive_letter + os.sep,
+        #                                                 'bulk', 'tiles', self.tile, 'change', self.version, 'json'))
 
         self.class_dir = os.path.join(self.drive_letter + os.sep, 'bulk', 'tiles', self.tile, 'class',
                                       'eval', 'pickles')
@@ -389,7 +389,7 @@ class MainControls(QMainWindow):
 
     def check_values(self):
         """
-        Check to make sure all of the required parameters have been entered before enabling certain buttons
+        Check to make sure all of the required parameters have been entered before enabling Plot
 
         Returns:
             None
@@ -415,14 +415,14 @@ class MainControls(QMainWindow):
 
                 self.ui.savefigpushButton.setEnabled(False)
 
-            elif ind in (0, 1, 2) and not os.path.exists(check):
-                log.warning("The path %s cannot be found" % check)
-
-                self.ui.plotbutton.setEnabled(False)
-
-                self.ui.clearpushButton.setEnabled(False)
-
-                self.ui.savefigpushButton.setEnabled(False)
+            # elif ind in (0, 1, 2) and not os.path.exists(check):
+            #     # log.warning("The path %s cannot be found" % check)
+            #
+            #     self.ui.plotbutton.setEnabled(False)
+            #
+            #     self.ui.clearpushButton.setEnabled(False)
+            #
+            #     self.ui.savefigpushButton.setEnabled(False)
 
             else:
                 counter += 1
@@ -431,9 +431,29 @@ class MainControls(QMainWindow):
         if counter == 6:
             self.ui.plotbutton.setEnabled(True)
 
-            self.set_units()
+            # self.set_units()
 
         return None
+
+    @staticmethod
+    def check_path(name, path):
+        """
+        Check if the input path exists
+        Args:
+            name <str>: The path category (e.g. cache, json, ard)
+            path <str>: A path on the system
+
+        Returns:
+            <bool>
+
+        """
+        if not os.path.exists(path):
+            log.warning("The %s path %s cannot be found" % (name, path))
+
+            return False
+
+        else:
+            return True
 
     def browse_cache(self):
         """
@@ -546,19 +566,22 @@ class MainControls(QMainWindow):
             None
 
         """
+        dirs = {"cache": self.ui.browsecacheline.text(),
+                "json": self.ui.browsejsonline.text(),
+                "ard": self.ui.browseARDline.text()}
+
+        for key, value in dirs.items():
+            if not self.check_path(key, value):
+                return None
+
         # <bool> If True, generate a point shapefile for the entered coordinates
         shp_on = self.ui.radioshp.isChecked()
 
-        # Close the previous plot window if still open
-        try:
+        if self.plot_window:
             self.plot_window.close()
 
-        # Will raise AttributeError if this is the first plot because "p" doesn't exist yet
-        except AttributeError:
-            pass
-
         # If there is a problem with any of the parameters, the first erroneous parameter
-        # will cause an exception to occur which will be displayed in the GUI for the user, and the tool won't close.
+        # will cause an exception to occur which will be displayed in the GUI for the user, but the tool won't close.
         try:
             self.extracted_data = CCDReader(x=self.ui.x1line.text(),
                                             y=self.ui.y1line.text(),
@@ -585,9 +608,9 @@ class MainControls(QMainWindow):
 
             return None
 
-        self.ard_specs = ARDInfo(self.ui.browseARDline.text(),
-                                 self.extracted_data.geo_info.H,
-                                 self.extracted_data.geo_info.V)
+        self.ard_specs = ARDInfo(root=self.ui.browseARDline.text(),
+                                 h=self.extracted_data.geo_info.H,
+                                 v=self.extracted_data.geo_info.V)
 
         # Display change model information for the entered coordinates
         self.show_model_params(data=self.extracted_data)
@@ -598,9 +621,9 @@ class MainControls(QMainWindow):
         """ 
         fig <matplotlib.figure> Matplotlib figure object containing all of the artists
         
-        artist_map <dict> mapping each specific PathCollection artist to it's underlying dataset
+        artist_map <dict> mapping of each specific PathCollection artist to it's underlying dataset
         
-        lines_map <dict> mapping artist lines and points to the legend lines
+        lines_map <dict> mapping of artist lines and points to the legend lines
         
         axes <ndarray> 2D array of matplotlib.axes.Axes objects
         """
