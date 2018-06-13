@@ -155,6 +155,10 @@ class MainControls(QMainWindow):
 
         self.ui.comboBoxUnits.currentIndexChanged.connect(self.get_version)
 
+        # Call the activated signal when the user clicks on any item (new or old) in the comboBox
+        # [str] calls the overloaded signal that passes the Qstring, not the index of the item
+        self.ui.version_comboBox.activated[str].connect(self.set_version)
+
         self.ui.driveLetter_comboBox.currentIndexChanged.connect(self.get_drive_letter)
 
         self.ui.browsecachebutton.clicked.connect(self.browse_cache)
@@ -184,10 +188,6 @@ class MainControls(QMainWindow):
         self.ui.exitbutton.clicked.connect(self.exit_plot)
 
         self.ui.clicked_listWidget.itemClicked.connect(self.show_ard)
-
-
-
-        self.ui.version_comboBox.currentIndexChanged.connect(self.set_version)
 
         self.ui.mapButton.clicked.connect(self.show_maps)
 
@@ -225,14 +225,8 @@ class MainControls(QMainWindow):
             None
 
         """
-        num_items = self.ui.version_comboBox.count()
-
-        for n in range(0, num_items):
-            try:
-                self.ui.version_comboBox.removeItem(n)
-
-            except IndexError:
-                continue
+        # Remove previous versions since they may not exist for the current coordinate
+        self.ui.version_comboBox.clear()
 
         path = os.path.join(self.drive_letter + os.sep, 'bulk', 'tiles', self.tile, 'change')
 
@@ -249,10 +243,13 @@ class MainControls(QMainWindow):
 
         self.version = self.ui.version_comboBox.currentText()
 
-    def set_version(self):
+    def set_version(self, version):
         """
         Set the PyCCD version for creating a path to the JSON files and automatically update the path to the
         JSON directory with the selected version
+
+        Args:
+            version <QString> the text sent automatically
 
         Returns:
             None
@@ -262,7 +259,7 @@ class MainControls(QMainWindow):
 
         # Update the browsejsonline field with the selected version
         self.ui.browsejsonline.setText(os.path.join(self.drive_letter + os.sep,
-                                                    'bulk', 'tiles', self.tile, 'change', self.version, 'json'))
+                                                    'bulk', 'tiles', self.tile, 'change', str(version), 'json'))
 
     def clear(self):
         """
@@ -380,10 +377,10 @@ class MainControls(QMainWindow):
 
         self.ui.browseARDline.setText(os.path.join(self.drive_letter + os.sep, 'perf', 'production', self.tile))
 
-        if self.version is not None:
-
-            self.ui.browsejsonline.setText(os.path.join(self.drive_letter + os.sep,
-                                                        'bulk', 'tiles', self.tile, 'change', self.version, 'json'))
+        # if self.version is not None:
+        #
+        #     self.ui.browsejsonline.setText(os.path.join(self.drive_letter + os.sep,
+        #                                                 'bulk', 'tiles', self.tile, 'change', self.version, 'json'))
 
         self.class_dir = os.path.join(self.drive_letter + os.sep, 'bulk', 'tiles', self.tile, 'class',
                                       'eval', 'pickles')
