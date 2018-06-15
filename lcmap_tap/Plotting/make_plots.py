@@ -127,7 +127,13 @@ def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure,
 
     def get_legend_handle(**kwargs):
         """
-        kwargs: Line2D keyword arguments
+        A helper function to generate legend handles
+
+        Args:
+            **kwargs: Line2D keyword arguments
+
+        Returns:
+
         """
         return mlines.Line2D([], [], **kwargs)
 
@@ -325,8 +331,6 @@ def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure,
             model_lines.append(lines5)
 
         """ ---- Draw horizontal color bars representing class assignments ---- """
-
-
 
         for key in class_results.keys():
             if key not in class_lines:
