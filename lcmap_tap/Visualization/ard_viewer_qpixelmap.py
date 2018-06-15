@@ -24,10 +24,6 @@ from lcmap_tap.logger import log
 DATA_PATH = pkg_resources.resource_filename('lcmap_tap', 'Auxiliary')
 PNG_FILE = pkg_resources.resource_filename('lcmap_tap', os.path.join('Auxiliary', 'locator.png'))
 
-log.debug("DATA PATH: %s" % DATA_PATH)
-log.debug("PNG FILE: %s" % PNG_FILE)
-log.debug(os.path.exists(PNG_FILE))
-
 
 def exc_handler(exc_type, exc_value, exc_traceback):
     """
@@ -197,7 +193,7 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
     band_nums = [1, 2, 3, 4, 5, 6]
 
-    def __init__(self, ard_file, ccd, sensor, gui, current_view=None):
+    def __init__(self, ard_file, ccd, sensor, gui):
         """
 
         Args:
@@ -205,6 +201,7 @@ class ARDViewerX(QtWidgets.QMainWindow):
             ccd: 
             sensor:
             gui:
+
         """
         super(ARDViewerX, self).__init__()
 
@@ -701,19 +698,19 @@ class ARDViewerX(QtWidgets.QMainWindow):
         Returns:
 
         """
-        self.bright, self.green, self.wet = tc_calculations.get_tc_bands(self.sensor, self.ard_file)
+        bright, green, wet = tc_calculations.get_tc_bands(self.sensor, self.ard_file)
 
-        self.bright_rs = Rescale(self.sensor, self.bright, self.qa)
+        bright_rs = Rescale(self.sensor, bright, self.qa)
 
-        self.green_rs = Rescale(self.sensor, self.green, self.qa)
+        green_rs = Rescale(self.sensor, green, self.qa)
 
-        self.wet_rs = Rescale(self.sensor, self.wet, self.qa)
+        wet_rs = Rescale(self.sensor, wet, self.qa)
 
         self.rgb = np.zeros((self.r.shape[0], self.r.shape[0], 3), dtype=np.uint8)
 
-        self.rgb[:, :, 0] = self.bright_rs.rescaled
-        self.rgb[:, :, 1] = self.green_rs.rescaled
-        self.rgb[:, :, 2] = self.wet_rs.rescaled
+        self.rgb[:, :, 0] = bright_rs.rescaled
+        self.rgb[:, :, 1] = green_rs.rescaled
+        self.rgb[:, :, 2] = wet_rs.rescaled
 
         self.img = QImage(self.rgb.data, self.rgb[:, :, 0].shape[0], self.rgb[:, :, 0].shape[0],
                           self.rgb.strides[0], QImage.Format_RGB888)
@@ -826,7 +823,6 @@ class ARDViewerX(QtWidgets.QMainWindow):
             upper_left = QtCore.QPointF(self.col, self.row)
             bottom_right = QtCore.QPointF(self.col + 1, self.row + 1)
 
-            # self.rect = QtCore.QRectF(upper_left, bottom_right)
             self.current_pixel = QtWidgets.QGraphicsRectItem(QtCore.QRectF(upper_left, bottom_right))
             self.current_pixel.setPen(pen)
 
