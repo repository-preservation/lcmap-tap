@@ -2,6 +2,10 @@ import sys
 from lcmap_tap.logger import log
 from PyQt5.QtWidgets import QApplication
 from lcmap_tap.Controls.controls import MainControls
+try:
+    from pip._internal.operations import freeze
+except ImportError:
+    from pip.operations import freeze
 
 
 def exc_handler(exc_type, exc_value, exc_traceback):
@@ -15,16 +19,18 @@ def exc_handler(exc_type, exc_value, exc_traceback):
     Returns:
 
     """
-    # if issubclass(exc_type, KeyboardInterrupt):
-    #     sys.__excepthook__(exc_type, exc_value, exc_traceback)
-    #     return
-
     log.critical("Uncaught Exception: ", exc_info=(exc_type, exc_value, exc_traceback))
 
 
 sys.excepthook = exc_handler
 
+
 def main():
+    log.debug('*** System Information ***')
+    log.debug('Platform: %s' % sys.platform)
+    log.debug('Python: %s' % str(sys.version).replace('\n', ''))
+    log.debug('Pip: %s' % ', '.join(freeze.freeze()))
+
     # Create a QApplication object, necessary to manage the GUI control flow and settings
     app = QApplication(sys.argv)
 
