@@ -73,21 +73,20 @@ class CCDReader:
 
         Args:
             results_chip: Absolute path to the input JSON file
-            coord: Attributes x and y, the upper left coordinate of the target pixel in projected meters
+            coord: Upper left coordinate of the target pixel in projected meters
 
         Returns:
             All of the information stored in the target JSON file for the specific pixel coordinate
 
         """
-        with open(results_chip, "r") as f:
-            results = json.load(f)
+        results = json.load(open(results_chip, "r"))
 
         gen = filter(lambda x: coord.x == x["x"] and coord.y == x["y"], results)
 
         return next(gen, None)
 
     @staticmethod
-    def extract_jsoncurve(pixel_info: dict):
+    def extract_jsoncurve(pixel_info: dict) -> dict:
         """
         Load the PyCCD results for the target pixel
 
@@ -95,6 +94,7 @@ class CCDReader:
             pixel_info:
 
         Returns:
+            The data structure containing the PyCCD results
 
         """
         return json.loads(pixel_info["result"])
