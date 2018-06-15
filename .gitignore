@@ -59,11 +59,9 @@ Notebooks/Working/
 
 # Other Dev Stuff
 Testing/
-changify/
-IWDS/
 scratch/
 **/dev/
 
 *.pickle
 
-helper.yaml
+*.yaml
