@@ -1,8 +1,27 @@
 """Retrieve PyCCD attributes and results for the pixel coordinates"""
 
-from lcmap_tap.RetrieveData.retrieve_data import GeoInfo, GeoCoordinate
+from lcmap_tap.RetrieveData.retrieve_data import GeoCoordinate
+from lcmap_tap.logger import log
 import os
+import sys
 import json
+
+
+def exc_handler(exc_type, exc_value, exc_traceback):
+    """
+    Customized handling of top-level exceptions
+    Args:
+        exc_type: exception class
+        exc_value: exception instance
+        exc_traceback: traceback object
+
+    Returns:
+
+    """
+    log.critical("Uncaught Exception: ", exc_info=(exc_type, exc_value, exc_traceback))
+
+
+sys.excepthook = exc_handler
 
 
 class CCDReader:
@@ -10,26 +29,25 @@ class CCDReader:
     Find and read the JSON containing PyCCD output for the target pixel coordinates
     """
 
-    def __index__(self, x: str, y: str, json_dir: str):
+    def __init__(self, tile: str, chip_coord: GeoCoordinate, pixel_coord: GeoCoordinate, json_dir: str):
         """
 
         Args:
-            x: X-coordinate in projected meters
-            y: Y-coordinate in projected meters
+            tile: The string-formatted H-V tile name
+            chip_coord: The upper left coordinate of the chip in projected meters
+            pixel_coord: The upper left coordinate of the pixel in projected meters
             json_dir: Absolute path to tile-specific PyCCD results stored in JSON files
 
         Returns:
 
         """
-        self.geo_info = GeoInfo(x=x, y=y)
-
         self.json_file = self.find_file(file_ls=[os.path.join(json_dir, f) for f in os.listdir(json_dir)],
-                                        string="{tile}_{x}_{y}.json".format(tile=self.geo_info.tile,
-                                                                            x=self.geo_info.chip_coord.x,
-                                                                            y=self.geo_info.chip_coord.y))
+                                        string="{tile}_{x}_{y}.json".format(tile=tile,
+                                                                            x=chip_coord.x,
+                                                                            y=chip_coord.y))
 
         self.results = self.extract_jsoncurve(pixel_info=self.pixel_ccd_info(results_chip=self.json_file,
-                                                                             coord=self.geo_info.pixel_coord))
+                                                                             coord=pixel_coord))
 
     @staticmethod
     def find_file(file_ls, string) -> str:
