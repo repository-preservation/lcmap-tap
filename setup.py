@@ -26,7 +26,11 @@ setup(
         'matplotlib',
         'numpy',
         'gdal',
-        'pyyaml'
+        'pyyaml',
+        'cytoolz',
+        'cython',
+        'requests',
+        'lcmap-merlin'
     ],
 
     entry_points={'gui_scripts': ['lcmap_tap = lcmap_tap.__main__:main']},
@@ -35,7 +39,7 @@ setup(
 
     # package_data={'lcmap_tap': ['Auxiliary/*.png']},
 
-    include_package_data = True,
+    # include_package_data = True,
 
     author='Daniel Zelenak',
 
