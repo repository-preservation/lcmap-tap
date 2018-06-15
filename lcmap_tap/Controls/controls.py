@@ -5,7 +5,10 @@ Establish the main GUI Window using PyQt and make ready the controls for the use
 from lcmap_tap.UserInterface import ui_main
 
 # Import the CCDReader class which retrieves json and cache data
-from lcmap_tap.RetrieveData.retrieve_data import CCDReader, GeoInfo
+from lcmap_tap.RetrieveData.retrieve_ard import ARDData
+from lcmap_tap.RetrieveData.retrieve_ccd import CCDReader
+from lcmap_tap.RetrieveData.retrieve_geo import GeoInfo
+from lcmap_tap.RetrieveData.retrieve_classes import SegmentClasses
 
 # Import the PlotWindow class defined in the plotwindow.py module
 from lcmap_tap.PlotFrame.plotwindow import PlotWindow
@@ -32,8 +35,7 @@ matplotlib.use('Qt5Agg')
 
 # Load in some necessary file paths - commenting this out for now
 if os.path.exists('helper.yaml'):
-    with open('helper.yaml', 'r') as stream:
-        helper = yaml.load(stream)
+    helper = yaml.load(open('helper.yaml', 'r'))
 
 else:
     helper = None
@@ -568,7 +570,8 @@ class MainControls(QMainWindow):
         """
         dirs = {"cache": self.ui.browsecacheline.text(),
                 "json": self.ui.browsejsonline.text(),
-                "ard": self.ui.browseARDline.text()}
+                "ard": self.ui.browseARDline.text(),
+                "class": self.class_dir}
 
         for key, value in dirs.items():
             if not self.check_path(key, value):
@@ -583,12 +586,29 @@ class MainControls(QMainWindow):
         # If there is a problem with any of the parameters, the first erroneous parameter
         # will cause an exception to occur which will be displayed in the GUI for the user, but the tool won't close.
         try:
-            self.extracted_data = CCDReader(x=self.ui.x1line.text(),
-                                            y=self.ui.y1line.text(),
-                                            units=self.units[self.selected_units]["unit"],
-                                            cache_dir=str(self.ui.browsecacheline.text()),
-                                            json_dir=str(self.ui.browsejsonline.text()),
-                                            class_dir=self.class_dir)
+            # self.extracted_data = CCDReader(x=self.ui.x1line.text(),
+            #                                 y=self.ui.y1line.text(),
+            #                                 units=self.units[self.selected_units]["unit"],
+            #                                 cache_dir=str(self.ui.browsecacheline.text()),
+            #                                 json_dir=str(self.ui.browsejsonline.text()),
+            #                                 class_dir=self.class_dir)
+
+            self.geo_info = GeoInfo(x=self.ui.x1line.text(),
+                                    y=self.ui.y1line.text(),
+                                    units=self.units[self.selected_units]["unit"])
+
+            self.ard_observations = ARDData(coord=self.geo_info.coord,
+                                            pixel_coord=self.geo_info.pixel_coord)
+
+            self.ccd_results = CCDReader(tile=self.geo_info.tile,
+                                         chip_coord=self.geo_info.chip_coord,
+                                         pixel_coord=self.geo_info.pixel_coord,
+                                         json_dir=dirs["json"])
+
+            self.class_results = SegmentClasses(chip_coord=self.geo_info.chip_coord,
+                                                class_dir=dirs["class"],
+                                                rc=self.geo_info.chip_pixel_rowcol,
+                                                tile=self.geo_info.tile)
 
         except (IndexError, AttributeError, TypeError, ValueError) as e:
             # Clear the results window
@@ -609,8 +629,8 @@ class MainControls(QMainWindow):
             return None
 
         self.ard_specs = ARDInfo(root=self.ui.browseARDline.text(),
-                                 h=self.extracted_data.geo_info.H,
-                                 v=self.extracted_data.geo_info.V)
+                                 h=self.geo_info.H,
+                                 v=self.geo_info.V)
 
         # Display change model information for the entered coordinates
         self.show_model_params(data=self.extracted_data)
