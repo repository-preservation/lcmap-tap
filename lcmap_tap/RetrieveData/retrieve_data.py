@@ -81,6 +81,8 @@ class GeoInfo:
 
         self.H, self.V = self.get_hv(x=self.coord.x, y=self.coord.y)
 
+        self.tile = "h{:02}v{:02}".format(self.H, self.V)
+
         self.EXTENT, self.PIXEL_AFFINE = self.geospatial_hv(loc=CONUS_EXTENT,
                                                             h=self.H,
                                                             v=self.V)
@@ -266,7 +268,7 @@ class GeoInfo:
 
 
 class SegmentClasses:
-    def __init__(self, x, y, units, class_dir):
+    def __init__(self, x, y, class_dir, units="meters"):
         """
         Read in the classification results for the given coordinate
 
@@ -332,7 +334,7 @@ class SegmentClasses:
 
 
 class CCDReader:
-    def __init__(self, x, y, units, cache_dir, json_dir, class_dir):
+    def __init__(self, x, y, cache_dir, json_dir, class_dir, units="meters"):
         """
         Use x and y coordinates to determine the H-V tile, retrieve the corresponding cache file and json file
         based on the input coordinates.
@@ -728,3 +730,71 @@ class CCDReader:
             pixelqa_mask[pixelqa_in == val] = True
 
         return pixelqa_mask
+
+
+class CacheReader:
+    def __init__(self, x, y, cache_dir):
+        """
+        Load ARD observations from the cache directories
+
+        Args:
+            x: Coord-x
+            y: Coord-y
+            cache_dir: Full path to the cache files (tile-specific)
+
+        """
+        self.geo_info = GeoInfo(x, y)
+
+        self.cache_dir = cache_dir
+
+        self.CACHE_INV = [os.path.join(self.cache_dir, f) for f in os.listdir(self.cache_dir)]
+
+        self.data, self.dates, self.image_ids = self.extract_cachepoint()
+
+    def extract_cachepoint(self):
+        """
+        Extract the spectral values from the cache file
+        :return:
+        """
+        data, image_ids = self.load_cache(self.find_file(self.CACHE_INV,
+                                                         "r{}".format(self.geo_info.rowcol.row)))
+
+        dates = self.imageid_date(image_ids)
+
+        return data[:, :, self.geo_info.rowcol.column], dates, image_ids
+
+    @staticmethod
+    def load_cache(file):
+        """
+        Load the cache file and split the data into the image IDs and values
+        :param file:
+        :return:
+        """
+        data = np.load(file)
+
+        return data["Y"], data["image_IDs"]
+
+    @staticmethod
+    def imageid_date(image_ids):
+        """
+        Extract the ordinal day from the ARD image name.
+        :param image_ids:
+        :return:
+        """
+        return np.array([dt.datetime.strptime(d[15:23], "%Y%m%d").toordinal()
+                         for d in image_ids])
+
+    @staticmethod
+    def find_file(file_ls, string):
+        """
+        Find the target file
+        Args:
+            file_ls: <list> all files in the given directory
+            string: <str> pattern to match
+
+        Returns:
+            <str>
+        """
+        gen = filter(lambda x: string in x, file_ls)
+
+        return next(gen, None)
