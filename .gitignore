@@ -53,17 +53,15 @@ docs/_build/
 # JetBrains and Notebooks and more
 .idea/
 .ipynb_checkpoints/
-*.UI
+
 Notebooks/Working/
 *.ipynb
 
 # Other Dev Stuff
 Testing/
-changify/
-IWDS/
 scratch/
 **/dev/
 
 *.pickle
 
-helper.yaml
+*.yaml

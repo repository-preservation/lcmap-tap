@@ -11,7 +11,7 @@ from collections import OrderedDict
 from typing import Tuple
 import numpy as np
 from numpy import ndarray
-from lcmap_tap.RetrieveData.retrieve_data import CCDReader
+from lcmap_tap.Plotting.plot_specs import PlotSpecs
 from lcmap_tap.Plotting import plot_functions
 from lcmap_tap.logger import log
 
@@ -57,7 +57,7 @@ def exc_handler(exc_type, exc_value, exc_traceback):
 sys.excepthook = exc_handler
 
 
-def get_plot_items(data: CCDReader, items: list) -> dict:
+def get_plot_items(data: PlotSpecs, items: list) -> dict:
     """
     Check to see which bands and/or indices were selected to plot.
     Args:
@@ -90,7 +90,7 @@ def get_plot_items(data: CCDReader, items: list) -> dict:
         return data.all_lookup
 
 
-def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure, dict, dict, ndarray]:
+def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure, dict, dict, ndarray]:
     """
 
     Args:
@@ -127,15 +127,21 @@ def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure,
 
     def get_legend_handle(**kwargs):
         """
-        kwargs: Line2D keyword arguments
+        A helper function to generate legend handles
+
+        Args:
+            **kwargs: Line2D keyword arguments
+
+        Returns:
+
         """
         return mlines.Line2D([], [], **kwargs)
 
     plt.style.use('ggplot')
 
     # get year values for labeling plots
-    year1 = str(dt.datetime.fromordinal(data.dates[0]))[:4]
-    year2 = str(dt.datetime.fromordinal(data.dates[-1]))[:4]
+    year1 = str(dt.datetime.fromordinal(data.dates[-1]))[:4]
+    year2 = str(dt.datetime.fromordinal(data.dates[0]))[:4]
 
     # List of years in time series
     years = range(int(year1), int(year2) + 2, 1)
@@ -143,11 +149,13 @@ def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure,
     # list of datetime objects with YYYY-MM-dd pattern using January 1 for month and day
     datetimes = [dt.datetime(yx, 1, 1) for yx in years]
 
-    total_mask = data.total_mask
+    total_mask = data.qa_mask
+
+    fill_out = data.fill_mask[~data.date_mask]
 
     class_results = dict()
 
-    for ind, result in enumerate(data.segment_classes.results):
+    for ind, result in enumerate(data.segment_classes):
         class_ind = int(np.argmax(result['class_probs']))
 
         class_label = NAMES[class_ind]
@@ -241,8 +249,8 @@ def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure,
 
         """ ---- Plot the observed values within the PyCCD time range ---- """
         #: class matplotlib.collections.PathCollection:
-        obs = axes[num, 0].scatter(x=data.dates_in[total_mask],
-                                   y=plot_data[b][0][data.date_mask][total_mask],
+        obs = axes[num, 0].scatter(x=data.dates_in[total_mask[data.date_mask]],
+                                   y=plot_data[b][0][data.date_mask][total_mask[data.date_mask]],
                                    s=44,
                                    c="green",
                                    marker="o",
@@ -255,12 +263,13 @@ def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure,
 
         # There's only ever one item in the *_points lists-a PathCollection artist-but it makes it easier to use with
         # the 2D Lines because those are lists too.  See the plotwindow.py module.
-        artist_map[obs_points[0]] = [data.dates_in[total_mask], plot_data[b][0][data.date_mask][total_mask], b]
+        artist_map[obs_points[0]] = [data.dates_in[total_mask[data.date_mask]],
+                                     plot_data[b][0][data.date_mask][total_mask[data.date_mask]], b]
 
         """ ---- Observed values outside of the PyCCD time range ---- """
         #: class matplotlib.collections.PathCollection:
-        out = axes[num, 0].scatter(x=data.dates_out[data.fill_out],
-                                   y=plot_data[b][0][~data.date_mask][data.fill_out],
+        out = axes[num, 0].scatter(x=data.dates_out[fill_out],
+                                   y=plot_data[b][0][~data.date_mask][fill_out],
                                    s=21,
                                    color="red",
                                    marker="o",
@@ -271,12 +280,12 @@ def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure,
         out_points.append(out)
         all_out_points.append(out)
 
-        artist_map[out_points[0]] = [data.dates_out[data.fill_out], plot_data[b][0][~data.date_mask][data.fill_out], b]
+        artist_map[out_points[0]] = [data.dates_out[fill_out], plot_data[b][0][~data.date_mask][fill_out], b]
 
         """ ---- Plot the observed values masked out by PyCCD ---- """
         #: class matplotlib.collections.PathCollection:
-        mask = axes[num, 0].scatter(x=data.dates_in[~data.ccd_mask],
-                                    y=plot_data[b][0][data.date_mask][~data.ccd_mask],
+        mask = axes[num, 0].scatter(x=data.dates_in[~total_mask[data.date_mask]],
+                                    y=plot_data[b][0][data.date_mask][~total_mask[data.date_mask]],
                                     s=21,
                                     color="0.65",
                                     marker="o",
@@ -286,8 +295,8 @@ def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure,
         mask_points.append(mask)
         all_mask_points.append(mask)
 
-        artist_map[mask_points[0]] = [data.dates_in[~data.ccd_mask],
-                                      plot_data[b][0][data.date_mask][~data.ccd_mask], b]
+        artist_map[mask_points[0]] = [data.dates_in[~total_mask[data.date_mask]],
+                                      plot_data[b][0][data.date_mask][~total_mask[data.date_mask]], b]
 
         """ # ---- plot the model start, end, and break dates ---- """
         match_dates = check_for_matches(data.start_dates, data.break_dates)
@@ -325,8 +334,6 @@ def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure,
             model_lines.append(lines5)
 
         """ ---- Draw horizontal color bars representing class assignments ---- """
-
-
 
         for key in class_results.keys():
             if key not in class_lines:
@@ -376,7 +383,7 @@ def draw_figure(data: CCDReader, items: list) -> Tuple[matplotlib.figure.Figure,
 
         """ ---- Plot a vertical line at January 1 of each year on the time series ---- """
         for date in datetimes:
-            lines7 = axes[num, 0].axvline(date, color='dimgray', linewidth=1.5)
+            lines7 = axes[num, 0].axvline(date, color='dimgray', linewidth=1.5, visible=False)
 
             date_lines.append(lines7)
 

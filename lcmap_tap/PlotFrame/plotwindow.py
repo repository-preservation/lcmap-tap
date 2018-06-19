@@ -137,6 +137,61 @@ class PlotWindow(QtWidgets.QMainWindow):
 
         self.show()
 
+        self.initial_legend()
+
+    def initial_legend(self):
+        """
+
+        Returns:
+
+        """
+        def set_vis(visibility, line):
+            """
+            Change the transparency of the picked object in the legend so the user can see explicitly
+            which items are turned on/off.
+            TODO: Figure out how to make this work for the marker (no line) symbols
+            Args:
+                visibility: <bool> Whether or not the line is currently visible
+                line: <matplotlib.collections.PathCollection> Represents the clicked symbol from the plot legend
+
+            Returns:
+
+            """
+            if visibility:
+                line.set_alpha(1.0)
+
+            else:
+                line.set_alpha(0.2)
+
+            return None
+
+        for legline in self.lines_map.keys():
+            # The origlines is a list of lines mapped to the legline for that particular subplot
+            origlines = self.lines_map[legline]
+
+            # log.debug("method leg_pick, origlines referenced=%s" % str(origlines))
+
+            for l in origlines:
+                if type(l) is not list:
+
+                    # Reference the opposite of the line's current visibility
+                    vis = l.get_visible()
+
+                    l.set_visible(vis)
+
+                    set_vis(vis, legline)
+
+                else:
+                    for _l in l:
+                        vis = _l.get_visible()
+
+                        _l.set_visible(vis)
+
+                        set_vis(vis, legline)
+
+            # Redraw the canvas with the line or points turned on/off
+            self.canvas.draw()
+
     def point_pick(self, event=None):
         """
         Define a picker method to grab data off of the plot wherever the mouse cursor is when clicked
@@ -188,10 +243,10 @@ class PlotWindow(QtWidgets.QMainWindow):
 
                 test_str = "{:%Y%m%d}".format(self.value_holder["temp"][1][0])
 
-                log.debug("Point clicked: %s" % point_clicked)
-                log.debug("Nearest artist: %s" % self.value_holder)
-                log.debug("Artist data: %s" % self.artist_data)
-                log.debug("Subplot: %s" % self.b)
+                # log.debug("Point clicked: %s" % point_clicked)
+                # log.debug("Nearest artist: %s" % self.value_holder)
+                # log.debug("Artist data: %s" % self.artist_data)
+                # log.debug("Subplot: %s" % self.b)
 
                 # Look through the scene IDs to find which one corresponds to the selected obs. date
                 for scene in self.scenes:
@@ -229,7 +284,7 @@ class PlotWindow(QtWidgets.QMainWindow):
             None
 
         """
-        log.debug("highlight_pick method self.artist= %s" % str(self.artist))
+        # log.debug("highlight_pick method self.artist= %s" % str(self.artist))
 
         # Remove the highlight from the previously selected point
         try:
@@ -242,7 +297,7 @@ class PlotWindow(QtWidgets.QMainWindow):
         # Use index '0' because self.artist_map[b] is referencing a list of 1 item
         highlight = self.artist_map[self.b][0]
 
-        log.debug("Method highlight_pick, highlight=%s" % str(highlight))
+        # log.debug("Method highlight_pick, highlight=%s" % str(highlight))
 
         self.prev_highlight = highlight
 
@@ -281,12 +336,12 @@ class PlotWindow(QtWidgets.QMainWindow):
 
         legline = self.artist
 
-        log.debug("method leg_pick called, legline=%s" % str(legline))
+        # log.debug("method leg_pick called, legline=%s" % str(legline))
 
         # The origlines is a list of lines mapped to the legline for that particular subplot
         origlines = self.lines_map[legline]
 
-        log.debug("method leg_pick, origlines referenced=%s" % str(origlines))
+        # log.debug("method leg_pick, origlines referenced=%s" % str(origlines))
 
         for l in origlines:
             if type(l) is not list:

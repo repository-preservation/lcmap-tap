@@ -24,10 +24,6 @@ from lcmap_tap.logger import log
 DATA_PATH = pkg_resources.resource_filename('lcmap_tap', 'Auxiliary')
 PNG_FILE = pkg_resources.resource_filename('lcmap_tap', os.path.join('Auxiliary', 'locator.png'))
 
-log.debug("DATA PATH: %s" % DATA_PATH)
-log.debug("PNG FILE: %s" % PNG_FILE)
-log.debug(os.path.exists(PNG_FILE))
-
 
 def exc_handler(exc_type, exc_value, exc_traceback):
     """
@@ -197,14 +193,15 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
     band_nums = [1, 2, 3, 4, 5, 6]
 
-    def __init__(self, ard_file, ccd, sensor, gui, current_view=None):
+    def __init__(self, ard_file, geo, sensor, gui):
         """
 
         Args:
             ard_file: List of the vsipaths associated with the current ard observation
-            ccd: 
+            geo: A container for geographic reference information
             sensor:
             gui:
+
         """
         super(ARDViewerX, self).__init__()
 
@@ -245,12 +242,12 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
         self.sensor = sensor
 
-        self.ccd = ccd
+        self.geo_info = geo
 
         self.gui = gui
 
-        self.pixel_rowcol = self.ccd.geo_info.geo_to_rowcol(affine=self.ccd.geo_info.PIXEL_AFFINE,
-                                                            coord=self.ccd.geo_info.coord)
+        self.pixel_rowcol = self.geo_info.geo_to_rowcol(affine=self.geo_info.PIXEL_AFFINE,
+                                                        coord=self.geo_info.coord)
 
         self.row = self.pixel_rowcol.row
 
@@ -438,7 +435,7 @@ class ARDViewerX(QtWidgets.QMainWindow):
             if not self.graphics_view.rect.isNull():
                 self.graphics_view.setSceneRect(self.graphics_view.rect)
 
-                log.debug("self.graphics_view.rect used to set SceneRect")
+                # log.debug("self.graphics_view.rect used to set SceneRect")
 
         except AttributeError:
             pass
@@ -701,19 +698,19 @@ class ARDViewerX(QtWidgets.QMainWindow):
         Returns:
 
         """
-        self.bright, self.green, self.wet = tc_calculations.get_tc_bands(self.sensor, self.ard_file)
+        bright, green, wet = tc_calculations.get_tc_bands(self.sensor, self.ard_file)
 
-        self.bright_rs = Rescale(self.sensor, self.bright, self.qa)
+        bright_rs = Rescale(self.sensor, bright, self.qa)
 
-        self.green_rs = Rescale(self.sensor, self.green, self.qa)
+        green_rs = Rescale(self.sensor, green, self.qa)
 
-        self.wet_rs = Rescale(self.sensor, self.wet, self.qa)
+        wet_rs = Rescale(self.sensor, wet, self.qa)
 
         self.rgb = np.zeros((self.r.shape[0], self.r.shape[0], 3), dtype=np.uint8)
 
-        self.rgb[:, :, 0] = self.bright_rs.rescaled
-        self.rgb[:, :, 1] = self.green_rs.rescaled
-        self.rgb[:, :, 2] = self.wet_rs.rescaled
+        self.rgb[:, :, 0] = bright_rs.rescaled
+        self.rgb[:, :, 1] = green_rs.rescaled
+        self.rgb[:, :, 2] = wet_rs.rescaled
 
         self.img = QImage(self.rgb.data, self.rgb[:, :, 0].shape[0], self.rgb[:, :, 0].shape[0],
                           self.rgb.strides[0], QImage.Format_RGB888)
@@ -826,7 +823,6 @@ class ARDViewerX(QtWidgets.QMainWindow):
             upper_left = QtCore.QPointF(self.col, self.row)
             bottom_right = QtCore.QPointF(self.col + 1, self.row + 1)
 
-            # self.rect = QtCore.QRectF(upper_left, bottom_right)
             self.current_pixel = QtWidgets.QGraphicsRectItem(QtCore.QRectF(upper_left, bottom_right))
             self.current_pixel.setPen(pen)
 
@@ -848,16 +844,16 @@ class ARDViewerX(QtWidgets.QMainWindow):
         # Before generating the new plot, create a reference to the previously clicked date and subplot
         self.ax = self.gui.plot_window.b  # Subplot name
 
-        log.debug("self.ax = %s" % self.ax)
+        # log.debug("self.ax = %s" % self.ax)
 
         self.date_x = self.gui.plot_window.x  # Date in ordinal datetime format, the x coordinate
 
-        log.debug("self.date_x = %s" % self.date_x)
+        # log.debug("self.date_x = %s" % self.date_x)
 
         # Gather information to retrieve necessary data for the new plot
         rowcol = RowColumn(row=self.row, column=self.col)
 
-        coords = GeoInfo.rowcol_to_geo(affine=self.ccd.geo_info.PIXEL_AFFINE,
+        coords = GeoInfo.rowcol_to_geo(affine=self.geo_info.PIXEL_AFFINE,
                                        rowcol=rowcol)
 
         log.info("New point selected: %s" % str(coords))
@@ -884,22 +880,24 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
         """Need to determine the y-axis value for the new time series.  Can be done by determining the index within
         the new time-series of the x-axis (i.e. date) value from the previous time series """
-        x_look_thru = {"obs_points": self.gui.extracted_data.dates_in[self.gui.extracted_data.total_mask],
-                       "out_points": self.gui.extracted_data.dates_out[self.gui.extracted_data.fill_out],
-                       "mask_points": self.gui.extracted_data.dates_in[~self.gui.extracted_data.ccd_mask]}
+        x_look_thru = {"obs_points": self.gui.plot_specs.dates_in[self.gui.plot_specs.qa_mask[
+            self.gui.plot_specs.date_mask]],
+                       "out_points": self.gui.plot_specs.dates_out[self.gui.plot_specs.fill_out],
+                       "mask_points": self.gui.plot_specs.dates_in[~self.gui.plot_specs.qa_mask
+                       [self.gui.plot_specs.date_mask]]}
 
-        y_look_thru = {"obs_points": self.gui.extracted_data.all_lookup[self.ax][0][self.gui.extracted_data.date_mask]
-                       [self.gui.extracted_data.total_mask],
+        y_look_thru = {"obs_points": self.gui.plot_specs.all_lookup[self.ax][0][self.gui.plot_specs.date_mask][
+            self.gui.plot_specs.qa_mask[self.gui.plot_specs.date_mask]],
 
-                       "out_points": self.gui.extracted_data.all_lookup[self.ax][0][~self.gui.extracted_data.date_mask]
-                       [self.gui.extracted_data.fill_out],
+                       "out_points": self.gui.plot_specs.all_lookup[self.ax][0][~self.gui.plot_specs.date_mask][
+                           self.gui.plot_specs.fill_out],
 
-                       "mask_points": self.gui.extracted_data.all_lookup[self.ax][0][self.gui.extracted_data.date_mask]
-                       [~self.gui.extracted_data.ccd_mask]}
+                       "mask_points": self.gui.plot_specs.all_lookup[self.ax][0][self.gui.plot_specs.date_mask][
+                           ~self.gui.plot_specs.qa_mask[self.gui.plot_specs.date_mask]]}
 
         for key, x in x_look_thru.items():
             if self.date_x in x:
-                log.debug("Found date clicked %s in %s" % (self.date_x, key))
+                log.info("Found date clicked %s in %s" % (self.date_x, key))
 
                 self.x_series = x
 
@@ -910,21 +908,19 @@ class ARDViewerX(QtWidgets.QMainWindow):
         #: int: the location of the date in the new time series
         ind = np.where(self.x_series == self.date_x)
 
-        log.debug("Numpy Where returned index value %s" % ind)
-
         #: the reflectance or index value for the new time series
         self.data_y = np.take(self.y_series, ind)
 
-        log.debug("Y-series value returned: %s" % self.data_y)
+        # log.debug("Y-series value returned: %s" % self.data_y)
 
-        log.debug("From plot_window X: %s" % self.date_x)
+        # log.debug("From plot_window X: %s" % self.date_x)
 
-        log.debug("From plot_window Y: %s" % self.data_y)
+        # log.debug("From plot_window Y: %s" % self.data_y)
 
         # Display the highlighted pixel in the new plot
         highlight = self.gui.plot_window.artist_map[self.ax][0]
 
-        log.debug("method update_plot, highlight=%s" % str(highlight))
+        # log.debug("method update_plot, highlight=%s" % str(highlight))
 
         # highlight.set_data(self.date_x[0], self.data_y[0])
         highlight.set_data(self.date_x, self.data_y)
