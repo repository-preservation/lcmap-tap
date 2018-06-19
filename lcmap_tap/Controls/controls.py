@@ -5,7 +5,7 @@ Establish the main GUI Window using PyQt and make ready the controls for the use
 from lcmap_tap.UserInterface import ui_main
 
 # Import the CCDReader class which retrieves json and cache data
-from lcmap_tap.RetrieveData.retrieve_ard import ARDData
+from lcmap_tap.RetrieveData.retrieve_ard import ARDData, get_image_ids
 from lcmap_tap.RetrieveData.retrieve_ccd import CCDReader
 from lcmap_tap.RetrieveData.retrieve_geo import GeoInfo
 from lcmap_tap.RetrieveData.retrieve_classes import SegmentClasses
@@ -13,6 +13,7 @@ from lcmap_tap.RetrieveData.retrieve_classes import SegmentClasses
 # Import the PlotWindow class defined in the plotwindow.py module
 from lcmap_tap.PlotFrame.plotwindow import PlotWindow
 from lcmap_tap.Plotting import make_plots
+from lcmap_tap.Plotting.plot_specs import PlotSpecs
 from lcmap_tap.RetrieveData.ard_info import ARDInfo
 from lcmap_tap.Auxiliary import projections
 from lcmap_tap.Visualization.ard_viewer_qpixelmap import ARDViewerX
@@ -85,7 +86,7 @@ class MainControls(QMainWindow):
                                                                                           "Albers CONUS WGS 84"}
                       }
 
-        self.extracted_data = None
+        self.config = None
         self.plot_window = None
         self.maps_window = None
         self.ard_specs = None
@@ -99,6 +100,11 @@ class MainControls(QMainWindow):
         self.lines_map = None
         self.axes = None
         self.class_dir = None
+        self.geo_info = None  # container for geographic info derived from the input coordinates
+        self.ard_observations = None  # container for the ARD stack at the pixel
+        self.ccd_results = None  # container for PyCCD results at the pixel
+        self.class_results = None  # container for classification results at the pixel
+        self.plot_specs = None  # container for plotting data
 
         self.selected_units = self.ui.comboBoxUnits.currentText()
 
@@ -129,7 +135,6 @@ class MainControls(QMainWindow):
             """For testing, use some preset values if helper.yaml is found"""
             self.ui.browseoutputline.setText(helper['test_output'])
             self.ui.browsejsonline.setText(helper['test_json'])
-            self.ui.browsecacheline.setText(helper['test_cache'])
             self.ui.browseARDline.setText(helper['ard_dir'])
             self.ui.x1line.setText(helper['test_x'])
             self.ui.y1line.setText(helper['test_y'])
@@ -163,15 +168,11 @@ class MainControls(QMainWindow):
 
         self.ui.driveLetter_comboBox.currentIndexChanged.connect(self.get_drive_letter)
 
-        self.ui.browsecachebutton.clicked.connect(self.browse_cache)
-
         self.ui.browsejsonbutton.clicked.connect(self.browse_json)
 
         self.ui.browseoutputbutton.clicked.connect(self.browse_output)
 
         self.ui.browseardbutton.clicked.connect(self.browse_ard)
-
-        self.ui.browsecacheline.textChanged.connect(self.check_values)
 
         self.ui.browsejsonline.textChanged.connect(self.check_values)
 
@@ -230,20 +231,27 @@ class MainControls(QMainWindow):
         # Remove previous versions since they may not exist for the current coordinate
         self.ui.version_comboBox.clear()
 
-        path = os.path.join(self.drive_letter + os.sep, 'bulk', 'tiles', self.tile, 'change')
+        try:
+            path = os.path.join(self.drive_letter + os.sep, 'bulk', 'tiles', self.tile, 'change')
 
-        log.info("Looking for versions in %s" % path)
+            log.info("Looking for versions in %s" % path)
 
         # use version[1:] to strip the leading 'v' from the version string.
-        versions_present = [version[1:] for version in MapsViewer.versions
-                            if os.path.exists(os.path.join(path, version[1:]))]
+        # versions_present = [version[1:] for version in MapsViewer.versions
+        #                     if os.path.exists(os.path.join(path, version[1:]))]
 
-        log.info("PyCCD versions found: %s" % str(versions_present))
+            versions_present = [c for c in os.listdir(path) if os.path.isdir(os.path.join(path, c))]
 
-        for version in versions_present:
-            self.ui.version_comboBox.addItem(version)
+            log.info("PyCCD versions found: %s" % str(versions_present))
 
-        self.version = self.ui.version_comboBox.currentText()
+            for version in versions_present:
+                self.ui.version_comboBox.addItem(version)
+
+            self.version = self.ui.version_comboBox.currentText()
+
+        except (FileNotFoundError, TypeError):
+
+            pass
 
     def set_version(self, version):
         """
@@ -252,9 +260,6 @@ class MainControls(QMainWindow):
 
         Args:
             version <QString> the text sent automatically
-
-        Returns:
-            None
 
         """
         self.version = self.ui.version_comboBox.currentText()
@@ -265,8 +270,8 @@ class MainControls(QMainWindow):
 
     def clear(self):
         """
-        Clear the observations window
-        :return:
+        Clear the the list of clicked observations
+
         """
         self.ui.clicked_listWidget.clear()
 
@@ -284,9 +289,6 @@ class MainControls(QMainWindow):
     def set_units(self):
         """
         Change the unit labels if the units are changed on the GUI, display the converted units if values are entered
-
-        Returns:
-            None
 
         """
         self.selected_units = self.ui.comboBoxUnits.currentText()
@@ -312,18 +314,33 @@ class MainControls(QMainWindow):
 
             self.ui.y2line.setText(str(temp.y))
 
+            if self.units[self.selected_units]["unit"] == "meters":
+                geocoord = GeoInfo.get_geocoordinate(xstring=self.ui.x1line.text(),
+                                                     ystring=self.ui.y1line.text())
+
+            else:
+                geocoord = GeoInfo.get_geocoordinate(xstring=self.ui.x2line.text(),
+                                                     ystring=self.ui.y2line.text())
+
+            h, v = GeoInfo.get_hv(geocoord.x, geocoord.y)
+
+            self.tile = "h{:02}v{:02}".format(h, v)
+
     def fname_generator(self, ext=".png"):
         """
         Generate a string for an output file
+
         Args:
             ext: <str> The output file extension, default is .png
+
         Returns:
             <str> The full path to the output file name
+
         """
         return "{outdir}{sep}H{h}V{v}_{xy}_{t}{ext}".format(outdir=self.ui.browseoutputline.text(),
                                                             sep=os.sep,
-                                                            h=self.extracted_data.geo_info.H,
-                                                            v=self.extracted_data.geo_info.V,
+                                                            h=self.geo_info.H,
+                                                            v=self.geo_info.V,
                                                             xy=self.ui.x1line.text() + "_" + self.ui.y1line.text(),
                                                             t=self.get_time(),
                                                             ext=ext)
@@ -331,9 +348,6 @@ class MainControls(QMainWindow):
     def save_fig(self):
         """
         Save the current matplotlib figure to a PNG file
-
-        Returns:
-            None
 
         """
         if not os.path.exists(self.ui.browseoutputline.text()):
@@ -347,7 +361,7 @@ class MainControls(QMainWindow):
                 os.remove(fname)
 
             except IOError:
-                return None
+                pass
 
         plt.savefig(fname, bbox_inches="tight", dpi=150)
 
@@ -359,49 +373,28 @@ class MainControls(QMainWindow):
         """
         Generate the paths to the various required data
 
-        Returns:
-            None
-
         """
-        if self.units[self.selected_units]["unit"] == "meters":
-            geocoord = GeoInfo.get_geocoordinate(xstring=self.ui.x1line.text(),
-                                                 ystring=self.ui.y1line.text())
+        try:
+            self.ui.browseARDline.setText(os.path.join(self.drive_letter + os.sep, 'perf', 'production', self.tile))
 
-        else:
-            geocoord = GeoInfo.get_geocoordinate(xstring=self.ui.x2line.text(),
-                                                 ystring=self.ui.y2line.text())
+            self.class_dir = os.path.join(self.drive_letter + os.sep, 'bulk', 'tiles', self.tile, 'class',
+                                          'eval', 'pickles')
 
-        h, v = GeoInfo.get_hv(geocoord.x, geocoord.y)
+            self.config = os.path.join(self.drive_letter + os.sep, 'bulk', 'lcmap_tap_config', 'config.yaml')
 
-        self.tile = "h{:02}v{:02}".format(h, v)
-
-        self.ui.browsecacheline.setText(os.path.join(self.drive_letter + os.sep, 'bulk', 'cache', self.tile))
-
-        self.ui.browseARDline.setText(os.path.join(self.drive_letter + os.sep, 'perf', 'production', self.tile))
-
-        # if self.version is not None:
-        #
-        #     self.ui.browsejsonline.setText(os.path.join(self.drive_letter + os.sep,
-        #                                                 'bulk', 'tiles', self.tile, 'change', self.version, 'json'))
-
-        self.class_dir = os.path.join(self.drive_letter + os.sep, 'bulk', 'tiles', self.tile, 'class',
-                                      'eval', 'pickles')
-
-        return None
+        except (FileNotFoundError, TypeError):
+            pass
 
     def check_values(self):
         """
         Check to make sure all of the required parameters have been entered before enabling Plot
-
-        Returns:
-            None
 
         """
         # <int> A container to keep track of how many parameters have been entered
         counter = 0
 
         # <list> List containing the text() values from each of the input widgets
-        checks = [self.ui.browsecacheline.text(),
+        checks = [  # self.ui.browsecacheline.text(),
                   self.ui.browsejsonline.text(),
                   self.ui.browseardbutton.text(),
                   self.ui.x1line.text(),
@@ -417,20 +410,11 @@ class MainControls(QMainWindow):
 
                 self.ui.savefigpushButton.setEnabled(False)
 
-            # elif ind in (0, 1, 2) and not os.path.exists(check):
-            #     # log.warning("The path %s cannot be found" % check)
-            #
-            #     self.ui.plotbutton.setEnabled(False)
-            #
-            #     self.ui.clearpushButton.setEnabled(False)
-            #
-            #     self.ui.savefigpushButton.setEnabled(False)
-
             else:
                 counter += 1
 
-        # If all parameters are entered and valid, then counter will equal 6
-        if counter == 6:
+        # If all parameters are entered and valid, enable the plot button
+        if counter == len(checks):
             self.ui.plotbutton.setEnabled(True)
 
             # self.set_units()
@@ -457,23 +441,9 @@ class MainControls(QMainWindow):
         else:
             return True
 
-    def browse_cache(self):
-        """
-        Open QFileDialog to manually browse to and retrieve the full path to the directory containing ARD cache files
-        Returns:
-            None
-        """
-        # <str> Full path to the ARD cache directory (tile-specific)
-        cachedir = QFileDialog.getExistingDirectory(self)
-
-        self.ui.browsecacheline.setText(cachedir)
-
-        return None
-
     def browse_ard(self):
         """
         Open QFileDialog to manually browse to the directory containing ARD tarballs
-        Returns:
 
         """
         ard_directory = QFileDialog.getExistingDirectory(self)
@@ -485,8 +455,7 @@ class MainControls(QMainWindow):
     def browse_json(self):
         """
         Open a QFileDialog to manually browse to and retrieve the full path to the PyCCD results directory
-        Returns:
-            None
+
         """
         # <str> Full path to the directory containing PyCCD results (.json files)
         jsondir = QFileDialog.getExistingDirectory(self)
@@ -498,8 +467,7 @@ class MainControls(QMainWindow):
     def browse_output(self):
         """
         Open a QFileDialog to manually browse to and retrieve the full path to the output directory
-        Returns:
-            None
+
         """
         # <str> Full path to the output directory, used for saving plot images
         output_dir = QFileDialog.getExistingDirectory(self)
@@ -508,35 +476,29 @@ class MainControls(QMainWindow):
 
         return None
 
-    def show_model_params(self, data):
+    def show_model_params(self, results, geo):
         """
         Print the model results out to the GUI QPlainTextEdit widget
-        Args:
-            data: <CCDReader instance> Class instance containing change model results and parameters
 
-        Returns:
-            None
+        Args:
+            results: Class instance containing change model results and parameters
+            geo: Class instance containing geographic info
+
         """
+        # TODO Possibly add all logging output to QPlainTextEditor
         self.ui.plainTextEdit_results.clear()
 
-        log.info("%s" % data.message)
+        log.info("Plotting for tile H{:02}V{:02} at point ({}, {}) meters".format(geo.H, geo.V,
+                                                                                  geo.coord.x,
+                                                                                  geo.coord.y))
 
-        if data.duplicates:
-            self.ui.plainTextEdit_results.appendPlainText("\n***Duplicate dates***\n{}".format(data.duplicates))
+        self.ui.plainTextEdit_results.appendPlainText("\n\nBegin Date: {}".format(results.begin))
+        log.info("Begin Date: {}".format(results.begin))
 
-            log.debug("Duplicate dates: {}".format(data.duplicates))
+        self.ui.plainTextEdit_results.appendPlainText("End Date: {}\n".format(results.end))
+        log.info("End Date: {}".format(results.end))
 
-        log.info("Plotting for tile H{:02}V{:02} at point ({}, {}) meters".format(data.geo_info.H, data.geo_info.V,
-                                                                                  data.geo_info.coord.x,
-                                                                                  data.geo_info.coord.y))
-
-        self.ui.plainTextEdit_results.appendPlainText("\n\nBegin Date: {}".format(data.BEGIN_DATE))
-        log.info("Begin Date: {}".format(data.BEGIN_DATE))
-
-        self.ui.plainTextEdit_results.appendPlainText("End Date: {}\n".format(data.END_DATE))
-        log.info("End Date: {}".format(data.END_DATE))
-
-        for num, result in enumerate(data.results["change_models"]):
+        for num, result in enumerate(results.results["change_models"]):
             self.ui.plainTextEdit_results.appendPlainText("Result: {}".format(num + 1))
             log.info("Result: {}".format(num + 1))
 
@@ -564,12 +526,8 @@ class MainControls(QMainWindow):
         """
         Instantiate the CCDReader class that retrieves the plotting data and generate the plots
 
-        Returns:
-            None
-
         """
-        dirs = {"cache": self.ui.browsecacheline.text(),
-                "json": self.ui.browsejsonline.text(),
+        dirs = {"json": self.ui.browsejsonline.text(),
                 "ard": self.ui.browseARDline.text(),
                 "class": self.class_dir}
 
@@ -586,19 +544,13 @@ class MainControls(QMainWindow):
         # If there is a problem with any of the parameters, the first erroneous parameter
         # will cause an exception to occur which will be displayed in the GUI for the user, but the tool won't close.
         try:
-            # self.extracted_data = CCDReader(x=self.ui.x1line.text(),
-            #                                 y=self.ui.y1line.text(),
-            #                                 units=self.units[self.selected_units]["unit"],
-            #                                 cache_dir=str(self.ui.browsecacheline.text()),
-            #                                 json_dir=str(self.ui.browsejsonline.text()),
-            #                                 class_dir=self.class_dir)
-
             self.geo_info = GeoInfo(x=self.ui.x1line.text(),
                                     y=self.ui.y1line.text(),
                                     units=self.units[self.selected_units]["unit"])
 
             self.ard_observations = ARDData(coord=self.geo_info.coord,
-                                            pixel_coord=self.geo_info.pixel_coord)
+                                            pixel_coord=self.geo_info.pixel_coord,
+                                            config=self.config)
 
             self.ccd_results = CCDReader(tile=self.geo_info.tile,
                                          chip_coord=self.geo_info.chip_coord,
@@ -609,6 +561,10 @@ class MainControls(QMainWindow):
                                                 class_dir=dirs["class"],
                                                 rc=self.geo_info.chip_pixel_rowcol,
                                                 tile=self.geo_info.tile)
+
+            self.plot_specs = PlotSpecs(ard=self.ard_observations.pixel_ard,
+                                        change=self.ccd_results.results,
+                                        segs=self.class_results.results)
 
         except (IndexError, AttributeError, TypeError, ValueError) as e:
             # Clear the results window
@@ -633,7 +589,7 @@ class MainControls(QMainWindow):
                                  v=self.geo_info.V)
 
         # Display change model information for the entered coordinates
-        self.show_model_params(data=self.extracted_data)
+        self.show_model_params(results=self.plot_specs, geo=self.geo_info)
 
         # <list> The bands and/or indices selected for plotting
         item_list = [str(i.text()) for i in self.ui.listitems.selectedItems()]
@@ -647,7 +603,7 @@ class MainControls(QMainWindow):
         
         axes <ndarray> 2D array of matplotlib.axes.Axes objects
         """
-        self.fig, self.artist_map, self.lines_map, self.axes = make_plots.draw_figure(data=self.extracted_data,
+        self.fig, self.artist_map, self.lines_map, self.axes = make_plots.draw_figure(data=self.plot_specs,
                                                                                       items=item_list)
 
         if not os.path.exists(self.ui.browseoutputline.text()):
@@ -659,7 +615,7 @@ class MainControls(QMainWindow):
             root, name = os.path.split(temp_shp)
             root = root + os.sep + "shp"
 
-            self.get_shp(coords=self.extracted_data.geo_info.coord,
+            self.get_shp(coords=self.geo_info.coord,
                          out_shp="{}{}{}".format(root, os.sep, name))
 
         # Show the figure in an interactive window
@@ -668,7 +624,7 @@ class MainControls(QMainWindow):
                                       artist_map=self.artist_map,
                                       lines_map=self.lines_map,
                                       gui=self,
-                                      scenes=self.extracted_data.image_ids)
+                                      scenes=get_image_ids(path=dirs["ard"]))
 
         # Make these buttons available once a figure has been created
         self.ui.clearpushButton.setEnabled(True)
@@ -757,7 +713,7 @@ class MainControls(QMainWindow):
 
             if not self.ard:
                 self.ard = ARDViewerX(ard_file=scene_files[0:7],
-                                      ccd=self.extracted_data,
+                                      geo=self.geo_info,
                                       sensor=sensor,
                                       gui=self,  # Provide backwards interactions with the main GUI
                                       # Send the previous view rectangle to the new image
@@ -804,7 +760,7 @@ class MainControls(QMainWindow):
         path = os.path.join(self.drive_letter + os.sep, 'bulk', 'tiles', self.tile, 'eval')
 
         if self.ard_specs:
-            self.maps_window = MapsViewer(tile=self.ard_specs.tile_name, root=path, ccd=self.extracted_data,
+            self.maps_window = MapsViewer(tile=self.ard_specs.tile_name, root=path, geo=self.geo_info,
                                           version=self.version)
 
     def exit_plot(self):
