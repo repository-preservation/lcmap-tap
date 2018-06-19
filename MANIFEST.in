@@ -1,2 +1,3 @@
 include lcmap_tap/Auxiliary/*.png
 include lcmap_tap/*.kmz
+include lcmap_tap/*.ui
