@@ -222,7 +222,7 @@ class MapsViewer(QMainWindow):
                 "v2017.06.20", "v2017.06.20b", "v2017.06.20-b",
                 "v2017.6.8", "v1.4.0", "v1.4.0rc1"]
 
-    def __init__(self, tile, root, ccd, version, begin_year=1984, end_year=2015):
+    def __init__(self, tile, root, geo, version, begin_year=1984, end_year=2015):
 
         super(MapsViewer, self).__init__()
 
@@ -230,11 +230,11 @@ class MapsViewer(QMainWindow):
 
         self.root = root
 
-        self.ccd = ccd
+        self.geo_info = geo
 
         self.current_pixel = None
 
-        self.pixel_rowcol = self.ccd.geo_info.geo_to_rowcol(affine=self.ccd.geo_info.PIXEL_AFFINE,
+        self.pixel_rowcol = self.geo_info.geo_to_rowcol(affine=self.ccd.geo_info.PIXEL_AFFINE,
                                                             coord=self.ccd.geo_info.coord)
 
         self.row = self.pixel_rowcol.row
