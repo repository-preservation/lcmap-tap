@@ -1,18 +1,17 @@
 """Read a chip of ARD using lcmap-merlin"""
 
 from lcmap_tap.RetrieveData.retrieve_data import GeoCoordinate
-from lcmap_tap.logger import log
+from lcmap_tap.logger import log, HOME
 import os
 import sys
 import time
 import yaml
 import pickle
 import glob
+import datetime as dt
 import merlin
-from pathlib import Path
 
-
-HOME = str(Path.home())
+TODAY = dt.datetime.now().strftime("%Y-%m-%d")
 
 
 def exc_handler(exc_type, exc_value, exc_traceback):
@@ -62,7 +61,7 @@ class ARDData:
 
     def __init__(self, coord: GeoCoordinate, pixel_coord: GeoCoordinate, config: str,
                  home: str=HOME,
-                 start: str='1982-01-01', stop: str='2017-12-31'):
+                 start: str='1982-01-01', stop: str=TODAY):
         """
 
         Args:
@@ -82,11 +81,6 @@ class ARDData:
         if not os.path.exists(p_file):
 
             t0 = get_time()
-
-            log.debug("Merlin X-coord: %s" % coord.x)
-            log.debug("Merlin Y-coord: %s" % coord.y)
-            log.debug("Merlin P-X-coord: %s" % pixel_coord.x)
-            log.debug("Merlin P-Y-coord: %s" % pixel_coord.y)
 
             self.timeseries = merlin.create(x=int(coord.x),
                                             y=int(coord.y),

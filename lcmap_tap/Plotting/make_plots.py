@@ -239,13 +239,13 @@ def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure,
                                              picker=3,
                                              linewidth=0))
 
-        log.debug("empty_point created")
-        log.debug("empty_point=%s" % str(empty_point))
+        # log.debug("empty_point created")
+        # log.debug("empty_point=%s" % str(empty_point))
 
         # Store a reference to the empty point which will be used to display clicked points on the plot
         artist_map[b] = empty_point[0]
 
-        log.debug("Referencing empty_point[0] which is %s for subplot %s" % (str(empty_point[0]), b))
+        # log.debug("Referencing empty_point[0] which is %s for subplot %s" % (str(empty_point[0]), b))
 
         """ ---- Plot the observed values within the PyCCD time range ---- """
         #: class matplotlib.collections.PathCollection:

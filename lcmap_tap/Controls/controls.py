@@ -105,6 +105,8 @@ class MainControls(QMainWindow):
         self.ccd_results = None  # container for PyCCD results at the pixel
         self.class_results = None  # container for classification results at the pixel
         self.plot_specs = None  # container for plotting data
+        self.begin = dt.date(year=1982, month=1, day=1)
+        self.end = dt.date(year=2015, month=12, day=31)
 
         self.selected_units = self.ui.comboBoxUnits.currentText()
 
@@ -267,6 +269,15 @@ class MainControls(QMainWindow):
         # Update the browsejsonline field with the selected version
         self.ui.browsejsonline.setText(os.path.join(self.drive_letter + os.sep,
                                                     'bulk', 'tiles', self.tile, 'change', str(version), 'json'))
+
+        if str(self.version) == 'n-compare':
+            self.end = dt.date(year=2017, month=12, day=31)
+
+        else:
+            self.end = dt.date(year=2015, month=12, day=31)
+
+        log.debug("Version=%s" % self.version)
+        log.debug("End=%s" % self.end)
 
     def clear(self):
         """
@@ -564,7 +575,9 @@ class MainControls(QMainWindow):
 
             self.plot_specs = PlotSpecs(ard=self.ard_observations.pixel_ard,
                                         change=self.ccd_results.results,
-                                        segs=self.class_results.results)
+                                        segs=self.class_results.results,
+                                        begin=self.begin,
+                                        end=self.end)
 
         except (IndexError, AttributeError, TypeError, ValueError) as e:
             # Clear the results window
