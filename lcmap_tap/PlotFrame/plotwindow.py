@@ -260,6 +260,10 @@ class PlotWindow(QtWidgets.QMainWindow):
                                                                                      self.b,
                                                                                      self.value_holder['temp'][1][1][
                                                                                          0]))
+                        log.info("Observation Selected: %s" % scene)
+                        log.info("Observation Date: {:%Y-%b-%d}".format(self.value_holder['temp'][1][0]))
+                        log.info("Observation %s Band Value: %s" % (self.b, self.value_holder['temp'][1][1][0]))
+
                         break
 
                 self.highlight_pick()
