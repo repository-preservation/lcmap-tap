@@ -67,12 +67,9 @@ class PlotSpecs:
 
         self.fill_mask = np.isin(self.ard['qas'], [n for n in np.unique(self.ard['qas']) if n != 1])
 
-        # self.fill_mask = np.ones_like(self.ard['qas'], dtype=np.bool)
-        # self.fill_mask[self.ard['qas'] == 1] = False
-        #
-        # self.fill_in = self.fill_mask[date_mask]
-        # self.fill_out = self.fill_mask[~date_mask]
-        #
+        self.fill_in = self.fill_mask[self.date_mask]
+        self.fill_out = self.fill_mask[~self.date_mask]
+
         # # self.total_mask = np.logical_and(self.ccd_mask, self.fill_in)
         # self.total_mask = np.logical_and(self.qa_mask[date_mask], self.fill_in)
 

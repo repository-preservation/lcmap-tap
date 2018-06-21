@@ -83,8 +83,13 @@ class ARDData:
 
             t0 = get_time()
 
-            self.timeseries = merlin.create(x=coord.x,
-                                            y=coord.y,
+            log.debug("Merlin X-coord: %s" % coord.x)
+            log.debug("Merlin Y-coord: %s" % coord.y)
+            log.debug("Merlin P-X-coord: %s" % pixel_coord.x)
+            log.debug("Merlin P-Y-coord: %s" % pixel_coord.y)
+
+            self.timeseries = merlin.create(x=int(coord.x),
+                                            y=int(coord.y),
                                             acquired="{}/{}".format(start, stop),
                                             cfg=merlin.cfg.get(profile="chipmunk-ard",
                                                                env={"CHIPMUNK_URL": MERLIN}))
