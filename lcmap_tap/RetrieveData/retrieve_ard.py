@@ -8,7 +8,10 @@ import time
 import yaml
 import pickle
 import glob
+import datetime as dt
 import merlin
+
+TODAY = dt.datetime.now().strftime("%Y-%m-%d")
 
 
 def exc_handler(exc_type, exc_value, exc_traceback):
@@ -58,7 +61,7 @@ class ARDData:
 
     def __init__(self, coord: GeoCoordinate, pixel_coord: GeoCoordinate, config: str,
                  home: str=HOME,
-                 start: str='1982-01-01', stop: str='2017-12-31'):
+                 start: str='1982-01-01', stop: str=TODAY):
         """
 
         Args:
