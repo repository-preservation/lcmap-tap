@@ -26,15 +26,15 @@ COLORS = {'Developed': (1.0, 0.0, 0.0),
           'Barren': (0.39215686274509803, 0.39215686274509803, 0.39215686274509803),
           'No Model-fit': (1.0, 0.0, 1.0)}
 
-NAMES = {0: 'Developed',
-         1: 'Agriculture',
-         2: 'Grass/Shrub',
-         3: 'Tree Cover',
-         4: 'Water',
-         5: 'Wetlands',
-         6: 'Ice/Snow',
-         7: 'Barren',
-         8: 'No Model-fit'}
+NAMES = {1: 'Developed',
+         2: 'Agriculture',
+         3: 'Grass/Shrub',
+         4: 'Tree Cover',
+         5: 'Water',
+         6: 'Wetlands',
+         7: 'Ice/Snow',
+         8: 'Barren',
+         9: 'No Model-fit'}
 
 
 def exc_handler(exc_type, exc_value, exc_traceback):
@@ -156,7 +156,12 @@ def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure,
     class_results = dict()
 
     for ind, result in enumerate(data.segment_classes):
-        class_ind = int(np.argmax(result['class_probs']))
+        if len(result['class_probs']) == 9:
+            class_ind = np.argmax(result['class_probs'])
+
+        else:
+            # The older classification results have an additional class '0' so indices are off by 1
+            class_ind = np.argmax(result['class_probs']) + 1
 
         class_label = NAMES[class_ind]
 
@@ -351,7 +356,7 @@ def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure,
             class_handles.append(get_legend_handle(linewidth=6,
                                                    color=COLORS[key], label=key))
 
-        """ Set values for the y-axis limits """
+        """ ---- Set values for the y-axis limits ---- """
         if b in data.index_lookup.keys():
             # Potential dynamic range values
             # ymin = min(plot_data[b][0][data.date_mask][total_mask]) - 0.15

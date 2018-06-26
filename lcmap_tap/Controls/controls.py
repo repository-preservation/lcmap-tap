@@ -99,7 +99,6 @@ class MainControls(QMainWindow):
         self.artist_map = None
         self.lines_map = None
         self.axes = None
-        self.class_dir = None
         self.geo_info = None  # container for geographic info derived from the input coordinates
         self.ard_observations = None  # container for the ARD stack at the pixel
         self.ccd_results = None  # container for PyCCD results at the pixel
@@ -175,6 +174,8 @@ class MainControls(QMainWindow):
         self.ui.browseoutputbutton.clicked.connect(self.browse_output)
 
         self.ui.browseardbutton.clicked.connect(self.browse_ard)
+
+        self.ui.browseclassbutton.clicked.connect(self.browse_class)
 
         self.ui.browsejsonline.textChanged.connect(self.check_values)
 
@@ -388,8 +389,8 @@ class MainControls(QMainWindow):
         try:
             self.ui.browseARDline.setText(os.path.join(self.drive_letter + os.sep, 'perf', 'production', self.tile))
 
-            self.class_dir = os.path.join(self.drive_letter + os.sep, 'bulk', 'tiles', self.tile, 'class',
-                                          'eval', 'pickles')
+            self.ui.browseclassline.setText(os.path.join(self.drive_letter + os.sep, 'bulk', 'tiles', self.tile,
+                                                         'class', 'eval', 'pickles'))
 
             self.config = os.path.join(self.drive_letter + os.sep, 'bulk', 'lcmap_tap_config', 'config.yaml')
 
@@ -408,12 +409,13 @@ class MainControls(QMainWindow):
         checks = [  # self.ui.browsecacheline.text(),
                   self.ui.browsejsonline.text(),
                   self.ui.browseardbutton.text(),
+                  self.ui.browseclassline.text(),
                   self.ui.x1line.text(),
                   self.ui.y1line.text(),
                   self.ui.browseoutputline.text()]
 
         # Parse through the checks list to check for entered text
-        for ind, check in enumerate(checks):
+        for check in checks:
             if check == "":
                 self.ui.plotbutton.setEnabled(False)
 
@@ -427,8 +429,6 @@ class MainControls(QMainWindow):
         # If all parameters are entered and valid, enable the plot button
         if counter == len(checks):
             self.ui.plotbutton.setEnabled(True)
-
-            # self.set_units()
 
         return None
 
@@ -462,6 +462,16 @@ class MainControls(QMainWindow):
         self.ui.browseARDline.setText(ard_directory)
 
         return None
+
+    def browse_class(self):
+        """
+        Open a QFileDialog to manually browse to the directory containing class pickle files
+        Returns:
+
+        """
+        class_dir = QFileDialog.getExistingDirectory(self)
+
+        self.ui.browseclassline.setText(class_dir)
 
     def browse_json(self):
         """
@@ -540,7 +550,7 @@ class MainControls(QMainWindow):
         """
         dirs = {"json": self.ui.browsejsonline.text(),
                 "ard": self.ui.browseARDline.text(),
-                "class": self.class_dir}
+                "class": self.ui.browseclassline.text()}
 
         for key, value in dirs.items():
             if not self.check_path(key, value):
