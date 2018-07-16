@@ -18,7 +18,7 @@ from setuptools import setup, find_packages
 setup(
     name='lcmap_tap',
 
-    version='0.2.0',
+    version='0.3.0',
 
     packages=find_packages(),
 
@@ -43,11 +43,11 @@ setup(
 
     author='Daniel Zelenak',
 
-    author_email='daniel.zelenak.ctr@usgs.gov',
+    author_email='dzelenak@contractor.usgs.gov',
 
     long_description=__doc__,
 
-    description='A plotting tool for displaying PyCCD time-series model results and Landsat-ARD observations',
+    description='A data visualization tool for PyCCD time-series model results and Landsat ARD',
 
     license='Public Domain',
 
