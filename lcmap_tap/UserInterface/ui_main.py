@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'UI_MAIN.UI'
 #
-# Created by: PyQt5 UI code generator 5.6
+# Created by: PyQt5 UI code generator 5.9.2
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -13,7 +13,7 @@ class Ui_TAPTool(object):
         TAPTool.setObjectName("TAPTool")
         TAPTool.resize(957, 609)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("../../../../../Pictures/lcmap_tap5.PNG"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap("lcmap_tap/Auxiliary/icon.PNG"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         TAPTool.setWindowIcon(icon)
         TAPTool.setUnifiedTitleAndToolBarOnMac(False)
         self.centralwidget = QtWidgets.QWidget(TAPTool)
@@ -303,6 +303,16 @@ class Ui_TAPTool(object):
         self.gridLayout_3.addItem(spacerItem2, 13, 1, 1, 1)
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
+        self.pushLocator = QtWidgets.QPushButton(self.centralwidget)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.pushLocator.sizePolicy().hasHeightForWidth())
+        self.pushLocator.setSizePolicy(sizePolicy)
+        self.pushLocator.setMinimumSize(QtCore.QSize(75, 0))
+        self.pushLocator.setMaximumSize(QtCore.QSize(75, 16777215))
+        self.pushLocator.setObjectName("pushLocator")
+        self.horizontalLayout_2.addWidget(self.pushLocator)
         self.plotbutton = QtWidgets.QPushButton(self.centralwidget)
         self.plotbutton.setEnabled(False)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
@@ -483,6 +493,7 @@ class Ui_TAPTool(object):
         item = self.listitems.item(16)
         item.setText(_translate("TAPTool", "NBR-2"))
         self.listitems.setSortingEnabled(__sortingEnabled)
+        self.pushLocator.setText(_translate("TAPTool", "Locator Map"))
         self.plotbutton.setText(_translate("TAPTool", "Plot"))
         self.savefigpushButton.setText(_translate("TAPTool", "Save Figure"))
         self.mapButton.setText(_translate("TAPTool", "Maps"))
