@@ -18,6 +18,7 @@ from lcmap_tap.RetrieveData.ard_info import ARDInfo
 from lcmap_tap.Auxiliary import projections
 from lcmap_tap.Visualization.ard_viewer_qpixelmap import ARDViewerX
 from lcmap_tap.Visualization.maps_viewer import MapsViewer
+from lcmap_tap.MapCanvas.mapcanvas import MapCanvas
 from lcmap_tap.logger import log
 import datetime as dt
 import os
@@ -106,6 +107,8 @@ class MainControls(QMainWindow):
         self.plot_specs = None  # container for plotting data
         self.begin = dt.date(year=1982, month=1, day=1)
         self.end = dt.date(year=2015, month=12, day=31)
+
+        self.leaflet_map = MapCanvas(self)
 
         self.selected_units = self.ui.comboBoxUnits.currentText()
 
@@ -197,7 +200,16 @@ class MainControls(QMainWindow):
 
         self.ui.mapButton.clicked.connect(self.show_maps)
 
+        self.ui.pushLocator.clicked.connect(self.show_locator_map)
+
         return None
+
+    def show_locator_map(self):
+        """
+        Open the Leaflet map for selecting a coordinate for plotting
+
+        """
+        self.leaflet_map.show()
 
     def get_drive_letter(self):
         """
