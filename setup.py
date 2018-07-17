@@ -37,9 +37,9 @@ setup(
 
     python_requires='>=3.5',
 
-    # package_data={'lcmap_tap': ['Auxiliary/*.png']},
+    # package_data={'lcmap_tap': ['MapCanvas/*.png']},
 
-    # include_package_data = True,
+    include_package_data = True,
 
     author='Daniel Zelenak',
 
