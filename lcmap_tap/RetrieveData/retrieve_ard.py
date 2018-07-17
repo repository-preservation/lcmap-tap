@@ -13,6 +13,8 @@ import merlin
 
 TODAY = dt.datetime.now().strftime("%Y-%m-%d")
 
+# TODO: only retrieve the bands specified by user for plotting
+
 
 def exc_handler(exc_type, exc_value, exc_traceback):
     """
@@ -82,11 +84,13 @@ class ARDData:
 
             t0 = get_time()
 
+            cfg = merlin.cfg.get(profile="chipmunk-ard",
+                                 env={"CHIPMUNK_URL": MERLIN})
+
             self.timeseries = merlin.create(x=int(coord.x),
                                             y=int(coord.y),
                                             acquired="{}/{}".format(start, stop),
-                                            cfg=merlin.cfg.get(profile="chipmunk-ard",
-                                                               env={"CHIPMUNK_URL": MERLIN}))
+                                            cfg=cfg)
             t1 = get_time()
 
             log.info("Time series retrieved in %s seconds" % (t1 - t0))
