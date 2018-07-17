@@ -1,13 +1,36 @@
 """Use Leaflet JavaScript API to display an interactive web map within a QWidget"""
 
+from lcmap_tap.RetrieveData.retrieve_geo import GeoInfo
+from lcmap_tap.logger import log
+
 import sys
+import pkg_resources
+
 from PyQt5.QtCore import QDir, QObject, QUrl, pyqtSlot, pyqtSignal
-from PyQt5.QtWidgets import QTextEdit, QVBoxLayout, QApplication, QWidget
+from PyQt5.QtWidgets import QTextEdit, QVBoxLayout, QWidget
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWebChannel import QWebChannel
 
+HTML = pkg_resources.resource_filename('lcmap_tap', '/'.join(('MapCanvas', 'index.html')))
 
-HTML = "index.html"
+
+def exc_handler(exc_type, exc_value, exc_traceback):
+    """
+    Customized handling of top-level exceptions
+
+    Args:
+        exc_type: exception class
+        exc_value: exception instance
+        exc_traceback: traceback object
+
+    Returns:
+        None
+
+    """
+    log.critical("Uncaught Exception: ", exc_info=(exc_type, exc_value, exc_traceback))
+
+
+sys.excepthook = exc_handler
 
 
 class Backend(QObject):
@@ -19,10 +42,10 @@ class Backend(QObject):
 
 
 class MapCanvas(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, gui, parent=None):
         super(MapCanvas, self).__init__(parent)
 
-        self.coord = dict()
+        self.gui = gui
 
         self.setMinimumSize(400, 400)
 
@@ -66,22 +89,30 @@ class MapCanvas(QWidget):
             None
 
         """
-        self.coord['lat'] = lat
+        coords = GeoInfo.get_geocoordinate(xstring=str(lng), ystring=str(lat))
 
-        self.coord['lng'] = lng
+        log.info("New point selected from locator map: %s" % str(coords))
 
-        # Display the coordinate in the QTextEdit window
+        # Convert to meters before updating the coordinate text on the GUI
+        if self.gui.units[self.gui.selected_units]["unit"] == "meters":
+            _coords = GeoInfo.unit_conversion(coords, src="lat/long", dest="meters")
+
+            self.gui.ui.x1line.setText(str(_coords.x))
+
+            self.gui.ui.y1line.setText(str(_coords.y))
+
+        # Update the X and Y coordinates in the GUI with the new point
+        else:
+            self.gui.ui.x1line.setText(str(coords.x))
+
+            self.gui.ui.y1line.setText(str(coords.y))
+
+        self.gui.check_values()
+
+        # Clear the list of previously clicked ARD observations because they can't be referenced in the new time-series
+        self.gui.ui.clicked_listWidget.clear()
+
+        # Display the coordinate in the QTextEdit window below the map
         self.text.append("Point {lat}, {lng}".format(lat=lat, lng=lng))
 
         return None
-
-# For debugging and testing
-if __name__ == '__main__':
-
-    app = QApplication(sys.argv)
-
-    w = MapCanvas()
-
-    w.show()
-
-    sys.exit(app.exec_())
