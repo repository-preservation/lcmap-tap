@@ -113,19 +113,14 @@ class MapCanvas(QWidget):
 
         log.info("New point selected from locator map: %s" % str(coords))
 
-        # Convert to meters before updating the coordinate text on the GUI
+        # If necessary, convert to meters before updating the coordinate text on the GUI
         if self.gui.units[self.gui.selected_units]["unit"] == "meters":
-            _coords = GeoInfo.unit_conversion(coords, src="lat/long", dest="meters")
-
-            self.gui.ui.x1line.setText(str(_coords.x))
-
-            self.gui.ui.y1line.setText(str(_coords.y))
+            coords = GeoInfo.unit_conversion(coords, src="lat/long", dest="meters")
 
         # Update the X and Y coordinates in the GUI with the new point
-        else:
-            self.gui.ui.x1line.setText(str(coords.x))
+        self.gui.ui.x1line.setText(str(coords.x))
 
-            self.gui.ui.y1line.setText(str(coords.y))
+        self.gui.ui.y1line.setText(str(coords.y))
 
         self.gui.check_values()
 
