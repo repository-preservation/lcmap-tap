@@ -1,6 +1,6 @@
 include lcmap_tap/Auxiliary/*.png
 include lcmap_tap/*.kmz
 include lcmap_tap/*.ui
-include lcmap_tap/MapCanvas/*.html
-include lcmap_tap/MapCanvas/*.css
-include lcmap_tap/MapCanvas/*.js
+recursive-include lcmap_tap/MapCanvas *.html
+recursive-include lcmap_tap/MapCanvas *.css
+recursive-include lcmap_tap/MapCanvas *.js
