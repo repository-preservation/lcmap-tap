@@ -8,10 +8,21 @@ import pkg_resources
 
 from PyQt5.QtCore import QDir, QObject, QUrl, pyqtSlot, pyqtSignal
 from PyQt5.QtWidgets import QTextEdit, QVBoxLayout, QWidget
-from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWebChannel import QWebChannel
 
-HTML = pkg_resources.resource_filename('lcmap_tap', '/'.join(('MapCanvas', 'index.html')))
+try:
+    from PyQt5.QtWebEngineWidgets import QWebEngineView
+
+    use = 'UseWebEngineView'
+
+except ImportError:
+    from PyQt5.QtWebKitWidgets import QWebView
+
+    use = 'UseWebView'
+
+HTML = pkg_resources.resource_filename('lcmap_tap', '/'.join(('MapCanvas', use, 'index.html')))
+
+JS = pkg_resources.resource_filename('lcmap_tap', '/'.join(('MapCanvas', use, 'utils.js')))
 
 
 def exc_handler(exc_type, exc_value, exc_traceback):
@@ -34,6 +45,10 @@ sys.excepthook = exc_handler
 
 
 class Backend(QObject):
+    """
+    Only used with QWebEngineView
+
+    """
     pointChanged = pyqtSignal(float, float)
 
     @pyqtSlot(float, float)
@@ -49,22 +64,27 @@ class MapCanvas(QWidget):
 
         self.setMinimumSize(400, 400)
 
-        self.text = QTextEdit(self)
+        self.text = QTextEdit()
 
-        self.map_view = QWebEngineView()
-
-        self.backend = Backend(self)
-
-        self.backend.pointChanged.connect(self.onPointChanged)
-
-        self.channel = QWebChannel(self)
-
-        self.channel.registerObject('backend', self.backend)
-
-        self.map_view.page().setWebChannel(self.channel)
-
-        # Open the index.html that loads the leaflet JS code
         self.file = QDir.current().absoluteFilePath(HTML)
+
+        if use == 'UseWebEngineView':
+            self.map_view = QWebEngineView()
+
+            self.backend = Backend(self)
+
+            self.backend.pointChanged.connect(self.onPointChanged)
+
+            self.channel = QWebChannel(self)
+
+            self.channel.registerObject('backend', self.backend)
+
+            self.map_view.page().setWebChannel(self.channel)
+
+        else:
+            self.map_view = QWebView()
+
+            self.map_view.page().mainFrame().addToJavaScriptWindowObject("MapCanvas", self)
 
         self.map_view.load(QUrl.fromLocalFile(self.file))
 
@@ -74,8 +94,8 @@ class MapCanvas(QWidget):
 
         self.layout.addWidget(self.text)
 
-        # self.show()
 
+    # This should work for either usage type of PyQt
     @pyqtSlot(float, float)
     def onPointChanged(self, lat, lng):
         """
