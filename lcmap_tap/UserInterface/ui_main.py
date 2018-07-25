@@ -412,7 +412,7 @@ class Ui_TAPTool(object):
 
     def retranslateUi(self, TAPTool):
         _translate = QtCore.QCoreApplication.translate
-        TAPTool.setWindowTitle(_translate("TAPTool", "PyCCD Plotting Tool"))
+        TAPTool.setWindowTitle(_translate("TAPTool", "Time Series Analysis and Plotting (TAP) Tool"))
         self.label_x1.setText(_translate("TAPTool", "X (meters)"))
         self.comboBoxUnits.setCurrentText(_translate("TAPTool", "Projected - Meters - Albers CONUS WGS 84"))
         self.comboBoxUnits.setItemText(0, _translate("TAPTool", "Projected - Meters - Albers CONUS WGS 84"))
