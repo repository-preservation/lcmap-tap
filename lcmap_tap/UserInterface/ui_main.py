@@ -4,22 +4,29 @@
 #
 # Created by: PyQt5 UI code generator 5.9.2
 #
-# WARNING! All changes made in this file will be lost!
+# Edited 7/25/2018 by Dan Zelenak
+# - Add Icon to Main Window
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+import pkg_resources
 
 class Ui_TAPTool(object):
     def setupUi(self, TAPTool):
         TAPTool.setObjectName("TAPTool")
         TAPTool.resize(957, 609)
-        icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("lcmap_tap/Auxiliary/icon.PNG"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+
+        icon = QtGui.QIcon(QtGui.QPixmap(pkg_resources.resource_filename("lcmap_tap",
+                                                                         "/".join(("Auxiliary", "icon.PNG")))))
         TAPTool.setWindowIcon(icon)
+
         TAPTool.setUnifiedTitleAndToolBarOnMac(False)
+
         self.centralwidget = QtWidgets.QWidget(TAPTool)
         self.centralwidget.setObjectName("centralwidget")
+
         self.gridLayout_3 = QtWidgets.QGridLayout(self.centralwidget)
         self.gridLayout_3.setObjectName("gridLayout_3")
+
         self.gridLayout = QtWidgets.QGridLayout()
         self.gridLayout.setObjectName("gridLayout")
         self.y1line = QtWidgets.QLineEdit(self.centralwidget)
