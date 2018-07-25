@@ -4,13 +4,15 @@ import os
 import sys
 import traceback
 import glob
+import pkg_resources
 
-from PyQt5 import QtCore, QtWidgets, QtGui
-from PyQt5.QtCore import pyqtSignal, QPointF, QRectF
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QMainWindow, QSlider
+from PyQt5.QtCore import pyqtSignal, QPointF, QRectF, Qt
+from PyQt5.QtGui import QPixmap, QBrush, QPen, QColor, QMouseEvent, QWheelEvent, QIcon
+from PyQt5.QtWidgets import QFrame, QSlider, QMainWindow, QGraphicsView, QGraphicsScene, \
+    QGraphicsPixmapItem, QGraphicsRectItem, QSizePolicy
 
 from lcmap_tap.Visualization.ui_maps_viewer import Ui_MapViewer
+from lcmap_tap.Visualization import PRODUCTS, VERSIONS
 from lcmap_tap.logger import log
 
 
@@ -33,7 +35,7 @@ def exc_handler(type, value, tb):
 sys.excepthook = exc_handler
 
 
-class ImageViewer(QtWidgets.QGraphicsView):
+class ImageViewer(QGraphicsView):
     image_clicked = pyqtSignal(QPointF)
 
     def __init__(self):
@@ -43,9 +45,9 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
         self._empty = True
 
-        self.scene = QtWidgets.QGraphicsScene(self)
+        self.scene = QGraphicsScene(self)
 
-        self._image = QtWidgets.QGraphicsPixmapItem()
+        self._image = QGraphicsPixmapItem()
 
         self._mouse_button = None
 
@@ -55,17 +57,17 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
         self.setScene(self.scene)
 
-        self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
+        self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
 
-        self.setResizeAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
+        self.setResizeAnchor(QGraphicsView.AnchorUnderMouse)
 
-        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
-        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
-        self.setBackgroundBrush(QtGui.QBrush(QtGui.QColor(30, 30, 30)))
+        self.setBackgroundBrush(QBrush(QColor(30, 30, 30)))
 
-        self.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.setFrameShape(QFrame.NoFrame)
 
     def has_image(self):
         return not self._empty
@@ -104,9 +106,9 @@ class ImageViewer(QtWidgets.QGraphicsView):
         else:
             self._empty = True
 
-            self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
+            self.setDragMode(QGraphicsView.NoDrag)
 
-            self._image.setPixmap(QtGui.QPixmap())
+            self._image.setPixmap(QPixmap())
 
         if not self.view_holder:
             self.fitInView()
@@ -121,7 +123,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
             self.scale(factor, factor)
 
-    def wheelEvent(self, event: QtGui.QWheelEvent):
+    def wheelEvent(self, event: QWheelEvent):
         if self.has_image():
             if event.angleDelta().y() > 0:
                 factor = 1.25
@@ -143,24 +145,23 @@ class ImageViewer(QtWidgets.QGraphicsView):
         self.view_holder = QRectF(self.mapToScene(0, 0), self.mapToScene(self.width(), self.height()))
 
     def toggle_drag(self):
-        if self.dragMode() == QtWidgets.QGraphicsView.ScrollHandDrag:
-            self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
+        if self.dragMode() == QGraphicsView.ScrollHandDrag:
+            self.setDragMode(QGraphicsView.NoDrag)
 
         elif not self._image.pixmap().isNull():
-            self.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
+            self.setDragMode(QGraphicsView.ScrollHandDrag)
 
-    def mousePressEvent(self, event: QtGui.QMouseEvent):
+    def mousePressEvent(self, event: QMouseEvent):
         # 1 -> Left-click
         # 2 -> Right-click
         # 4 -> Wheel-click
         self._mouse_button = event.button()
 
-        if event.button() == QtCore.Qt.RightButton:
+        if event.button() == Qt.RightButton:
             self.toggle_drag()
 
-        if self._image.isUnderMouse() and event.button() == QtCore.Qt.LeftButton \
-                and self.dragMode() == QtWidgets.QGraphicsView.NoDrag:
-
+        if self._image.isUnderMouse() and event.button() == Qt.LeftButton \
+                and self.dragMode() == QGraphicsView.NoDrag:
             point = self.mapToScene(event.pos())
 
             log.debug("point %s" % str(point))
@@ -169,62 +170,20 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
         super(ImageViewer, self).mousePressEvent(event)
 
-    def mouseReleaseEvent(self, event: QtGui.QMouseEvent):
+    def mouseReleaseEvent(self, event: QMouseEvent):
         # self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
 
         super(ImageViewer, self).mouseReleaseEvent(event)
 
 
 class MapsViewer(QMainWindow):
-    """A dict used to reference the various products that were generated for LCMAP evaluations"""
-    products = {"Change DOY": {"type": "ChangeMaps",
-                               "alias": "ChangeMap_color",
-                               "root": ""},
-
-                "Change Magnitude": {"type": "ChangeMaps",
-                                     "alias": "ChangeMagMap_color",
-                                     "root": ""},
-
-                "Change QA": {"type": "ChangeMaps",
-                              "alias": "QAMap_color",
-                              "root": ""},
-
-                "Segment Length": {"type": "ChangeMaps",
-                                   "alias": "SegLength_color",
-                                   "root": ""},
-
-                "Time Since Last Change": {"type": "ChangeMaps",
-                                           "alias": "LastChange_color",
-                                           "root": ""},
-
-                "Primary Land Cover": {"type": "CoverMaps",
-                                       "alias": "CoverPrim_color",
-                                       "root": ""},
-
-                "Secondary Land Cover": {"type": "CoverMaps",
-                                         "alias": "CoverSec_color",
-                                         "root": ""},
-
-                "Primary Land Cover Confidence": {"type": "CoverMaps",
-                                                  "alias": "CoverConfPrim_color",
-                                                  "root": ""},
-
-                "Secondary Land Cover Confidence": {"type": "CoverMaps",
-                                                    "alias": "CoverConfSec_color",
-                                                    "root": ""}
-                }
-    """ Versions listed from highest to lowest priority.  Getting away from this so that the user can specify
-    which version they want to use.  Need to handle the presence of the 'v' in these names because it's only
-    there for the eval -> products.  The version subdirectories located in change don't contain the 'v'. 
-    """
-    versions = ["v2017.08.18", "v2017.8.18",
-                "v2017.6.20-a", "v2017.6.20",
-                "v2017.06.20", "v2017.06.20b", "v2017.06.20-b",
-                "v2017.6.8", "v1.4.0", "v1.4.0rc1"]
-
     def __init__(self, tile, root, geo, version, begin_year=1984, end_year=2015):
 
         super(MapsViewer, self).__init__()
+
+        icon = QIcon(QPixmap(pkg_resources.resource_filename("lcmap_tap", "/".join(("Auxiliary", "icon.PNG")))))
+
+        self.setWindowIcon(icon)
 
         self.tile = tile
 
@@ -234,8 +193,8 @@ class MapsViewer(QMainWindow):
 
         self.current_pixel = None
 
-        self.pixel_rowcol = self.geo_info.geo_to_rowcol(affine=self.ccd.geo_info.PIXEL_AFFINE,
-                                                            coord=self.ccd.geo_info.coord)
+        self.pixel_rowcol = self.geo_info.geo_to_rowcol(affine=self.geo_info.PIXEL_AFFINE,
+                                                        coord=self.geo_info.coord)
 
         self.row = self.pixel_rowcol.row
 
@@ -311,7 +270,7 @@ class MapsViewer(QMainWindow):
             version: The version identifier
 
         """
-        for version in self.versions:
+        for version in VERSIONS:
             temp_look = os.path.join(self.root, version)
 
             if os.path.exists(temp_look):
@@ -332,17 +291,17 @@ class MapsViewer(QMainWindow):
     def get_product_root_directories(self):
         """
         Construct the full path to the change/cover product subdirectories using the most recent version available.
-        Store the full path in the self.products dict under keyword "root"
+        Store the full path in the products dict under keyword "root"
 
         Returns:
             None
 
         """
-        for product in self.products.keys():
-            self.products[product]["root"] = os.path.join(self.root, self.products[product]["type"],
-                                                          self.products[product]["alias"])
+        for product in PRODUCTS.keys():
+            PRODUCTS[product]["root"] = os.path.join(self.root, PRODUCTS[product]["type"],
+                                                     PRODUCTS[product]["alias"])
 
-            log.debug("MAPS VIEWER, %s root dir: %s" % (str(product), str(self.products[product]["root"])))
+            log.debug("MAPS VIEWER, %s root dir: %s" % (str(product), str(PRODUCTS[product]["root"])))
 
         return None
 
@@ -466,9 +425,9 @@ class MapsViewer(QMainWindow):
         Returns:
 
         """
-        cat = self.products[product]["type"]
+        cat = PRODUCTS[product]["type"]
 
-        folder = self.products[product]["alias"]
+        folder = PRODUCTS[product]["alias"]
 
         # A 16-bit product, needs extra work for display
         if product == "Change DOY":
@@ -524,7 +483,7 @@ class MapsViewer(QMainWindow):
         if product is not "":
 
             try:
-                self.img_list1 = glob.glob(self.products[product]["root"] + os.sep + "*.tif")
+                self.img_list1 = glob.glob(PRODUCTS[product]["root"] + os.sep + "*.tif")
 
                 temp = [img for img in self.img_list1 if str(self.ui.date_slider.value()) in img][0]
 
@@ -551,7 +510,7 @@ class MapsViewer(QMainWindow):
 
         """
         try:
-            sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Ignored)
+            sizePolicy = QSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
 
             self.graphics_view.setSizePolicy(sizePolicy)
 
@@ -601,10 +560,10 @@ class MapsViewer(QMainWindow):
         row_lr = check_lower(self.row)
         col_lr = check_lower(self.col)
 
-        upper_left = QtCore.QPointF(col_ul, row_ul)
-        bottom_right = QtCore.QPointF(col_lr, row_lr)
+        upper_left = QPointF(col_ul, row_ul)
+        bottom_right = QPointF(col_lr, row_lr)
 
-        rect = QtCore.QRectF(upper_left, bottom_right)
+        rect = QRectF(upper_left, bottom_right)
 
         view_rect = self.graphics_view.viewport().rect()
 
@@ -632,13 +591,13 @@ class MapsViewer(QMainWindow):
             None
 
         """
-        pen = QtGui.QPen(QtCore.Qt.magenta)
+        pen = QPen(Qt.magenta)
         pen.setWidthF(0.1)
 
         upper_left = QPointF(self.col, self.row)
         bottom_right = QPointF(self.col + 1, self.row + 1)
 
-        self.current_pixel = QtWidgets.QGraphicsRectItem(QRectF(upper_left, bottom_right))
+        self.current_pixel = QGraphicsRectItem(QRectF(upper_left, bottom_right))
         self.current_pixel.setPen(pen)
 
         self.graphics_view.scene.addItem(self.current_pixel)
