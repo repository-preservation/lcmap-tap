@@ -1,3 +1,4 @@
+
 import sys
 from lcmap_tap.logger import log
 from PyQt5.QtWidgets import QApplication

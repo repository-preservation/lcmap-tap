@@ -24,12 +24,15 @@ from lcmap_tap.Visualization.maps_viewer import MapsViewer
 
 from lcmap_tap.MapCanvas.mapcanvas import MapCanvas
 
-from lcmap_tap.logger import log
+from lcmap_tap.RetrieveData import lcmaphttp
+
+from lcmap_tap.logger import log, HOME
 
 import datetime as dt
 import os
 import sys
 import time
+import pickle
 import traceback
 import matplotlib
 import matplotlib.pyplot as plt
@@ -47,7 +50,7 @@ if os.path.exists('helper.yaml'):
     helper = yaml.load(open('helper.yaml', 'r'))
 
 else:
-    helper = None
+    helper = dict()
 
 
 def exc_handler(exc_type, exc_value, exc_traceback):
@@ -65,6 +68,21 @@ def exc_handler(exc_type, exc_value, exc_traceback):
 
 
 sys.excepthook = exc_handler
+
+
+CACHE = os.path.join(HOME, 'tap_tool_cache.p')
+
+# if os.path.exists(CACHE):
+#     with open(CACHE, 'rb') as f:
+#         cache_data = pickle.load(f)
+
+try:
+    with open(CACHE, 'rb') as f:
+        cache_data = pickle.load(f)
+
+except (FileNotFoundError, EOFError):
+    cache_data = dict()
+
 
 
 class MainControls(QMainWindow):
@@ -529,6 +547,9 @@ class MainControls(QMainWindow):
         if self.plot_window:
             self.plot_window.close()
 
+        # <list> The bands and/or indices selected for plotting
+        self.item_list = [str(i.text()) for i in self.ui.listitems.selectedItems()]
+
         # If there is a problem with any of the parameters, the first erroneous parameter
         # will cause an exception to occur which will be displayed in the GUI for the user, but the tool won't close.
         try:
@@ -538,7 +559,9 @@ class MainControls(QMainWindow):
 
             self.ard_observations = ARDData(coord=self.geo_info.coord,
                                             pixel_coord=self.geo_info.pixel_coord,
-                                            config=self.config)
+                                            config=self.config,
+                                            items=self.item_list,
+                                            cache=cache_data)
 
             self.ccd_results = CCDReader(tile=self.geo_info.tile,
                                          chip_coord=self.geo_info.chip_coord,
@@ -555,6 +578,8 @@ class MainControls(QMainWindow):
                                         segs=self.class_results.results,
                                         begin=self.begin,
                                         end=self.end)
+
+            self.ard_http = lcmaphttp.LCMAPHTTP(self.config)
 
         except (IndexError, AttributeError, TypeError, ValueError) as e:
             # Clear the results window
@@ -581,9 +606,6 @@ class MainControls(QMainWindow):
         # Display change model information for the entered coordinates
         self.show_model_params(results=self.plot_specs, geo=self.geo_info)
 
-        # <list> The bands and/or indices selected for plotting
-        item_list = [str(i.text()) for i in self.ui.listitems.selectedItems()]
-
         """ 
         fig <matplotlib.figure> Matplotlib figure object containing all of the artists
         
@@ -594,7 +616,7 @@ class MainControls(QMainWindow):
         axes <ndarray> 2D array of matplotlib.axes.Axes objects
         """
         self.fig, self.artist_map, self.lines_map, self.axes = make_plots.draw_figure(data=self.plot_specs,
-                                                                                      items=item_list)
+                                                                                      items=self.item_list)
 
         if not os.path.exists(self.ui.browseoutputline.text()):
             os.makedirs(self.ui.browseoutputline.text())
@@ -749,8 +771,25 @@ class MainControls(QMainWindow):
         Close all TAP tool windows and exit the program
 
         """
+        log.info("Saving cache data to %s" % CACHE)
+
+        with open(CACHE, 'wb') as f:
+            pickle.dump(self.ard_observations.cache, f)
+
         log.info("Exiting TAP Tool")
 
         self.close()
 
         sys.exit(0)
+
+    def closeEvent(self, event):
+        """
+        Override method if user closes the GUI some other way
+
+        Args:
+            event:
+
+        Returns:
+
+        """
+        self.exit_plot()

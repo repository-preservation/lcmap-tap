@@ -8,8 +8,8 @@ import sys
 import pkg_resources
 
 from PyQt5.Qt import PYQT_VERSION_STR
-from PyQt5.QtCore import QDir, QObject, QUrl, pyqtSlot, pyqtSignal
-from PyQt5.QtWidgets import QTextEdit, QVBoxLayout, QWidget
+from PyQt5.QtCore import QDir, QObject, QUrl, pyqtSlot, pyqtSignal, Qt
+from PyQt5.QtWidgets import QTextEdit, QVBoxLayout, QWidget, QLabel
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWebChannel import QWebChannel
 
@@ -74,7 +74,9 @@ class MapCanvas(QWidget):
 
         self.setMinimumSize(400, 400)
 
-        self.text = QTextEdit()
+        self.text = QLabel()
+
+        self.text.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         self.file = QDir.current().absoluteFilePath(HTML)
 
@@ -136,7 +138,7 @@ class MapCanvas(QWidget):
         # Clear the list of previously clicked ARD observations because they can't be referenced in the new time-series
         self.gui.ui.clicked_listWidget.clear()
 
-        # Display the coordinate in the QTextEdit window below the map
-        self.text.append("Point {lat}, {lng}".format(lat=lat, lng=lng))
+        # Display the coordinate in the QLabel window below the map
+        self.text.setText("Point {lat}, {lng}".format(lat=lat, lng=lng))
 
         return None
