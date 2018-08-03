@@ -50,7 +50,7 @@ if os.path.exists('helper.yaml'):
     helper = yaml.load(open('helper.yaml', 'r'))
 
 else:
-    helper = dict()
+    helper = None
 
 
 def exc_handler(exc_type, exc_value, exc_traceback):
