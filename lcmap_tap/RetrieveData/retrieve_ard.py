@@ -116,6 +116,8 @@ class ARDData:
         self.x = pixel_coord.x
         self.y = pixel_coord.y
 
+        key = (self.x, self.y)
+
         self.items = [i for item in items for i in item_lookup[item]]
 
         self.exists, self.required = self.check_cache()
@@ -145,45 +147,12 @@ class ARDData:
             self.pixel_ard = self.exists
 
         try:
-            self.cache[(self.x, self.y)].update(self.pixel_ard)
+            self.cache[key].update(self.pixel_ard)
 
-        except KeyError:
-            self.cache[(self.x, self.y)] = self.pixel_ard
+        except (KeyError, ValueError):
+            self.cache[key] = self.pixel_ard
 
-        # p_file = os.path.join(home, "ard_{x}_{y}_{n}.p".format(x=pixel_coord.x,
-        #                                                        y=pixel_coord.y,
-        #                                                        n=''.join(names(self.items))))
-        #
-        # if not os.path.exists(p_file):
-        #
-        #     t0 = get_time()
-        #
-        #     # cfg = merlin.cfg.get(profile="chipmunk-ard",
-        #     #                      env={"CHIPMUNK_URL": url})
-        #
-        #     cfg = make_cfg(items=items, url=url)
-        #
-        #     self.timeseries = merlin.create(x=int(coord.x),
-        #                                     y=int(coord.y),
-        #                                     acquired="{}/{}".format(start, stop),
-        #                                     cfg=cfg)
-        #     t1 = get_time()
-        #
-        #     log.info("Time series retrieved in %s seconds" % (t1 - t0))
-        #
-        #     self.pixel_ard = self.get_sequence(timeseries=self.timeseries,
-        #                                        pixel_coord=pixel_coord)
-        #
-        #     with open(p_file, "wb") as f:
-        #         pickle.dump(self.pixel_ard, f)
-        #
-        #         log.info("Dumped ARD data to pickle file %s" % p_file)
-        #
-        # else:
-        #     with open(p_file, "rb") as f:
-        #         self.pixel_ard = pickle.load(f)
-        #
-        #     log.info("Read ARD data from pre-existing pickle file %s" % p_file)
+        self.cache[key].update({'pulled': dt.datetime.now()})
 
     @staticmethod
     def get_sequence(timeseries: tuple, pixel_coord: GeoCoordinate) -> dict:
@@ -207,8 +176,14 @@ class ARDData:
 
     def check_cache(self):
         """
+        Check the contents of the cache file for pre-existing data to avoid making redundant chipmunk requests
 
         Returns:
+            Tuple[dict, list]
+                dict:
+                    [item (str)]: A chipmunk label for a particular spectral band (e.g. 'reds')
+                                  Maps to the contents of the cached data for a particular band and coordinate
+                list: A list of chipmunk labels that will be requested (e.g. 'reds')
 
         """
         exists = dict()  # Dict of existing data

@@ -765,6 +765,31 @@ class MainControls(QMainWindow):
         if self.ard_specs:
             self.maps_window = MapsViewer(tile=self.ard_specs.tile_name, root=path, geo=self.geo_info,
                                           version=self.version)
+    @staticmethod
+    def check_cache_size(cache, length=150):
+        """
+        Get the number of pixel 'rods' in the cache.  If it's greater than a set length, then remove the oldest
+        entries until the length is satisfied
+
+        Returns:
+
+        """
+        lookup = sorted([(key, item['pulled']) for key, item in cache.items()],
+                        key=lambda d: d[1], reverse=False)
+
+        test = len(cache)
+
+        for ind in lookup:
+            if test > length:
+                try:
+                    cache.pop(ind[0], None)
+
+                    test = test - 1
+
+                except KeyError:
+                    continue
+
+        return cache
 
     def exit_plot(self):
         """
@@ -774,7 +799,7 @@ class MainControls(QMainWindow):
         log.info("Saving cache data to %s" % CACHE)
 
         with open(CACHE, 'wb') as f:
-            pickle.dump(self.ard_observations.cache, f)
+            pickle.dump(self.check_cache_size(self.ard_observations.cache), f)
 
         log.info("Exiting TAP Tool")
 
