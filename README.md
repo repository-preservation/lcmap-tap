@@ -38,13 +38,13 @@ These instructions work for both Windows and Linux systems.
 
 lcmap_tap has been installed and run successfully on Windows 7 & 10, and CentOS Linux (version 7).
 
-The current version of the tool (v0.3.0) was developed using python 3.6
+The current version of the tool (v0.3.1) was developed using python 3.6
 
 ##
 
 ##### System Requirements:
 
-python >= 3.5
+python == 3.6
 
 matplotlib
 

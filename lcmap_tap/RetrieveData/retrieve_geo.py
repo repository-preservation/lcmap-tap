@@ -2,8 +2,8 @@
 
 from lcmap_tap.logger import log
 from lcmap_tap.Auxiliary import projections
+from lcmap_tap.RetrieveData import GeoExtent, GeoAffine, GeoCoordinate, RowColumn, CONUS_EXTENT
 import sys
-from collections import namedtuple
 from typing import Tuple
 import re
 from osgeo import ogr, osr
@@ -24,21 +24,6 @@ def exc_handler(exc_type, exc_value, exc_traceback):
 
 
 sys.excepthook = exc_handler
-
-GeoExtent = namedtuple("GeoExtent", ["x_min", "y_max", "x_max", "y_min"])
-
-GeoAffine = namedtuple("GeoAffine", ["ul_x", "x_res", "rot_1", "ul_y", "rot_2", "y_res"])
-
-GeoCoordinate = namedtuple("GeoCoordinate", ["x", "y"])
-
-RowColumn = namedtuple("RowColumn", ["row", "column"])
-
-RowColumnExtent = namedtuple("RowColumnExtent", ["start_row", "start_col", "end_row", "end_col"])
-
-CONUS_EXTENT = GeoExtent(x_min=-2565585,
-                         y_min=14805,
-                         x_max=2384415,
-                         y_max=3314805)
 
 
 class GeoInfo:

@@ -1,40 +1,22 @@
 """Create a matplotlib figure"""
 
+from lcmap_tap.Plotting.plot_specs import PlotSpecs
+from lcmap_tap.Plotting import plot_functions
+from lcmap_tap.Plotting import NAMES, COLORS
+from lcmap_tap.logger import log
+
 import sys
 import traceback
 import datetime as dt
-import matplotlib
-from matplotlib import pyplot as plt
-import matplotlib.lines as mlines
-from matplotlib.figure import Figure
 from collections import OrderedDict
 from typing import Tuple
 import numpy as np
 from numpy import ndarray
-from lcmap_tap.Plotting.plot_specs import PlotSpecs
-from lcmap_tap.Plotting import plot_functions
-from lcmap_tap.logger import log
 
-
-COLORS = {'Developed': (1.0, 0.0, 0.0),
-          'Agriculture': (1.0, 0.6470588235294118, 0.0),
-          'Grass/Shrub': (1.0, 1.0, 0.0),
-          'Tree Cover': (0.0, 0.5490196078431373, 0.0),
-          'Water': (0.0, 0.0, 1.0),
-          'Wetlands': (0.0, 1.0, 1.0),
-          'Ice/Snow': (1.0, 1.0, 1.0),
-          'Barren': (0.39215686274509803, 0.39215686274509803, 0.39215686274509803),
-          'No Model-fit': (1.0, 0.0, 1.0)}
-
-NAMES = {1: 'Developed',
-         2: 'Agriculture',
-         3: 'Grass/Shrub',
-         4: 'Tree Cover',
-         5: 'Water',
-         6: 'Wetlands',
-         7: 'Ice/Snow',
-         8: 'Barren',
-         9: 'No Model-fit'}
+import matplotlib
+from matplotlib import pyplot as plt
+import matplotlib.lines as mlines
+from matplotlib.figure import Figure
 
 
 def exc_handler(exc_type, exc_value, exc_traceback):
