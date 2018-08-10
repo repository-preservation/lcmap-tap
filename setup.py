@@ -18,7 +18,7 @@ from setuptools import setup, find_packages
 setup(
     name='lcmap_tap',
 
-    version='0.3.1-rc.1',
+    version='0.3.2',
 
     packages=find_packages(),
 
@@ -35,7 +35,7 @@ setup(
 
     entry_points={'gui_scripts': ['lcmap_tap = lcmap_tap.__main__:main']},
 
-    python_requires='>=3.5',
+    python_requires='>=3.6',
 
     include_package_data = True,
 

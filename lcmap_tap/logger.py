@@ -6,8 +6,11 @@ import sys
 import time
 from pathlib import Path
 
+
 # Get the path to the home directory for the current user and create an 'lcmap_tap' subfolder
 HOME = os.path.join(str(Path.home()), 'lcmap_tap')
+
+__version__ = '0.3.2'
 
 if not os.path.exists(HOME):
     os.makedirs(HOME)

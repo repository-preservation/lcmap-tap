@@ -38,7 +38,7 @@ These instructions work for both Windows and Linux systems.
 
 lcmap_tap has been installed and run successfully on Windows 7 & 10, and CentOS Linux (version 7).
 
-The current version of the tool (v0.3.1) was developed using python 3.6
+The current version of the tool (0.3.2) was developed using python 3.6
 
 ##
 
@@ -46,13 +46,15 @@ The current version of the tool (v0.3.1) was developed using python 3.6
 
 python == 3.6
 
-matplotlib
+matplotlib == 2.2.2
 
-numpy
+PyQt5 >= 5.6
+
+numpy == 1.14.5
+
+GDAL == 2.2.2
 
 pyyaml
-
-GDAL
 
 cytoolz
 
@@ -60,7 +62,7 @@ cython
 
 requests
 
-lcmap-merlin
+lcmap-merlin == 2.2.0
 #
 
 The tool also currently requires:
