@@ -1,0 +1,37 @@
+html, body {
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+}
+
+/* Cursor shows the grabbing icon when the mouse button is held to drag the map view */
+.leaflet-grabbing {
+    cursor: auto !important;
+    }
+
+/* Cursor shows cross-hair when hovering within hv tile areas */
+.leaflet-clickable {
+    cursor: crosshair;
+    }
+/* Cursor shows not-allowed when hovering over non-hv tile area */
+.leaflet-container {
+    cursor: not-allowed;
+    }
+
+#mapL {
+    position: absolute !important;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background-color: #fff;
+    position: absolute !important;
+}
+#mapL {
+    right: 0%;
+}
+
+#coords {
+    position: absolute;
+    bottom: 0;
+}

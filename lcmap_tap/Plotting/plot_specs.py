@@ -73,10 +73,14 @@ class PlotSpecs:
         # # self.total_mask = np.logical_and(self.ccd_mask, self.fill_in)
         # self.total_mask = np.logical_and(self.qa_mask[date_mask], self.fill_in)
 
-        # Fix the scaling of the Brightness Temperature
-        temp_thermal = np.copy(self.ard['thermals'])
-        temp_thermal[self.fill_mask] = temp_thermal[self.fill_mask] * 10 - 27315
-        self.ard['thermals'] = np.copy(temp_thermal)
+        try:
+            # Fix the scaling of the Brightness Temperature
+            temp_thermal = np.copy(self.ard['thermals'])
+            temp_thermal[self.fill_mask] = temp_thermal[self.fill_mask] * 10 - 27315
+            self.ard['thermals'] = np.copy(temp_thermal)
+
+        except KeyError:  # Thermal was not selected for plotting and isn't present
+            pass
 
         # This naming convention was chosen so as to match that which is used in merlin chipmunk
         self.bands = ('blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'thermal')
@@ -111,60 +115,104 @@ class PlotSpecs:
                 self.predicted_values.append(self.band_info[b]['pred'])
 
         # Calculate indices from observed values
-        self.EVI = plot_functions.evi(B=self.ard['blues'].astype(np.float),
-                                      NIR=self.ard['nirs'].astype(np.float),
-                                      R=self.ard['reds'].astype(np.float))
-
-        self.NDVI = plot_functions.ndvi(R=self.ard['reds'].astype(np.float),
-                                        NIR=self.ard['nirs'].astype(np.float))
-
-        self.MSAVI = plot_functions.msavi(R=self.ard['reds'].astype(np.float),
-                                          NIR=self.ard['nirs'].astype(np.float))
-
-        self.SAVI = plot_functions.savi(R=self.ard['reds'].astype(np.float),
-                                        NIR=self.ard['nirs'].astype(np.float))
-
-        self.NDMI = plot_functions.ndmi(NIR=self.ard['nirs'].astype(np.float),
-                                        SWIR1=self.ard['swir1s'].astype(np.float))
-
-        self.NBR = plot_functions.nbr(NIR=self.ard['nirs'].astype(np.float),
-                                      SWIR2=self.ard['swir2s'].astype(np.float))
-
-        self.NBR2 = plot_functions.nbr2(SWIR1=self.ard['swir1s'].astype(np.float),
-                                        SWIR2=self.ard['swir2s'].astype(np.float))
 
         # Calculate indices from the results' change models
         # The change models are stored by order of model, then
         # band number.  For example, the band values for the first change model are represented by indices 0-5,
         # the second model by indices 6-11, and so on.
-        self.NDVI_ = [plot_functions.ndvi(NIR=self.predicted_values[m * len(self.bands) + 3],
-                                          R=self.predicted_values[m * len(self.bands) + 2])
-                      for m in range(len(self.results["change_models"]))]
 
-        self.MSAVI_ = [plot_functions.msavi(R=self.predicted_values[m * len(self.bands) + 2],
-                                            NIR=self.predicted_values[m * len(self.bands) + 3])
-                       for m in range(len(self.results["change_models"]))]
+        try:
+            self.EVI = plot_functions.evi(B=self.ard['blues'].astype(np.float),
+                                          NIR=self.ard['nirs'].astype(np.float),
+                                          R=self.ard['reds'].astype(np.float))
 
-        self.EVI_ = [plot_functions.evi(B=self.predicted_values[m * len(self.bands)],
-                                        NIR=self.predicted_values[m * len(self.bands) + 3],
-                                        R=self.predicted_values[m * len(self.bands) + 2])
-                     for m in range(len(self.results["change_models"]))]
+            self.EVI_ = [plot_functions.evi(B=self.predicted_values[m * len(self.bands)],
+                                            NIR=self.predicted_values[m * len(self.bands) + 3],
+                                            R=self.predicted_values[m * len(self.bands) + 2])
+                         for m in range(len(self.results["change_models"]))]
 
-        self.SAVI_ = [plot_functions.savi(NIR=self.predicted_values[m * len(self.bands) + 3],
-                                          R=self.predicted_values[m * len(self.bands) + 2])
-                      for m in range(len(self.results["change_models"]))]
+        except KeyError:
+            self.EVI = None
 
-        self.NDMI_ = [plot_functions.ndmi(NIR=self.predicted_values[m * len(self.bands) + 3],
-                                          SWIR1=self.predicted_values[m * len(self.bands) + 4])
-                      for m in range(len(self.results["change_models"]))]
+            self.EVI_ = None
 
-        self.NBR_ = [plot_functions.nbr(NIR=self.predicted_values[m * len(self.bands) + 3],
-                                        SWIR2=self.predicted_values[m * len(self.bands) + 5])
-                     for m in range(len(self.results["change_models"]))]
+        try:
+            self.NDVI = plot_functions.ndvi(R=self.ard['reds'].astype(np.float),
+                                            NIR=self.ard['nirs'].astype(np.float))
 
-        self.NBR2_ = [plot_functions.nbr2(SWIR1=self.predicted_values[m * len(self.bands) + 4],
-                                          SWIR2=self.predicted_values[m * len(self.bands) + 5])
-                      for m in range(len(self.results["change_models"]))]
+            self.NDVI_ = [plot_functions.ndvi(NIR=self.predicted_values[m * len(self.bands) + 3],
+                                              R=self.predicted_values[m * len(self.bands) + 2])
+                          for m in range(len(self.results["change_models"]))]
+
+        except KeyError:
+            self.NDVI = None
+
+            self.NDVI_ = None
+
+        try:
+            self.MSAVI = plot_functions.msavi(R=self.ard['reds'].astype(np.float),
+                                              NIR=self.ard['nirs'].astype(np.float))
+
+            self.MSAVI_ = [plot_functions.msavi(R=self.predicted_values[m * len(self.bands) + 2],
+                                                NIR=self.predicted_values[m * len(self.bands) + 3])
+                           for m in range(len(self.results["change_models"]))]
+
+        except KeyError:
+            self.MSAVI = None
+
+            self.MSAVI_ = None
+
+        try:
+            self.SAVI = plot_functions.savi(R=self.ard['reds'].astype(np.float),
+                                            NIR=self.ard['nirs'].astype(np.float))
+
+            self.SAVI_ = [plot_functions.savi(NIR=self.predicted_values[m * len(self.bands) + 3],
+                                              R=self.predicted_values[m * len(self.bands) + 2])
+                          for m in range(len(self.results["change_models"]))]
+
+        except KeyError:
+            self.SAVI = None
+
+            self.SAVI_ = None
+
+        try:
+            self.NDMI = plot_functions.ndmi(NIR=self.ard['nirs'].astype(np.float),
+                                            SWIR1=self.ard['swir1s'].astype(np.float))
+
+            self.NDMI_ = [plot_functions.ndmi(NIR=self.predicted_values[m * len(self.bands) + 3],
+                                              SWIR1=self.predicted_values[m * len(self.bands) + 4])
+                          for m in range(len(self.results["change_models"]))]
+
+        except KeyError:
+            self.NDMI = None
+
+            self.NDMI_ = None
+
+        try:
+            self.NBR = plot_functions.nbr(NIR=self.ard['nirs'].astype(np.float),
+                                          SWIR2=self.ard['swir2s'].astype(np.float))
+
+            self.NBR_ = [plot_functions.nbr(NIR=self.predicted_values[m * len(self.bands) + 3],
+                                            SWIR2=self.predicted_values[m * len(self.bands) + 5])
+                         for m in range(len(self.results["change_models"]))]
+
+        except KeyError:
+            self.NBR = None
+
+            self.NBR_ = None
+
+        try:
+            self.NBR2 = plot_functions.nbr2(SWIR1=self.ard['swir1s'].astype(np.float),
+                                            SWIR2=self.ard['swir2s'].astype(np.float))
+
+            self.NBR2_ = [plot_functions.nbr2(SWIR1=self.predicted_values[m * len(self.bands) + 4],
+                                              SWIR2=self.predicted_values[m * len(self.bands) + 5])
+                          for m in range(len(self.results["change_models"]))]
+
+        except KeyError:
+            self.NBR2 = None
+
+            self.NBR2_ = None
 
         # Use a list of tuples for passing to OrderedDict so the order of element insertion is preserved
         # The dictionaries are used to map selections from the GUI to the corresponding plot data
@@ -178,13 +226,26 @@ class PlotSpecs:
 
         self.index_lookup = OrderedDict(self.index_lookup)
 
-        self.band_lookup = [("Blue", (self.ard['blues'], self.get_predicts(0))),
-                            ("Green", (self.ard['greens'], self.get_predicts(1))),
-                            ("Red", (self.ard['reds'], self.get_predicts(2))),
-                            ("NIR", (self.ard['nirs'], self.get_predicts(3))),
-                            ("SWIR-1", (self.ard['swir1s'], self.get_predicts(4))),
-                            ("SWIR-2", (self.ard['swir2s'], self.get_predicts(5))),
-                            ("Thermal", (self.ard['thermals'], self.get_predicts(6)))]
+        lookup = OrderedDict([("Blue", ('blues', 0)),
+                              ("Green", ('greens', 1)),
+                              ("Red", ('reds', 2)),
+                              ("NIR", ('nirs', 3)),
+                              ("SWIR-1", ('swir1s', 4)),
+                              ("SWIR-2", ('swir2s', 5)),
+                              ("Thermal", ('thermals', 6))])
+
+        self.band_lookup = [(key, (self.ard[lookup[key][0]],
+                                   self.get_predicts(lookup[key][1])))
+                             for key in lookup.keys()
+                             if lookup[key][0] in self.ard.keys()]
+
+        # self.band_lookup = [("Blue", (self.ard['blues'], self.get_predicts(0))),
+        #                     ("Green", (self.ard['greens'], self.get_predicts(1))),
+        #                     ("Red", (self.ard['reds'], self.get_predicts(2))),
+        #                     ("NIR", (self.ard['nirs'], self.get_predicts(3))),
+        #                     ("SWIR-1", (self.ard['swir1s'], self.get_predicts(4))),
+        #                     ("SWIR-2", (self.ard['swir2s'], self.get_predicts(5))),
+        #                     ("Thermal", (self.ard['thermals'], self.get_predicts(6)))]
 
         self.band_lookup = OrderedDict(self.band_lookup)
 

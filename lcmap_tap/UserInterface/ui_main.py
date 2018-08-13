@@ -2,24 +2,31 @@
 
 # Form implementation generated from reading ui file 'UI_MAIN.UI'
 #
-# Created by: PyQt5 UI code generator 5.6
+# Created by: PyQt5 UI code generator 5.9.2
 #
-# WARNING! All changes made in this file will be lost!
+# Edited 7/25/2018 by Dan Zelenak
+# - Add Icon to Main Window
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+import pkg_resources
 
 class Ui_TAPTool(object):
     def setupUi(self, TAPTool):
         TAPTool.setObjectName("TAPTool")
         TAPTool.resize(957, 609)
-        icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("../../../../../Pictures/lcmap_tap5.PNG"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+
+        icon = QtGui.QIcon(QtGui.QPixmap(pkg_resources.resource_filename("lcmap_tap",
+                                                                         "/".join(("Auxiliary", "icon.PNG")))))
         TAPTool.setWindowIcon(icon)
+
         TAPTool.setUnifiedTitleAndToolBarOnMac(False)
+
         self.centralwidget = QtWidgets.QWidget(TAPTool)
         self.centralwidget.setObjectName("centralwidget")
+
         self.gridLayout_3 = QtWidgets.QGridLayout(self.centralwidget)
         self.gridLayout_3.setObjectName("gridLayout_3")
+
         self.gridLayout = QtWidgets.QGridLayout()
         self.gridLayout.setObjectName("gridLayout")
         self.y1line = QtWidgets.QLineEdit(self.centralwidget)
@@ -303,6 +310,16 @@ class Ui_TAPTool(object):
         self.gridLayout_3.addItem(spacerItem2, 13, 1, 1, 1)
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
+        self.pushLocator = QtWidgets.QPushButton(self.centralwidget)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.pushLocator.sizePolicy().hasHeightForWidth())
+        self.pushLocator.setSizePolicy(sizePolicy)
+        self.pushLocator.setMinimumSize(QtCore.QSize(75, 0))
+        self.pushLocator.setMaximumSize(QtCore.QSize(75, 16777215))
+        self.pushLocator.setObjectName("pushLocator")
+        self.horizontalLayout_2.addWidget(self.pushLocator)
         self.plotbutton = QtWidgets.QPushButton(self.centralwidget)
         self.plotbutton.setEnabled(False)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
@@ -395,7 +412,7 @@ class Ui_TAPTool(object):
 
     def retranslateUi(self, TAPTool):
         _translate = QtCore.QCoreApplication.translate
-        TAPTool.setWindowTitle(_translate("TAPTool", "PyCCD Plotting Tool"))
+        TAPTool.setWindowTitle(_translate("TAPTool", "Time Series Analysis and Plotting (TAP) Tool"))
         self.label_x1.setText(_translate("TAPTool", "X (meters)"))
         self.comboBoxUnits.setCurrentText(_translate("TAPTool", "Projected - Meters - Albers CONUS WGS 84"))
         self.comboBoxUnits.setItemText(0, _translate("TAPTool", "Projected - Meters - Albers CONUS WGS 84"))
@@ -483,6 +500,7 @@ class Ui_TAPTool(object):
         item = self.listitems.item(16)
         item.setText(_translate("TAPTool", "NBR-2"))
         self.listitems.setSortingEnabled(__sortingEnabled)
+        self.pushLocator.setText(_translate("TAPTool", "Locator Map"))
         self.plotbutton.setText(_translate("TAPTool", "Plot"))
         self.savefigpushButton.setText(_translate("TAPTool", "Save Figure"))
         self.mapButton.setText(_translate("TAPTool", "Maps"))

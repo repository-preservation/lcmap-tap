@@ -4,7 +4,9 @@ display and interactions for the PyCCD plots."""
 import sys
 import datetime as dt
 import numpy as np
+import pkg_resources
 from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtGui import QIcon, QPixmap
 import matplotlib
 
 matplotlib.use("Qt5Agg")
@@ -76,6 +78,10 @@ class PlotWindow(QtWidgets.QMainWindow):
 
         """
         super(PlotWindow, self).__init__(parent)
+
+        icon = QIcon(QPixmap(pkg_resources.resource_filename("lcmap_tap", "/".join(("Auxiliary", "icon.PNG")))))
+
+        self.setWindowIcon(icon)
 
         self.widget = QtWidgets.QWidget()
         self.setCentralWidget(self.widget)

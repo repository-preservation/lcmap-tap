@@ -419,7 +419,7 @@
          </size>
         </property>
         <property name="currentText">
-         <string>Z:</string>
+         <string>A:</string>
         </property>
         <item>
          <property name="text">
@@ -860,6 +860,31 @@
     </item>
     <item row="14" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QPushButton" name="pushLocator">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>75</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>75</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Locator Map</string>
+        </property>
+       </widget>
+      </item>
       <item>
        <widget class="QPushButton" name="plotbutton">
         <property name="enabled">

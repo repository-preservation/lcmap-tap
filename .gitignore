@@ -61,6 +61,7 @@ Notebooks/Working/
 Testing/
 scratch/
 **/dev/
+**/example/
 
 *.pickle
 

@@ -8,7 +8,7 @@ import time
 import pkg_resources
 
 from PyQt5 import QtCore
-from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtGui import QPixmap, QImage, QIcon
 from PyQt5 import QtWidgets, QtGui
 
 from lcmap_tap.Visualization.ui_ard_viewer import Ui_ARDViewer
@@ -19,27 +19,11 @@ from lcmap_tap.RetrieveData.retrieve_data import GeoInfo
 from lcmap_tap.RetrieveData.retrieve_data import RowColumn
 from lcmap_tap.Plotting import plot_functions
 from lcmap_tap.Visualization import tc_calculations
-from lcmap_tap.logger import log
+from lcmap_tap.Controls import units
+from lcmap_tap.logger import log, exc_handler
 
-DATA_PATH = pkg_resources.resource_filename('lcmap_tap', 'Auxiliary')
-PNG_FILE = pkg_resources.resource_filename('lcmap_tap', os.path.join('Auxiliary', 'locator.png'))
-
-
-def exc_handler(exc_type, exc_value, exc_traceback):
-    """
-    Customized handling of top-level exceptions
-
-    Args:
-        exc_type: exception class
-        exc_value: exception instance
-        exc_traceback: traceback object
-
-    Returns:
-        None
-
-    """
-    log.critical("Uncaught Exception: ", exc_info=(exc_type, exc_value, exc_traceback))
-
+# DATA_PATH = pkg_resources.resource_filename('lcmap_tap', 'Auxiliary')
+# PNG_FILE = pkg_resources.resource_filename('lcmap_tap', os.path.join('Auxiliary', 'locator.png'))
 
 sys.excepthook = exc_handler
 
@@ -208,6 +192,9 @@ class ARDViewerX(QtWidgets.QMainWindow):
         # Load the main GUI code that was built in Qt Designer
         self.ui = Ui_ARDViewer()
 
+        icon = QIcon(QPixmap(pkg_resources.resource_filename("lcmap_tap", "/".join(("Auxiliary", "icon.PNG")))))
+        self.setWindowIcon(icon)
+
         # Call the method that builds the GUI window
         self.ui.setupUi(self)
 
@@ -329,7 +316,7 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
         self.make_rect()
 
-        self.add_marker()
+        # self.add_marker()
 
         self.graphics_view.fitInView()
 
@@ -762,42 +749,42 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
         self.graphics_view.scene.addItem(self.current_pixel)
 
-    def add_marker(self):
-        """
-        Add the marker icon to show where in the image the highlighted pixel is located
+    # def add_marker(self):
+    #     """
+    #     Add the marker icon to show where in the image the highlighted pixel is located
+    #
+    #     TODO: make the icon scalable
+    #     TODO: only display the icon when zoomed out a specific level from the highlighted pixel
+    #
+    #     Returns:
+    #
+    #     """
+    #     # Use the png file to create a QPixmap object
+    #     self.marker = QtWidgets.QGraphicsPixmapItem(QPixmap(PNG_FILE))
+    #
+    #     # Get the bounding rectangle of the QPixmap object
+    #     marker_rect = self.marker.boundingRect()
+    #
+    #     # Create a QPointF object based on the highlighted pixel row and column that represents the
+    #     # center of the bottom edge of the QPixmap bounding rectangle
+    #     marker_placement = QtCore.QPointF(self.col - marker_rect.width() / 2, self.row - marker_rect.height())
+    #
+    #     # Set the position of the marker
+    #     self.marker.setPos(marker_placement)
+    #
+    #     # Add the QPixmap to the QGraphicsScene on the QGraphicsView
+    #     # self.graphics_view.scene.addItem(self.marker)
+    #
+    #     # self.marker.setFlag(QtWidgets.QGraphicsPixmapItem.ItemIgnoresTransformations)
 
-        TODO: make the icon scalable
-        TODO: only display the icon when zoomed out a specific level from the highlighted pixel
-
-        Returns:
-
-        """
-        # Use the png file to create a QPixmap object
-        self.marker = QtWidgets.QGraphicsPixmapItem(QPixmap(PNG_FILE))
-
-        # Get the bounding rectangle of the QPixmap object
-        marker_rect = self.marker.boundingRect()
-
-        # Create a QPointF object based on the highlighted pixel row and column that represents the
-        # center of the bottom edge of the QPixmap bounding rectangle
-        marker_placement = QtCore.QPointF(self.col - marker_rect.width() / 2, self.row - marker_rect.height())
-
-        # Set the position of the marker
-        self.marker.setPos(marker_placement)
-
-        # Add the QPixmap to the QGraphicsScene on the QGraphicsView
-        # self.graphics_view.scene.addItem(self.marker)
-
-        # self.marker.setFlag(QtWidgets.QGraphicsPixmapItem.ItemIgnoresTransformations)
-
-    def remove_marker(self):
-        """
-        When the view port is at a certain zoom level, remove the marker
-        Returns:
-
-        """
-        if self.marker is not None:
-            self.graphics_view.scene.removeItem(self.marker)
+    # def remove_marker(self):
+    #     """
+    #     When the view port is at a certain zoom level, remove the marker
+    #     Returns:
+    #
+    #     """
+    #     if self.marker is not None:
+    #         self.graphics_view.scene.removeItem(self.marker)
 
     def update_rect(self, pos: QtCore.QPointF):
         """
@@ -859,7 +846,7 @@ class ARDViewerX(QtWidgets.QMainWindow):
         log.info("New point selected: %s" % str(coords))
 
         # Update the X and Y coordinates in the GUI with the new point
-        if self.gui.units[self.gui.selected_units]["unit"] == "meters":
+        if units[self.gui.selected_units]["unit"] == "meters":
 
             self.gui.ui.x1line.setText(str(coords.x))
 
@@ -882,18 +869,24 @@ class ARDViewerX(QtWidgets.QMainWindow):
         the new time-series of the x-axis (i.e. date) value from the previous time series """
         x_look_thru = {"obs_points": self.gui.plot_specs.dates_in[self.gui.plot_specs.qa_mask[
             self.gui.plot_specs.date_mask]],
+
                        "out_points": self.gui.plot_specs.dates_out[self.gui.plot_specs.fill_out],
-                       "mask_points": self.gui.plot_specs.dates_in[~self.gui.plot_specs.qa_mask
-                       [self.gui.plot_specs.date_mask]]}
+
+                       "mask_points": self.gui.plot_specs.dates_in[~self.gui.plot_specs.qa_mask[
+                           self.gui.plot_specs.date_mask]]
+                       }
 
         y_look_thru = {"obs_points": self.gui.plot_specs.all_lookup[self.ax][0][self.gui.plot_specs.date_mask][
-            self.gui.plot_specs.qa_mask[self.gui.plot_specs.date_mask]],
+            self.gui.plot_specs.qa_mask[
+                self.gui.plot_specs.date_mask]],
 
                        "out_points": self.gui.plot_specs.all_lookup[self.ax][0][~self.gui.plot_specs.date_mask][
                            self.gui.plot_specs.fill_out],
 
                        "mask_points": self.gui.plot_specs.all_lookup[self.ax][0][self.gui.plot_specs.date_mask][
-                           ~self.gui.plot_specs.qa_mask[self.gui.plot_specs.date_mask]]}
+                           ~self.gui.plot_specs.qa_mask[
+                               self.gui.plot_specs.date_mask]]
+                       }
 
         for key, x in x_look_thru.items():
             if self.date_x in x:

@@ -4,72 +4,11 @@ useful data structures that house sceneIDs mapped to tar files and the bands con
 import os
 import sys
 import re
-from lcmap_tap.logger import log
-
-
-def exc_handler(exc_type, exc_value, exc_traceback):
-    """
-    Customized handling of top-level exceptions
-    Args:
-        exc_type: exception class
-        exc_value: exception instance
-        exc_traceback: traceback object
-
-    Returns:
-
-    """
-    # if issubclass(exc_type, KeyboardInterrupt):
-    #     sys.__excepthook__(exc_type, exc_value, exc_traceback)
-    #     return
-
-    log.critical("Uncaught Exception: ", exc_info=(exc_type, exc_value, exc_traceback))
+from lcmap_tap.logger import exc_handler
+from lcmap_tap.RetrieveData import band_specs
 
 
 sys.excepthook = exc_handler
-
-# <dict> Used to look-up the sensor-specific bands stored in a scene tarball.
-band_specs = {
-    "LC08": {
-        "SR": {"blue": "SRB2",
-               "green": "SRB3",
-               "red": "SRB4",
-               "nir": "SRB5",
-               "swir1": "SRB6",
-               "swir2": "SRB7",
-               "qa": "PIXELQA"},
-        "BT": {"thermal": "BTB10"}
-    },
-    "LE07": {
-        "SR": {"blue": "SRB1",
-               "green": "SRB2",
-               "red": "SRB3",
-               "nir": "SRB4",
-               "swir1": "SRB5",
-               "swir2": "SRB7",
-               "qa": "PIXELQA"},
-        "BT": {"thermal": "BTB6"}
-    },
-    "LT05": {
-        "SR": {"blue": "SRB1",
-               "green": "SRB2",
-               "red": "SRB3",
-               "nir": "SRB4",
-               "swir1": "SRB5",
-               "swir2": "SRB7",
-               "qa": "PIXELQA"},
-        "BT": {"thermal": "BTB6"}
-    },
-    "LT04": {
-        "SR": {"blue": "SRB1",
-               "green": "SRB2",
-               "red": "SRB3",
-               "nir": "SRB4",
-               "swir1": "SRB5",
-               "swir2": "SRB7",
-               "qa": "PIXELQA"},
-        "BT": {"thermal": "BTB6"}
-    },
-}
 
 
 class ARDInfo:
@@ -226,7 +165,7 @@ class ARDInfo:
             The full path to the band stored in the tarfile
 
         """
-        return "/vsitar/{}".format(in_tar) + os.sep + os.path.basename(in_tar)[:40] + "_{}.tif".format(band)
+        return os.path.join("/vsitar/{}".format(in_tar), "{}_{}.tif".format(os.path.basename(in_tar)[:40], band))
 
     def get_vsipath_list(self) -> dict:
         """

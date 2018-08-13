@@ -1,5 +1,6 @@
+
 import sys
-from lcmap_tap.logger import log
+from lcmap_tap.logger import log, __version__
 from PyQt5.QtWidgets import QApplication
 from lcmap_tap.Controls.controls import MainControls
 try:
@@ -30,6 +31,7 @@ def main():
     log.debug('Platform: %s' % sys.platform)
     log.debug('Python: %s' % str(sys.version).replace('\n', ''))
     log.debug('Pip: %s' % ', '.join(freeze.freeze()))
+    log.info("Running lcmap-tap version %s" % __version__)
 
     # Create a QApplication object, necessary to manage the GUI control flow and settings
     app = QApplication(sys.argv)
