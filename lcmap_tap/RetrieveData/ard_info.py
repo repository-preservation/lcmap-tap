@@ -4,22 +4,8 @@ useful data structures that house sceneIDs mapped to tar files and the bands con
 import os
 import sys
 import re
-from lcmap_tap.logger import log
+from lcmap_tap.logger import exc_handler
 from lcmap_tap.RetrieveData import band_specs
-
-
-def exc_handler(exc_type, exc_value, exc_traceback):
-    """
-    Customized handling of top-level exceptions
-    Args:
-        exc_type: exception class
-        exc_value: exception instance
-        exc_traceback: traceback object
-
-    Returns:
-
-    """
-    log.critical("Uncaught Exception: ", exc_info=(exc_type, exc_value, exc_traceback))
 
 
 sys.excepthook = exc_handler

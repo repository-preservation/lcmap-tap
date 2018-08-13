@@ -1,7 +1,6 @@
 """
 Establish the main GUI Window using PyQt, provide the main interactions with child widgets
 """
-
 # Import the main GUI built in QTDesigner, compiled into python with pyuic5.bat
 from lcmap_tap.UserInterface import ui_main
 
@@ -26,7 +25,7 @@ from lcmap_tap.MapCanvas.mapcanvas import MapCanvas
 
 from lcmap_tap.RetrieveData import lcmaphttp
 
-from lcmap_tap.logger import log, HOME
+from lcmap_tap.logger import log, HOME, exc_handler
 
 import datetime as dt
 import os
@@ -44,7 +43,6 @@ from PyQt5.QtWidgets import QMainWindow, QFileDialog
 # Tell matplotlib to use the QT5Agg Backend
 matplotlib.use('Qt5Agg')
 
-
 # Can be used to quickly load paths on start-up for debugging
 if os.path.exists('helper.yaml'):
     helper = yaml.load(open('helper.yaml', 'r'))
@@ -52,29 +50,9 @@ if os.path.exists('helper.yaml'):
 else:
     helper = None
 
-
-def exc_handler(exc_type, exc_value, exc_traceback):
-    """
-    Customized handling of top-level exceptions
-    Args:
-        exc_type: exception class
-        exc_value: exception instance
-        exc_traceback: traceback object
-
-    Returns:
-
-    """
-    log.critical("Uncaught Exception: ", exc_info=(exc_type, exc_value, exc_traceback))
-
-
 sys.excepthook = exc_handler
 
-
 CACHE = os.path.join(HOME, 'tap_tool_cache.p')
-
-# if os.path.exists(CACHE):
-#     with open(CACHE, 'rb') as f:
-#         cache_data = pickle.load(f)
 
 try:
     with open(CACHE, 'rb') as f:
@@ -82,7 +60,6 @@ try:
 
 except (FileNotFoundError, EOFError):
     cache_data = dict()
-
 
 
 class MainControls(QMainWindow):
@@ -765,6 +742,7 @@ class MainControls(QMainWindow):
         if self.ard_specs:
             self.maps_window = MapsViewer(tile=self.ard_specs.tile_name, root=path, geo=self.geo_info,
                                           version=self.version)
+
     @staticmethod
     def check_cache_size(cache, length=150):
         """

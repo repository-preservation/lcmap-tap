@@ -20,27 +20,10 @@ from lcmap_tap.RetrieveData.retrieve_data import RowColumn
 from lcmap_tap.Plotting import plot_functions
 from lcmap_tap.Visualization import tc_calculations
 from lcmap_tap.Controls import units
-from lcmap_tap.logger import log
+from lcmap_tap.logger import log, exc_handler
 
 # DATA_PATH = pkg_resources.resource_filename('lcmap_tap', 'Auxiliary')
 # PNG_FILE = pkg_resources.resource_filename('lcmap_tap', os.path.join('Auxiliary', 'locator.png'))
-
-
-def exc_handler(exc_type, exc_value, exc_traceback):
-    """
-    Customized handling of top-level exceptions
-
-    Args:
-        exc_type: exception class
-        exc_value: exception instance
-        exc_traceback: traceback object
-
-    Returns:
-        None
-
-    """
-    log.critical("Uncaught Exception: ", exc_info=(exc_type, exc_value, exc_traceback))
-
 
 sys.excepthook = exc_handler
 
