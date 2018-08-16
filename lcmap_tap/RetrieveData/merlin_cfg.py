@@ -1,6 +1,6 @@
 """Get the required ubids and build a custom merlin profile"""
 
-from lcmap_tap.RetrieveData import ard_groups, item_lookup
+from lcmap_tap.RetrieveData import ard_groups
 from merlin import chipmunk, dates, specs, formats
 from functools import partial
 from cytoolz import assoc
@@ -17,8 +17,6 @@ def get_ubids(items: list) -> dict:
         dict: Nested dict under the main 'chipmunk-ard' key, each key points to the ubids for that band (e.g. reds)
 
     """
-    # temp = {band: ard_groups[band] for item in items for band in item_lookup[item]}
-
     temp = {band: ard_groups[band] for band in items}
 
     return {'chipmunk-ard': temp}
@@ -68,7 +66,7 @@ def make_cfg(items: list, url: str, profile: str='chipmunk-ard') -> dict:
     Args:
         items: A list of spectral bands including thermal, and/or indices
         url: CONUS ARD chipmunk url
-        profile: The name of the profile
+        profile: The name of the profile, default is 'chipmunk-ard'
 
     Returns:
         A Merlin configuration

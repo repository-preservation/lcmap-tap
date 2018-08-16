@@ -3,35 +3,27 @@ Establish the main GUI Window using PyQt, provide the main interactions with chi
 """
 # Import the main GUI built in QTDesigner, compiled into python with pyuic5.bat
 from lcmap_tap.UserInterface import ui_main
-
 from lcmap_tap.Controls import units
-
 from lcmap_tap.RetrieveData.retrieve_ard import ARDData, get_image_ids
 from lcmap_tap.RetrieveData.retrieve_ccd import CCDReader
 from lcmap_tap.RetrieveData.retrieve_geo import GeoInfo
 from lcmap_tap.RetrieveData.retrieve_classes import SegmentClasses
 from lcmap_tap.RetrieveData.ard_info import ARDInfo
-
 from lcmap_tap.PlotFrame.plotwindow import PlotWindow
 from lcmap_tap.Plotting import make_plots
 from lcmap_tap.Plotting.plot_specs import PlotSpecs
-
 from lcmap_tap.Auxiliary import projections
-
 from lcmap_tap.Visualization.ard_viewer_qpixelmap import ARDViewerX
 from lcmap_tap.Visualization.maps_viewer import MapsViewer
-
 from lcmap_tap.MapCanvas.mapcanvas import MapCanvas
-
-from lcmap_tap.RetrieveData import lcmaphttp
-
-from lcmap_tap.logger import log, HOME, exc_handler
+# from lcmap_tap.RetrieveData import lcmaphttp
+from lcmap_tap.logger import log, exc_handler
+from lcmap_tap.Auxiliary.caching import read_cache, save_cache, update_cache
 
 import datetime as dt
 import os
 import sys
 import time
-import pickle
 import traceback
 import matplotlib
 import matplotlib.pyplot as plt
@@ -52,20 +44,13 @@ else:
 
 sys.excepthook = exc_handler
 
-CACHE = os.path.join(HOME, 'tap_tool_cache.p')
-
-try:
-    with open(CACHE, 'rb') as f:
-        cache_data = pickle.load(f)
-
-except (FileNotFoundError, EOFError):
-    cache_data = dict()
-
 
 class MainControls(QMainWindow):
     def __init__(self):
 
         super(MainControls, self).__init__()
+
+        self.cache_data = dict()
 
         # Create an instance of a class that builds the user-interface, created in QT Designer and compiled with pyuic5
         self.ui = ui_main.Ui_TAPTool()
@@ -82,6 +67,7 @@ class MainControls(QMainWindow):
         self.current_view = None
         self.tile = None
         self.version = None
+        self.item_list = None
         self.highlighted = None
         self.artist_map = None
         self.lines_map = None
@@ -534,11 +520,14 @@ class MainControls(QMainWindow):
                                     y=self.ui.y1line.text(),
                                     units=units[self.selected_units]["unit"])
 
-            self.ard_observations = ARDData(coord=self.geo_info.coord,
-                                            pixel_coord=self.geo_info.pixel_coord,
+            self.cache_data = read_cache(self.geo_info, self.cache_data)
+
+            self.ard_observations = ARDData(geo=self.geo_info,
                                             config=self.config,
                                             items=self.item_list,
-                                            cache=cache_data)
+                                            cache=self.cache_data)
+
+            self.cache_data = update_cache(self.cache_data, self.ard_observations.cache, self.ard_observations.key)
 
             self.ccd_results = CCDReader(tile=self.geo_info.tile,
                                          chip_coord=self.geo_info.chip_coord,
@@ -556,7 +545,7 @@ class MainControls(QMainWindow):
                                         begin=self.begin,
                                         end=self.end)
 
-            self.ard_http = lcmaphttp.LCMAPHTTP(self.config)
+            # self.ard_http = lcmaphttp.LCMAPHTTP(self.config)
 
         except (IndexError, AttributeError, TypeError, ValueError) as e:
             # Clear the results window
@@ -743,51 +732,23 @@ class MainControls(QMainWindow):
             self.maps_window = MapsViewer(tile=self.ard_specs.tile_name, root=path, geo=self.geo_info,
                                           version=self.version)
 
-    @staticmethod
-    def check_cache_size(cache, length=150):
-        """
-        Get the number of pixel 'rods' in the cache.  If it's greater than a set length, then remove the oldest
-        entries until the length is satisfied
-
-        Returns:
-
-        """
-        lookup = sorted([(key, item['pulled']) for key, item in cache.items()],
-                        key=lambda d: d[1], reverse=False)
-
-        test = len(cache)
-
-        for ind in lookup:
-            if test > length:
-                try:
-                    cache.pop(ind[0], None)
-
-                    test = test - 1
-
-                except KeyError:
-                    continue
-
-        return cache
-
     def exit_plot(self):
         """
         Close all TAP tool windows and exit the program
 
         """
-        log.info("Saving cache data to %s" % CACHE)
 
-        with open(CACHE, 'wb') as f:
-            pickle.dump(self.check_cache_size(self.ard_observations.cache), f)
+        save_cache(self.cache_data)
 
         log.info("Exiting TAP Tool")
 
-        self.close()
+        # self.close()
 
         sys.exit(0)
 
     def closeEvent(self, event):
         """
-        Override method if user closes the GUI some other way
+        Override method if the GUI is closed but 'Close' button is not used
 
         Args:
             event:

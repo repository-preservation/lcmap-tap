@@ -15,8 +15,8 @@ from lcmap_tap.Visualization.ui_ard_viewer import Ui_ARDViewer
 from lcmap_tap.Visualization.rescale import Rescale
 
 # Import the CCDReader class which retrieves json and cache data
-from lcmap_tap.RetrieveData.retrieve_data import GeoInfo
-from lcmap_tap.RetrieveData.retrieve_data import RowColumn
+from lcmap_tap.RetrieveData.retrieve_geo import GeoInfo
+from lcmap_tap.RetrieveData import RowColumn
 from lcmap_tap.Plotting import plot_functions
 from lcmap_tap.Visualization import tc_calculations
 from lcmap_tap.Controls import units
