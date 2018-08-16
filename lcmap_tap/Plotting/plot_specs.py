@@ -239,6 +239,7 @@ class PlotSpecs:
                              for key in lookup.keys()
                              if lookup[key][0] in self.ard.keys()]
 
+        # Example of how the band_lookup is structured:
         # self.band_lookup = [("Blue", (self.ard['blues'], self.get_predicts(0))),
         #                     ("Green", (self.ard['greens'], self.get_predicts(1))),
         #                     ("Red", (self.ard['reds'], self.get_predicts(2))),
@@ -318,6 +319,7 @@ class PlotSpecs:
 
         """
         for key in in_dict.keys():
-            in_dict[key] = np.array(in_dict[key])
+            if isinstance(in_dict[key], list):
+                in_dict[key] = np.array(in_dict[key])
 
         return in_dict
