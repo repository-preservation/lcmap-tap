@@ -1,6 +1,6 @@
 """Retrieve PyCCD attributes and results for the pixel coordinates"""
 
-from lcmap_tap.RetrieveData.retrieve_data import GeoCoordinate
+from lcmap_tap.RetrieveData import GeoCoordinate
 from lcmap_tap.logger import log
 import os
 import sys
