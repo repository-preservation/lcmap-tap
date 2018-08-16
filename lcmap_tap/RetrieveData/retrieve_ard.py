@@ -1,22 +1,20 @@
 """Read a chip of ARD using lcmap-merlin"""
 
 from lcmap_tap.RetrieveData import GeoCoordinate, item_lookup
+from lcmap_tap.RetrieveData.retrieve_geo import GeoInfo
 from lcmap_tap.RetrieveData.merlin_cfg import make_cfg
-from lcmap_tap.logger import log, HOME
+from lcmap_tap.logger import log
 import os
 import sys
 import time
 import yaml
-import pickle
 import glob
 import datetime as dt
 import merlin
 from collections import OrderedDict
 from itertools import chain
 
-TODAY = dt.datetime.now().strftime("%Y-%m-%d")
-
-# TODO: only retrieve the bands specified by user for plotting
+# TODAY = dt.datetime.now().strftime("%Y-%m-%d")
 
 
 def exc_handler(exc_type, exc_value, exc_traceback):
@@ -96,31 +94,29 @@ def names(items: list):
 class ARDData:
     """Use lcmap-merlin to retrieve a time-series ARD for a chip"""
 
-    def __init__(self, coord: GeoCoordinate, pixel_coord: GeoCoordinate, config: str, items: list, cache: dict,
-                 home: str=HOME,
-                 start: str='1982-01-01', stop: str=TODAY):
+    def __init__(self, geo: GeoInfo, config: str, items: list, cache: dict,
+                 start: str='1982-01-01', stop: str='2017-12-31'):
         """
 
         Args:
-            coord: The X and Y coordinates of the target point in projected meters
-            pixel_coord: The upper left coordinate of the pixel in projected meters
+            geo: Instance of the GeoInfo class
             config: Absolute path to a .yaml configuration file
             items: List of bands selected for plotting
-            home: Absolute path to a working directory that would contain serialized ARD, default is User's home dir
+            cache: Contents of the cache file
             start: The start date (YYYY-MM-DD) of the time series
             stop: The stop date (YYYY-MM-DD) of the time series
 
         """
         self.cache = cache
 
-        self.x = pixel_coord.x
-        self.y = pixel_coord.y
+        self.chip_x = geo.chip_coord.x
+        self.chip_y = geo.chip_coord.y
 
-        key = (self.x, self.y)
+        self.key = f'{self.chip_x}_{self.chip_y}'
 
         self.items = [i for item in items for i in item_lookup[item]]
 
-        self.exists, self.required = self.check_cache()
+        self.cached, self.required = self.check_cache(key=self.key, cache=self.cache, items=self.items)
 
         if len(self.required) > 0:
             url = yaml.load(open(config, 'r'))['merlin']
@@ -129,8 +125,8 @@ class ARDData:
 
             cfg = make_cfg(items=self.required, url=url)
 
-            self.timeseries = merlin.create(x=int(coord.x),
-                                            y=int(coord.y),
+            self.timeseries = merlin.create(x=int(geo.coord.x),
+                                            y=int(geo.coord.y),
                                             acquired="{}/{}".format(start, stop),
                                             cfg=cfg)
 
@@ -138,21 +134,31 @@ class ARDData:
 
             log.info("Time series retrieved in %s seconds" % (t1 - t0))
 
-            self.pixel_ard = self.get_sequence(timeseries=self.timeseries,
-                                               pixel_coord=pixel_coord)
+            pixel_ard = self.get_sequence(timeseries=self.timeseries,
+                                          pixel_coord=geo.pixel_coord)
 
-            self.pixel_ard.update(self.exists)
+            self.cache = self.update_cache(key=self.key, cache=self.cache, required=self.required,
+                                           timeseries=self.timeseries)
 
-        else:
-            self.pixel_ard = self.exists
+            try:
+                self.pixel_ard.update(pixel_ard)
 
-        try:
-            self.cache[key].update(self.pixel_ard)
+            except AttributeError:
+                self.pixel_ard = pixel_ard
 
-        except (KeyError, ValueError):
-            self.cache[key] = self.pixel_ard
+            del pixel_ard
 
-        self.cache[key].update({'pulled': dt.datetime.now()})
+        if len(self.cached) > 0:
+            cached_pixel_ard = self.get_sequence(timeseries=tuple(self.cache[self.key].items()),
+                                                 pixel_coord=geo.pixel_coord)
+
+            try:
+                self.pixel_ard.update(cached_pixel_ard)
+
+            except AttributeError:
+                self.pixel_ard = cached_pixel_ard
+
+            del cached_pixel_ard
 
     @staticmethod
     def get_sequence(timeseries: tuple, pixel_coord: GeoCoordinate) -> dict:
@@ -161,50 +167,94 @@ class ARDData:
 
         Args:
             timeseries: Series of tuples, a tuple (i.e. Tuple[n]) corresponds to the nth pixel in the chip
-                        Tuple[n][0] (tuple): Pixel coordinates
+                        Tuple[n][0] (tuple): Chip and Pixel coordinates
+                                             [0, 1]: Chip UL coordinates
+                                             [2, 3]: Pixel UL coordinates
                         Tuple[n][1] (dict): Band values (e.g. 'reds': array([, vals]))
                                             Dates (e.g. 'dates': [736688, ...]
             pixel_coord: The upper left coordinate of the pixel in projected meters
 
         Returns:
-            Dict whose keys are band designations and dates for the time series
+            Spectral data organized by ubid along with Pixel QA and dates
 
         """
+        #  x is an item in timeseries; x[0] is the tuple of coordinates for that timeseries item.
         gen = filter(lambda x: x[0][2] == pixel_coord.x and x[0][3] == pixel_coord.y, timeseries)
 
         return next(gen, None)[1]
 
-    def check_cache(self):
+    @staticmethod
+    def check_cache(key, cache, items):
         """
         Check the contents of the cache file for pre-existing data to avoid making redundant chipmunk requests
 
+        Args:
+            key (Tuple[int, int]): The chip upper-left coordinates
+            cache (dict): Pre-loaded ARD, could be empty dict if cache file didn't exist
+            items (list): ubids for the requested bands and indices
+
         Returns:
-            Tuple[dict, list]
-                dict:
-                    [item (str)]: A chipmunk label for a particular spectral band (e.g. 'reds')
-                                  Maps to the contents of the cached data for a particular band and coordinate
-                list: A list of chipmunk labels that will be requested (e.g. 'reds')
+            Tuple[list, list]
+                [0]: List of ubids that will be requested using merlin
+                [1]: List of ubids that exist in the cache
 
         """
-        exists = dict()  # Dict of existing data
+        if key in cache.keys():
+            # list of ubids that we need to request with merlin
+            required = [i for i in items if i not in cache[key]['bands']]
 
-        required = list()  # List of items to call merlin for
-
-        if (self.x, self.y) in self.cache.keys():
-            # Make sure to grab the dates
-            exists['dates'] = (self.cache[(self.x, self.y)]['dates'])
-
-            for item in self.items:
-                if item in self.cache[(self.x, self.y)].keys():
-                    exists[item] = (self.cache[(self.x, self.y)][item])
-
-                else:
-                    required.append(item)
-
-            required = list(set(required))
+            # list of ubids that were previously requested from merlin and exist in the cache
+            cached = [i for i in cache[key]['bands'] if i in items or i is 'qas']
 
         else:
-            # No data retrieved yet from merlin at this coordinate
-            required = list(set([item for item in self.items]))
+            required = items
 
-        return exists, required
+            cached = list()
+
+        # remove duplicates (e.g. 'qas')
+        required = list(set(required))
+
+        log.debug("Required: %s" % required)
+        log.debug("Cached: %s " % cached)
+
+        return cached, required
+
+    @staticmethod
+    def update_cache(key, cache, required, timeseries):
+        """
+        Update the cache data to include the additional chipmunk requests
+
+        Args:
+            key (str): The chip coordinates
+            cache (dict): The cached ARD chip data
+            required (list): The ubids requested from chipmunk
+            timeseries (tuple): Contains series of tuples - the timeseries of ARD for a chip
+
+        Returns:
+            dict: The same format as the input cache dictionary
+
+        """
+        ts = OrderedDict({t[0]: t[1] for t in timeseries})
+
+        if key not in cache.keys():
+            cache[key] = ts
+
+        else:
+            for k in ts.keys():
+                try:
+                    cache[key][k].update(ts[k])
+
+                except KeyError:
+                    cache[key][k] = ts[k]
+
+        if 'bands' not in cache[key].keys():
+            cache[key]['bands'] = required
+
+        else:
+            # Update the 'bands' list to include the newly requested chipmunk ubids
+            cache[key]['bands'] = list(set(cache[key]['bands'] + required))
+
+        # Keep track of when the chip was last updated to allow for some control over the cache file size later on
+        cache[key]['pulled'] = dt.datetime.now()
+
+        return cache
