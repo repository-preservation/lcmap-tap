@@ -17,7 +17,7 @@ from lcmap_tap.Visualization.ard_viewer_qpixelmap import ARDViewerX
 from lcmap_tap.Visualization.maps_viewer import MapsViewer
 from lcmap_tap.MapCanvas.mapcanvas import MapCanvas
 # from lcmap_tap.RetrieveData import lcmaphttp
-from lcmap_tap.logger import log, exc_handler
+from lcmap_tap.logger import log, exc_handler, QtHandler
 from lcmap_tap.Auxiliary.caching import read_cache, save_cache, update_cache
 
 import datetime as dt
@@ -31,6 +31,7 @@ import yaml
 from osgeo import ogr, osr
 
 from PyQt5.QtWidgets import QMainWindow, QFileDialog
+from PyQt5.QtCore import QThread, pyqtSignal, pyqtSlot, QObject
 
 # Tell matplotlib to use the QT5Agg Backend
 matplotlib.use('Qt5Agg')
@@ -50,14 +51,25 @@ class MainControls(QMainWindow):
 
         super(MainControls, self).__init__()
 
-        self.cache_data = dict()
-
         # Create an instance of a class that builds the user-interface, created in QT Designer and compiled with pyuic5
         self.ui = ui_main.Ui_TAPTool()
 
         # Call the method that adds all of the widgets to the GUI
         self.ui.setupUi(self)
 
+        # Display log output to the QPlainTextEdit on the main GUI
+        self.qt_handler = QtHandler(self.ui.plainTextEdit_results)
+        # logging.getLogger().addHandler(self.qt_handler)
+
+        self.logworker = LogWorker(self.qt_handler)
+
+        self.log_thread = QThread()
+        self.log_thread.start()
+
+        # This currently doesn't do anything...
+        self.logworker.moveToThread(self.log_thread)
+
+        self.cache_data = dict()
         self.config = None
         self.plot_window = None
         self.maps_window = None
@@ -457,7 +469,7 @@ class MainControls(QMainWindow):
 
         """
         # TODO Possibly add all logging output to QPlainTextEditor
-        self.ui.plainTextEdit_results.clear()
+        # self.ui.plainTextEdit_results.clear()
 
         log.info("Plotting for tile H{:02}V{:02} at point ({}, {}) meters".format(geo.H, geo.V,
                                                                                   geo.coord.x,
@@ -757,3 +769,10 @@ class MainControls(QMainWindow):
 
         """
         self.exit_plot()
+
+
+class LogWorker(QObject):
+    def __init__(self, logger):
+        super().__init__()
+
+        self.logger = logger

@@ -4,16 +4,7 @@ import os
 import logging
 import sys
 import time
-from pathlib import Path
-
-
-# Get the path to the home directory for the current user and create an 'lcmap_tap' subfolder
-HOME = os.path.join(str(Path.home()), 'lcmap_tap')
-
-__version__ = '0.3.2'
-
-if not os.path.exists(HOME):
-    os.makedirs(HOME)
+from lcmap_tap import HOME
 
 
 def get_time():
@@ -42,6 +33,27 @@ stderr_handler.setFormatter(formatter)
 log.addHandler(stdout_handler)
 log.addHandler(file_handler)
 log.setLevel(logging.DEBUG)
+
+
+class QtHandler(logging.Handler):
+
+    def __init__(self, widget):
+        super().__init__()
+
+        self.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+
+        self.setLevel(logging.DEBUG)
+
+        log.addHandler(self)
+
+        self.log_display = widget
+
+        self.log_display.setReadOnly(True)
+
+    def emit(self, record):
+        msg = self.format(record)
+
+        self.log_display.appendPlainText(msg)
 
 
 def exc_handler(exc_type, exc_value, exc_traceback):

@@ -1,6 +1,7 @@
 
 import sys
-from lcmap_tap.logger import log, __version__
+from lcmap_tap import __version__
+from lcmap_tap.logger import log
 from PyQt5.QtWidgets import QApplication
 from lcmap_tap.Controls.controls import MainControls
 try:

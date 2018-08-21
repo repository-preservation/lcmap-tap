@@ -79,11 +79,15 @@ class CCDReader:
             All of the information stored in the target JSON file for the specific pixel coordinate
 
         """
-        results = json.load(open(results_chip, "r"))
+        try:
+            results = json.load(open(results_chip, "r"))
 
-        gen = filter(lambda x: coord.x == x["x"] and coord.y == x["y"], results)
+            gen = filter(lambda x: coord.x == x["x"] and coord.y == x["y"], results)
 
-        return next(gen, None)
+            return next(gen, None)
+
+        except TypeError:
+            log.warning("No results were found associated with the selected PyCCD version")
 
     @staticmethod
     def extract_jsoncurve(pixel_info: dict) -> dict:
