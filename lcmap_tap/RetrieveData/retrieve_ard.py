@@ -9,7 +9,6 @@ import sys
 import time
 import yaml
 import glob
-import datetime as dt
 import merlin
 from collections import OrderedDict
 from itertools import chain
@@ -253,8 +252,5 @@ class ARDData:
         else:
             # Update the 'bands' list to include the newly requested chipmunk ubids
             cache[key]['bands'] = list(set(cache[key]['bands'] + required))
-
-        # Keep track of when the chip was last updated to allow for some control over the cache file size later on
-        cache[key]['pulled'] = dt.datetime.now()
 
         return cache

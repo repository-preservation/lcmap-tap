@@ -3,6 +3,9 @@
 import os
 import pickle
 import zipfile
+import subprocess
+from subprocess import CalledProcessError
+import datetime as dt
 from lcmap_tap.logger import log, HOME
 
 CACHE = os.path.join(HOME, 'ard_cache.zip')
@@ -39,6 +42,7 @@ def read_cache(geo_info, cache_data):
                 cache_data = update_cache(cache_data, temp, key)
 
             else:
+                # Return the empty dictionary
                 log.info("Chip file %s does not exist yet" % fname)
 
     except (FileNotFoundError, EOFError):
@@ -59,12 +63,30 @@ def save_cache(cache_data):
     """
     log.info("Saving cache data to %s ..." % CACHE)
 
-    with zipfile.ZipFile(CACHE, 'w', compression=zipfile.ZIP_DEFLATED) as f:
-        for key, data in cache_data.items():
-            # fname = str(key).replace('(', '').replace(')', '').replace(', ', '_')
+    with zipfile.ZipFile(CACHE, 'r') as f:
+        names = f.namelist()
 
-            with f.open(f'{key}.p', 'w') as p:
-                pickle.dump(data, p)
+    # Remove pre-existing pickle files to avoid duplicates
+    for key in cache_data.keys():
+        fname = f'{key}.p'
+
+        if fname in names:
+            remove_name(CACHE, fname)
+
+    check_cache_size(CACHE)
+
+    with zipfile.ZipFile(CACHE, 'a', compression=zipfile.ZIP_DEFLATED) as f:
+        for key, data in cache_data.items():
+            fname = f'{key}.p'
+
+            # Create  ZipInfo instance for the input data so that a date_time can be specified.
+            info = zipfile.ZipInfo(fname, date_time=dt.datetime.now().timetuple())
+
+            info.compress_type = zipfile.ZIP_DEFLATED
+
+            info.create_system = 0
+
+            f.writestr(info, pickle.dumps(data))
 
     return None
 
@@ -76,6 +98,7 @@ def update_cache(cache_data, new_data, key):
     Args:
         cache_data (dict): Pre-existing chip data
         new_data (dict): Newly acquired chip data
+        key (str): The chip UL coordinates
 
     Returns:
 
@@ -89,27 +112,55 @@ def update_cache(cache_data, new_data, key):
     return cache_data
 
 
-def check_cache_size(cache, length=10):
+def check_cache_size(cache, size=3e8):
     """
-    Get the number of chips in the cache.  If it's greater than a set length, then remove the oldest
-    entries until the length is satisfied
+    Check the file size of the zip archive.  If it is greater than 300 MB, then delete the the oldest modified
+    archive file.
+
+    Args:
+        cache (str): Full path to the zip archive.
+        size (int): Limit in bytes of the file size (default=3e8).
 
     Returns:
+        None
 
     """
-    lookup = sorted([(k, item['pulled']) for k, item in cache.items()],
-                    key=lambda d: d[1], reverse=False)
+    if os.path.getsize(cache) > size:
+        with zipfile.ZipFile(CACHE, 'r') as f:
 
-    test = len(cache)
+            dates = [(c, f.getinfo(c).date_time) for c in f.namelist()]
 
-    for ind in lookup:
-        if test > length:
-            try:
-                cache.pop(ind[0], None)
+            log.debug("Archived: %s" % dates)
 
-                test = test - 1
+        dates.sort(key=lambda x: x[1], reverse=False)
 
-            except KeyError:
-                continue
+        file_to_remove = dates[0][0]
 
-    return cache
+        remove_name(cache, file_to_remove)
+
+    return None
+
+
+def remove_name(cache, name):
+    """
+    Helper function to remove a file stored in a zip archive.
+
+    Args:
+        cache (str): Full path to the zip archive.
+        name (str): Name of a file within the archive.
+
+    Returns:
+        None
+
+    """
+    cmd = ['zip', '-d', cache, name]
+
+    try:
+        subprocess.check_call(cmd)
+
+        log.info("Removed file %s from archive" % name)
+
+    except (CalledProcessError, PermissionError):
+        log.warning("Error occurred trying to remove %s from archive" % name)
+
+    return None
