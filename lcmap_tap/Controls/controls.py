@@ -463,33 +463,37 @@ class MainControls(QMainWindow):
                                                                                   geo.coord.x,
                                                                                   geo.coord.y))
 
-        self.ui.plainTextEdit_results.appendPlainText("\n\nBegin Date: {}".format(results.begin))
-        log.info("Begin Date: {}".format(results.begin))
+        try:
+            self.ui.plainTextEdit_results.appendPlainText("\n\nBegin Date: {}".format(results.begin))
+            log.info("Begin Date: {}".format(results.begin))
 
-        self.ui.plainTextEdit_results.appendPlainText("End Date: {}\n".format(results.end))
-        log.info("End Date: {}".format(results.end))
+            self.ui.plainTextEdit_results.appendPlainText("End Date: {}\n".format(results.end))
+            log.info("End Date: {}".format(results.end))
 
-        for num, result in enumerate(results.results["change_models"]):
-            self.ui.plainTextEdit_results.appendPlainText("Result: {}".format(num + 1))
-            log.info("Result: {}".format(num + 1))
+            for num, result in enumerate(results.results["change_models"]):
+                self.ui.plainTextEdit_results.appendPlainText("Result: {}".format(num + 1))
+                log.info("Result: {}".format(num + 1))
 
-            self.ui.plainTextEdit_results.appendPlainText(
-                "Start Date: {}".format(dt.datetime.fromordinal(result["start_day"])))
-            log.info("Start Date: {}".format(dt.datetime.fromordinal(result["start_day"])))
+                self.ui.plainTextEdit_results.appendPlainText(
+                    "Start Date: {}".format(dt.datetime.fromordinal(result["start_day"])))
+                log.info("Start Date: {}".format(dt.datetime.fromordinal(result["start_day"])))
 
-            self.ui.plainTextEdit_results.appendPlainText(
-                "End Date: {}".format(dt.datetime.fromordinal(result["end_day"])))
-            log.info("End Date: {}".format(dt.datetime.fromordinal(result["end_day"])))
+                self.ui.plainTextEdit_results.appendPlainText(
+                    "End Date: {}".format(dt.datetime.fromordinal(result["end_day"])))
+                log.info("End Date: {}".format(dt.datetime.fromordinal(result["end_day"])))
 
-            self.ui.plainTextEdit_results.appendPlainText(
-                "Break Date: {}".format(dt.datetime.fromordinal(result["break_day"])))
-            log.info("Break Date: {}".format(dt.datetime.fromordinal(result["break_day"])))
+                self.ui.plainTextEdit_results.appendPlainText(
+                    "Break Date: {}".format(dt.datetime.fromordinal(result["break_day"])))
+                log.info("Break Date: {}".format(dt.datetime.fromordinal(result["break_day"])))
 
-            self.ui.plainTextEdit_results.appendPlainText("QA: {}".format(result["curve_qa"]))
-            log.info("QA: {}".format(result["curve_qa"]))
+                self.ui.plainTextEdit_results.appendPlainText("QA: {}".format(result["curve_qa"]))
+                log.info("QA: {}".format(result["curve_qa"]))
 
-            self.ui.plainTextEdit_results.appendPlainText("Change prob: {}\n".format(result["change_probability"]))
-            log.info("Change prob: {}".format(result["change_probability"]))
+                self.ui.plainTextEdit_results.appendPlainText("Change prob: {}\n".format(result["change_probability"]))
+                log.info("Change prob: {}".format(result["change_probability"]))
+
+        except ValueError:
+            pass
 
     def plot(self):
         """
@@ -737,12 +741,9 @@ class MainControls(QMainWindow):
         Close all TAP tool windows and exit the program
 
         """
-
         save_cache(self.cache_data)
 
         log.info("Exiting TAP Tool")
-
-        # self.close()
 
         sys.exit(0)
 
