@@ -13,24 +13,7 @@ from PyQt5.QtWidgets import QFrame, QSlider, QMainWindow, QGraphicsView, QGraphi
 
 from lcmap_tap.Visualization.ui_maps_viewer import Ui_MapViewer
 from lcmap_tap.Visualization import PRODUCTS, VERSIONS
-from lcmap_tap.logger import log
-
-
-def exc_handler(type, value, tb):
-    """
-    Customized handling of top-level exceptions
-    Args:
-        type: exception class
-        value: exception instance
-        tb: traceback object
-
-    Returns:
-
-    """
-    log.warning("Uncaught Exception Type: {}".format(str(type)))
-    log.warning("Uncaught Exception Value: {}".format(str(value)))
-    log.warning("Uncaught Exception Traceback: {}".format(traceback.print_tb(tb)))
-
+from lcmap_tap.logger import log, exc_handler
 
 sys.excepthook = exc_handler
 

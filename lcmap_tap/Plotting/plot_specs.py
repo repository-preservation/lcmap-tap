@@ -1,27 +1,12 @@
 """Prepare data for plotting"""
 
-from lcmap_tap.logger import log
+from lcmap_tap.logger import exc_handler
 from lcmap_tap.Plotting import plot_functions
 import sys
 import numpy as np
 import datetime as dt
 from collections import OrderedDict
 from typing import Union, List
-
-
-def exc_handler(exc_type, exc_value, exc_traceback):
-    """
-    Customized handling of top-level exceptions
-    Args:
-        exc_type: exception class
-        exc_value: exception instance
-        exc_traceback: traceback object
-
-    Returns:
-
-    """
-    log.critical("Exception: ", exc_info=(exc_type, exc_value, exc_traceback))
-
 
 sys.excepthook = exc_handler
 

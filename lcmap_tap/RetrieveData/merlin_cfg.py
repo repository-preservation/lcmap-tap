@@ -1,10 +1,13 @@
 """Get the required ubids and build a custom merlin profile"""
 
+import sys
 from lcmap_tap.RetrieveData import ard_groups
+from lcmap_tap.logger import exc_handler
 from merlin import chipmunk, dates, specs, formats
 from functools import partial
 from cytoolz import assoc
 
+sys.excepthook = exc_handler
 
 def get_ubids(items: list) -> dict:
     """

@@ -1,12 +1,15 @@
 """Controls for reading and writing to a zipped directory of pickle files"""
 
 import os
+import sys
 import pickle
 import zipfile
 import subprocess
 from subprocess import CalledProcessError
 import datetime as dt
-from lcmap_tap.logger import log, HOME
+from lcmap_tap.logger import log, HOME, exc_handler
+
+sys.excepthook = exc_handler
 
 CACHE = os.path.join(HOME, 'ard_cache.zip')
 

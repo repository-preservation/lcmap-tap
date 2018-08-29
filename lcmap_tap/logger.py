@@ -4,16 +4,7 @@ import os
 import logging
 import sys
 import time
-from pathlib import Path
-
-
-# Get the path to the home directory for the current user and create an 'lcmap_tap' subfolder
-HOME = os.path.join(str(Path.home()), 'lcmap_tap')
-
-__version__ = '0.3.2'
-
-if not os.path.exists(HOME):
-    os.makedirs(HOME)
+from lcmap_tap import HOME
 
 
 def get_time():
@@ -44,9 +35,43 @@ log.addHandler(file_handler)
 log.setLevel(logging.DEBUG)
 
 
+class QtHandler(logging.Handler):
+
+    def __init__(self, widget):
+        """
+        Create a custom logging handler for outputting the log to a QWidget
+
+        Args:
+            widget (PyQt.QWidget): The widget that will display the log output
+
+        """
+        super().__init__()
+
+        # active (bool): Only display the log if True, default is False
+        self.active = False
+
+        self.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+
+        self.setLevel(logging.DEBUG)
+
+        log.addHandler(self)
+
+        self.log_display = widget
+
+    def set_active(self, active: bool=False):
+        self.active = active
+
+    def emit(self, record):
+        if self.active:
+            msg = self.format(record)
+
+            self.log_display.appendPlainText(msg)
+
+
 def exc_handler(exc_type, exc_value, exc_traceback):
     """
     Customized handling of top-level exceptions
+
     Args:
         exc_type: exception class
         exc_value: exception instance

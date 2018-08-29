@@ -7,7 +7,6 @@ import re
 from lcmap_tap.logger import exc_handler
 from lcmap_tap.RetrieveData import band_specs
 
-
 sys.excepthook = exc_handler
 
 
