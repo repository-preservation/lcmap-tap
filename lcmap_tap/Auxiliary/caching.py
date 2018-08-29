@@ -13,6 +13,7 @@ sys.excepthook = exc_handler
 
 CACHE = os.path.join(HOME, 'ard_cache.zip')
 
+
 def read_cache(geo_info, cache_data):
     """
     Using the chip coordinates, locate the pickle file containing that chip within the zip archive

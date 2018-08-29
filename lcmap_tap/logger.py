@@ -36,25 +36,36 @@ log.setLevel(logging.DEBUG)
 
 
 class QtHandler(logging.Handler):
-    qlog = logging.getLogger()
 
     def __init__(self, widget):
+        """
+        Create a custom logging handler for outputting the log to a QWidget
+
+        Args:
+            widget (PyQt.QWidget): The widget that will display the log output
+
+        """
         super().__init__()
+
+        # active (bool): Only display the log if True, default is False
+        self.active = False
 
         self.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 
         self.setLevel(logging.DEBUG)
 
-        self.qlog.addHandler(self)
+        log.addHandler(self)
 
-        self.qlog_display = widget
+        self.log_display = widget
 
-        self.qlog_display.setReadOnly(True)
+    def set_active(self, active: bool=False):
+        self.active = active
 
     def emit(self, record):
-        msg = self.format(record)
+        if self.active:
+            msg = self.format(record)
 
-        self.qlog_display.appendPlainText(msg)
+            self.log_display.appendPlainText(msg)
 
 
 def exc_handler(exc_type, exc_value, exc_traceback):

@@ -213,6 +213,8 @@ class ARDData(QObject):
 
             cfg = make_cfg(items=self.required, url=url)
 
+            self.controls.qt_handler.set_active(True)
+
             self.worker = Worker(geo, start, stop, cfg)
 
             self.thread = QThread()
@@ -233,6 +235,8 @@ class ARDData(QObject):
 
             while self.thread.isRunning():
                 QCoreApplication.processEvents()
+
+            self.controls.qt_handler.set_active(False)
 
             # time.sleep(1)
 
@@ -289,7 +293,7 @@ class ARDData(QObject):
 
         """
         # self.request_timeseries.emit()
-        log.debug("Made call to 'get_timeseries()'")
+        # log.debug("Made call to 'get_timeseries()'")
 
         self.timeseries = ts
 
@@ -299,7 +303,7 @@ class ARDData(QObject):
 
         # time.sleep(1)
 
-        log.debug("Length timeseries: %s" % len(self.timeseries))
+        # log.debug("Length timeseries: %s" % len(self.timeseries))
 
         pixel_ard = self.get_sequence(timeseries=self.timeseries,
                                       pixel_coord=self.geo.pixel_coord)
@@ -382,8 +386,8 @@ class ARDData(QObject):
         # remove duplicates (e.g. 'qas')
         required = list(set(required))
 
-        log.debug("Required: %s" % required)
-        log.debug("Cached: %s " % cached)
+        log.info("Required: %s" % required)
+        log.info("Cached: %s " % cached)
 
         return cached, required
 

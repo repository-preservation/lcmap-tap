@@ -29,9 +29,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 import yaml
 from osgeo import ogr, osr
-import multiprocessing
 from PyQt5.QtWidgets import QMainWindow, QFileDialog
-from PyQt5.QtCore import QThread, QObject
+from PyQt5.QtCore import QThread
 
 # Tell matplotlib to use the QT5Agg Backend
 matplotlib.use('Qt5Agg')
@@ -84,6 +83,8 @@ class MainControls(QMainWindow):
         self.plot_specs = None  # container for plotting data
         self.begin = dt.date(year=1982, month=1, day=1)
         self.end = dt.date(year=2015, month=12, day=31)
+
+        self.qt_handler = QtHandler(self.ui.plainTextEdit_results)
 
         self.leaflet_map = MapCanvas(self)
 
@@ -168,19 +169,6 @@ class MainControls(QMainWindow):
         self.ui.mapButton.clicked.connect(self.show_maps)
 
         self.ui.pushLocator.clicked.connect(self.show_locator_map)
-
-    # def plot_worker(self):
-    #     self.t = threading.Thread(target=self.get_data)
-    #
-    #     self.t.start()
-    #
-    #     self.q = QThread()
-    #
-    #     self.plot()
-    #
-    #     # self.t = Worker(self.plot)
-    #
-    #     # self.t.start()
 
     def show_locator_map(self):
         """
@@ -519,8 +507,8 @@ class MainControls(QMainWindow):
 
         """
         self.dirs = {"json": self.ui.browsejsonline.text(),
-                        "ard": self.ui.browseARDline.text(),
-                        "class": self.ui.browseclassline.text()}
+                     "ard": self.ui.browseARDline.text(),
+                     "class": self.ui.browseclassline.text()}
 
         for key, value in self.dirs.items():
             if not self.check_path(key, value):
@@ -541,7 +529,7 @@ class MainControls(QMainWindow):
 
             self.cache_data = read_cache(self.geo_info, self.cache_data)
 
-            # self.qt_handler = QtHandler(self.ui.plainTextEdit_results)
+            self.qt_handler.set_active(True)
 
             self.ard_observations = ARDData(geo=self.geo_info,
                                             config=self.config,
@@ -549,9 +537,9 @@ class MainControls(QMainWindow):
                                             cache=self.cache_data,
                                             controls=self)
 
-            self.cache_data = update_cache(self.cache_data, self.ard_observations.cache, self.ard_observations.key)
+            self.qt_handler.set_active(False)
 
-            # self.qt_handler = None
+            self.cache_data = update_cache(self.cache_data, self.ard_observations.cache, self.ard_observations.key)
 
             self.ccd_results = CCDReader(tile=self.geo_info.tile,
                                          chip_coord=self.geo_info.chip_coord,
@@ -781,10 +769,3 @@ class MainControls(QMainWindow):
 
         """
         self.exit_plot()
-
-
-class LogWorker(QObject):
-    def __init__(self, logger):
-        super().__init__()
-
-        self.logger = logger
