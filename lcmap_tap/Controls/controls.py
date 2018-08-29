@@ -764,7 +764,7 @@ class MainControls(QMainWindow):
         Close all TAP tool windows and exit the program
 
         """
-        # save_cache(self.cache_data)
+        save_cache(self.cache_data)
 
         log.info("Exiting TAP Tool")
 

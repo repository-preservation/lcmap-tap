@@ -3,7 +3,8 @@
 from lcmap_tap.RetrieveData import GeoCoordinate, item_lookup
 from lcmap_tap.RetrieveData.retrieve_geo import GeoInfo
 from lcmap_tap.RetrieveData.merlin_cfg import make_cfg
-from lcmap_tap.logger import log, QtHandler, exc_handler
+from lcmap_tap.logger import log, exc_handler
+# from lcmap_tap.logger import QtHandler
 import os
 import sys
 import time
@@ -13,8 +14,8 @@ import merlin
 from collections import OrderedDict
 from itertools import chain
 from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal, QThread, QCoreApplication
-import threading
-from concurrent.futures import Future
+# import threading
+# from concurrent.futures import Future
 
 # TODAY = dt.datetime.now().strftime("%Y-%m-%d")
 
@@ -81,7 +82,7 @@ def names(items: list):
 class Worker(QObject):
     result = pyqtSignal(object)
 
-    finished = pyqtSignal(int)
+    # finished = pyqtSignal(int)
 
     def __init__(self, geo, start, stop, cfg):
         super().__init__()
@@ -111,6 +112,10 @@ class Worker(QObject):
         self.result.emit(data)
 
         # self.finished.emit(thread_id)
+
+    # @pyqtSlot()
+    # def save_cache(self):
+    #     pass
 
 
 # def call_with_future(fn, future, args, kwargs):
@@ -226,8 +231,8 @@ class ARDData(QObject):
 
             self.thread.start()
 
-            # while self.thread.isRunning():
-            #     QCoreApplication.processEvents()
+            while self.thread.isRunning():
+                QCoreApplication.processEvents()
 
             # time.sleep(1)
 
