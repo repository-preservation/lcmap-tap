@@ -4,7 +4,6 @@ from lcmap_tap.RetrieveData import GeoCoordinate, item_lookup
 from lcmap_tap.RetrieveData.retrieve_geo import GeoInfo
 from lcmap_tap.RetrieveData.merlin_cfg import make_cfg
 from lcmap_tap.logger import log, exc_handler
-# from lcmap_tap.logger import QtHandler
 import os
 import sys
 import time
@@ -14,8 +13,6 @@ import merlin
 from collections import OrderedDict
 from itertools import chain
 from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal, QThread, QCoreApplication
-# import threading
-# from concurrent.futures import Future
 
 # TODAY = dt.datetime.now().strftime("%Y-%m-%d")
 
@@ -105,76 +102,15 @@ class Worker(QObject):
         log.debug("Grabbing merlin timeseries")
 
         data = merlin.create(x=int(self.geo.coord.x),
-                            y=int(self.geo.coord.y),
-                            acquired="{}/{}".format(self.start, self.stop),
-                            cfg=self.cfg)
+                             y=int(self.geo.coord.y),
+                             acquired="{}/{}".format(self.start, self.stop),
+                             cfg=self.cfg)
 
         self.result.emit(data)
-
-        # self.finished.emit(thread_id)
-
-    # @pyqtSlot()
-    # def save_cache(self):
-    #     pass
-
-
-# def call_with_future(fn, future, args, kwargs):
-#     try:
-#         result = fn(*args, **kwargs)
-#
-#         future.set_result(result)
-#
-#     except Exception as exc:
-#         future.set_exception(exc)
-#
-#
-# def threaded(fn):
-#     def wrapper(*args, **kwargs):
-#         future = Future()
-#
-#         threading.Thread(target=call_with_future, args=(fn, future, args, kwargs)).start()
-#
-#         return future
-#
-#     return wrapper
-#
-#
-# class RequestMerlin:
-#     def __init__(self, x, y, start, stop, cfg):
-#         self.x = x
-#         self.y = y
-#         self.acquired = f'{start}/{stop}'
-#         self.cfg = cfg
-#
-#     @threaded
-#     def call_merlin(self):
-#         """
-#         Make a request for a chip using Merlin.  Append results to a globally accessible container.
-#
-#         """
-#         try:
-#             data = merlin.create(x=self.x, y=self.y, acquired=self.acquired, cfg=self.cfg)
-#
-#             return data
-#
-#         except:
-#             self.error_msg()
-#
-#             return None
-#
-#     def error_msg(self):
-#         log.error("Error with call to Merlin using: ")
-#         log.error("X: %s" % self.x)
-#         log.error("Y: %s" % self.y)
-#         log.error("ACQUIRED: %s" % self.acquired)
-#         log.error("CFG: %s" % self.cfg)
 
 
 class ARDData(QObject):
     """Use lcmap-merlin to retrieve a time-series ARD for a chip"""
-
-    # request_timeseries = pyqtSignal()
-    sig_start = pyqtSignal()
 
     def __init__(self, geo, config, items, cache, controls, start='1982-01-01', stop='2017-12-31'):
         """
@@ -225,55 +161,12 @@ class ARDData(QObject):
 
             self.thread.started.connect(self.worker.call_merlin)
 
-            # self.sig_start.connect(self.worker.call_merlin)
-
-            # self.worker.finished.connect(self.abort)
-
-            # self.sig_start.emit()
-
             self.thread.start()
 
             while self.thread.isRunning():
                 QCoreApplication.processEvents()
 
             self.controls.qt_handler.set_active(False)
-
-            # time.sleep(1)
-
-            # t0 = get_time()
-
-            # cfg = make_cfg(items=self.required, url=url)
-
-            # self.timeseries = merlin.create(x=int(geo.coord.x),
-            #                                 y=int(geo.coord.y),
-            #                                 acquired="{}/{}".format(start, stop),
-            #                                 cfg=cfg)
-
-            # self.timeseries = self.call_merlin(geo=geo,
-            #                                    start=start,
-            #                                    stop=stop,
-            #                                    cfg=make_cfg(items=self.required, url=url))
-
-            # self.merlin = RequestMerlin(x=int(self.geo.coord.x), y=int(self.geo.coord.y),
-            #                             start=start, stop=stop, cfg=cfg)
-            #
-            # self.timeseries = self.merlin.call_merlin().result()
-
-            # t1 = get_time()
-
-            # log.info("Time series retrieved in %s seconds" % (t1 - t0))
-
-            # pixel_ard = self.get_sequence(timeseries=self.timeseries,
-            #                               pixel_coord=self.geo.pixel_coord)
-            #
-            # self.cache = self.update_cache(key=self.key, cache=self.cache, required=self.required,
-            #                                timeseries=self.timeseries)
-            #
-            # try:
-            #     self.pixel_ard.update(pixel_ard)
-            #
-            # except AttributeError:
-            #     self.pixel_ard = pixel_ard
 
         if len(self.cached) > 0:
             cached_pixel_ard = self.get_sequence(timeseries=tuple(self.cache[self.key].items()),
@@ -292,18 +185,7 @@ class ARDData(QObject):
         """
 
         """
-        # self.request_timeseries.emit()
-        # log.debug("Made call to 'get_timeseries()'")
-
         self.timeseries = ts
-
-        # self.thread.quit()
-        #
-        # self.thread.wait()
-
-        # time.sleep(1)
-
-        # log.debug("Length timeseries: %s" % len(self.timeseries))
 
         pixel_ard = self.get_sequence(timeseries=self.timeseries,
                                       pixel_coord=self.geo.pixel_coord)
@@ -317,20 +199,10 @@ class ARDData(QObject):
         except AttributeError:
             self.pixel_ard = pixel_ard
 
-        # log.debug("PIXEL ARD: %s" % self.pixel_ard)
-
         # Return to the main plotting routine
         self.controls.plot()
 
         return None
-
-    # @pyqtSlot()
-    # def abort(self):
-    #     self.thread.quit()
-    #
-    #     self.thread.wait()
-    #
-    #     return None
 
     @staticmethod
     def get_sequence(timeseries: tuple, pixel_coord: GeoCoordinate) -> dict:
