@@ -36,6 +36,7 @@ log.setLevel(logging.DEBUG)
 
 
 class QtHandler(logging.Handler):
+    qlog = logging.getLogger()
 
     def __init__(self, widget):
         super().__init__()
@@ -44,21 +45,22 @@ class QtHandler(logging.Handler):
 
         self.setLevel(logging.DEBUG)
 
-        log.addHandler(self)
+        self.qlog.addHandler(self)
 
-        self.log_display = widget
+        self.qlog_display = widget
 
-        self.log_display.setReadOnly(True)
+        self.qlog_display.setReadOnly(True)
 
     def emit(self, record):
         msg = self.format(record)
 
-        self.log_display.appendPlainText(msg)
+        self.qlog_display.appendPlainText(msg)
 
 
 def exc_handler(exc_type, exc_value, exc_traceback):
     """
     Customized handling of top-level exceptions
+
     Args:
         exc_type: exception class
         exc_value: exception instance

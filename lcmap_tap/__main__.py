@@ -1,28 +1,13 @@
 
 import sys
 from lcmap_tap import __version__
-from lcmap_tap.logger import log
+from lcmap_tap.logger import log, exc_handler
 from PyQt5.QtWidgets import QApplication
 from lcmap_tap.Controls.controls import MainControls
 try:
     from pip._internal.operations import freeze
 except ImportError:
     from pip.operations import freeze
-
-
-def exc_handler(exc_type, exc_value, exc_traceback):
-    """
-    Customized handling of top-level exceptions
-    Args:
-        exc_type: exception class
-        exc_value: exception instance
-        exc_traceback: traceback object
-
-    Returns:
-
-    """
-    log.critical("Uncaught Exception: ", exc_info=(exc_type, exc_value, exc_traceback))
-
 
 sys.excepthook = exc_handler
 

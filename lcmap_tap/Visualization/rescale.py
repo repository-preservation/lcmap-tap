@@ -1,7 +1,10 @@
 """Clip and rescale a passed numpy array"""
 
-import os
+import sys
 import numpy as np
+from lcmap_tap.logger import exc_handler
+
+sys.excepthook = exc_handler
 
 
 class Rescale:

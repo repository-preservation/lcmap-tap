@@ -1,27 +1,12 @@
 """Generate useful geographic information for tile, chip, and pixel granularities"""
 
-from lcmap_tap.logger import log
+from lcmap_tap.logger import log, exc_handler
 from lcmap_tap.Auxiliary import projections
 from lcmap_tap.RetrieveData import GeoExtent, GeoAffine, GeoCoordinate, RowColumn, CONUS_EXTENT
 import sys
 from typing import Tuple
 import re
 from osgeo import ogr, osr
-
-
-def exc_handler(exc_type, exc_value, exc_traceback):
-    """
-    Customized handling of top-level exceptions
-    Args:
-        exc_type: exception class
-        exc_value: exception instance
-        exc_traceback: traceback object
-
-    Returns:
-
-    """
-    log.critical("Uncaught Exception: ", exc_info=(exc_type, exc_value, exc_traceback))
-
 
 sys.excepthook = exc_handler
 

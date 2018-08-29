@@ -3,7 +3,7 @@
 from lcmap_tap.Plotting.plot_specs import PlotSpecs
 from lcmap_tap.Plotting import plot_functions
 from lcmap_tap.Plotting import NAMES, COLORS
-from lcmap_tap.logger import log
+from lcmap_tap.logger import log, exc_handler
 
 import sys
 import traceback
@@ -17,24 +17,6 @@ import matplotlib
 from matplotlib import pyplot as plt
 import matplotlib.lines as mlines
 from matplotlib.figure import Figure
-
-
-def exc_handler(exc_type, exc_value, exc_traceback):
-    """
-    Customized handling of top-level exceptions
-    Args:
-        exc_type: exception class
-        exc_value: exception instance
-        exc_traceback: traceback object
-
-    Returns:
-        None
-
-    """
-    log.warning("Uncaught Exception Type: {}".format(str(exc_type)))
-    log.warning("Uncaught Exception Value: {}".format(str(exc_value)))
-    log.warning("Uncaught Exception Traceback: {}".format(traceback.print_tb(exc_traceback)))
-
 
 sys.excepthook = exc_handler
 

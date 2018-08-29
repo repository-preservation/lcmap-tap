@@ -14,23 +14,7 @@ from matplotlib.collections import PathCollection
 from matplotlib.lines import Line2D
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-
-from lcmap_tap.logger import log
-
-
-def exc_handler(exc_type, exc_value, exc_traceback):
-    """
-    Customized handling of top-level exceptions
-    Args:
-        exc_type: exception class
-        exc_value: exception instance
-        exc_traceback: traceback object
-
-    Returns:
-
-    """
-    log.critical("Uncaught Exception: ", exc_info=(exc_type, exc_value, exc_traceback))
-
+from lcmap_tap.logger import log, exc_handler
 
 sys.excepthook = exc_handler
 

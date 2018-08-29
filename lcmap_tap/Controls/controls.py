@@ -29,9 +29,9 @@ import matplotlib
 import matplotlib.pyplot as plt
 import yaml
 from osgeo import ogr, osr
-
+import multiprocessing
 from PyQt5.QtWidgets import QMainWindow, QFileDialog
-from PyQt5.QtCore import QThread, pyqtSignal, pyqtSlot, QObject
+from PyQt5.QtCore import QThread, QObject
 
 # Tell matplotlib to use the QT5Agg Backend
 matplotlib.use('Qt5Agg')
@@ -49,7 +49,7 @@ sys.excepthook = exc_handler
 class MainControls(QMainWindow):
     def __init__(self):
 
-        super(MainControls, self).__init__()
+        super().__init__()
 
         # Create an instance of a class that builds the user-interface, created in QT Designer and compiled with pyuic5
         self.ui = ui_main.Ui_TAPTool()
@@ -58,16 +58,9 @@ class MainControls(QMainWindow):
         self.ui.setupUi(self)
 
         # Display log output to the QPlainTextEdit on the main GUI
-        self.qt_handler = QtHandler(self.ui.plainTextEdit_results)
-        # logging.getLogger().addHandler(self.qt_handler)
+        # self.qt_handler = QtHandler(self.ui.plainTextEdit_results)
 
-        self.logworker = LogWorker(self.qt_handler)
-
-        self.log_thread = QThread()
-        self.log_thread.start()
-
-        # This currently doesn't do anything...
-        self.logworker.moveToThread(self.log_thread)
+        self.thread = QThread()
 
         self.cache_data = dict()
         self.config = None
@@ -175,6 +168,19 @@ class MainControls(QMainWindow):
         self.ui.mapButton.clicked.connect(self.show_maps)
 
         self.ui.pushLocator.clicked.connect(self.show_locator_map)
+
+    # def plot_worker(self):
+    #     self.t = threading.Thread(target=self.get_data)
+    #
+    #     self.t.start()
+    #
+    #     self.q = QThread()
+    #
+    #     self.plot()
+    #
+    #     # self.t = Worker(self.plot)
+    #
+    #     # self.t.start()
 
     def show_locator_map(self):
         """
@@ -509,19 +515,16 @@ class MainControls(QMainWindow):
 
     def plot(self):
         """
-        Instantiate the CCDReader class that retrieves the plotting data and generate the plots
+        TODO: Add descriptive information
 
         """
-        dirs = {"json": self.ui.browsejsonline.text(),
-                "ard": self.ui.browseARDline.text(),
-                "class": self.ui.browseclassline.text()}
+        self.dirs = {"json": self.ui.browsejsonline.text(),
+                        "ard": self.ui.browseARDline.text(),
+                        "class": self.ui.browseclassline.text()}
 
-        for key, value in dirs.items():
+        for key, value in self.dirs.items():
             if not self.check_path(key, value):
                 return None
-
-        # <bool> If True, generate a point shapefile for the entered coordinates
-        shp_on = self.ui.radioshp.isChecked()
 
         if self.plot_window:
             self.plot_window.close()
@@ -538,20 +541,25 @@ class MainControls(QMainWindow):
 
             self.cache_data = read_cache(self.geo_info, self.cache_data)
 
+            # self.qt_handler = QtHandler(self.ui.plainTextEdit_results)
+
             self.ard_observations = ARDData(geo=self.geo_info,
                                             config=self.config,
                                             items=self.item_list,
-                                            cache=self.cache_data)
+                                            cache=self.cache_data,
+                                            controls=self)
 
             self.cache_data = update_cache(self.cache_data, self.ard_observations.cache, self.ard_observations.key)
+
+            # self.qt_handler = None
 
             self.ccd_results = CCDReader(tile=self.geo_info.tile,
                                          chip_coord=self.geo_info.chip_coord,
                                          pixel_coord=self.geo_info.pixel_coord,
-                                         json_dir=dirs["json"])
+                                         json_dir=self.dirs["json"])
 
             self.class_results = SegmentClasses(chip_coord=self.geo_info.chip_coord,
-                                                class_dir=dirs["class"],
+                                                class_dir=self.dirs["class"],
                                                 rc=self.geo_info.chip_pixel_rowcol,
                                                 tile=self.geo_info.tile)
 
@@ -588,7 +596,7 @@ class MainControls(QMainWindow):
         # Display change model information for the entered coordinates
         self.show_model_params(results=self.plot_specs, geo=self.geo_info)
 
-        """ 
+        """
         fig <matplotlib.figure> Matplotlib figure object containing all of the artists
         
         artist_map <dict> mapping of each specific PathCollection artist to it's underlying dataset
@@ -602,6 +610,9 @@ class MainControls(QMainWindow):
 
         if not os.path.exists(self.ui.browseoutputline.text()):
             os.makedirs(self.ui.browseoutputline.text())
+
+        # <bool> If True, generate a point shapefile for the entered coordinates
+        shp_on = self.ui.radioshp.isChecked()
 
         # Generate the ESRI point shapefile
         if shp_on is True:
@@ -618,7 +629,7 @@ class MainControls(QMainWindow):
                                       artist_map=self.artist_map,
                                       lines_map=self.lines_map,
                                       gui=self,
-                                      scenes=get_image_ids(path=dirs["ard"]))
+                                      scenes=get_image_ids(path=self.dirs["ard"]))
 
         # Make these buttons available once a figure has been created
         self.ui.clearpushButton.setEnabled(True)
@@ -753,7 +764,7 @@ class MainControls(QMainWindow):
         Close all TAP tool windows and exit the program
 
         """
-        save_cache(self.cache_data)
+        # save_cache(self.cache_data)
 
         log.info("Exiting TAP Tool")
 
