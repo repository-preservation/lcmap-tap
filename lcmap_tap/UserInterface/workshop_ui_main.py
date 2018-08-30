@@ -7,15 +7,22 @@
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+import pkg_resources
 
 class Ui_TAPTool(object):
     def setupUi(self, TAPTool):
         TAPTool.setObjectName("TAPTool")
         TAPTool.resize(580, 618)
-        icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("../../../../../Pictures/lcmap_tap5.PNG"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+
+        icon = QtGui.QIcon(QtGui.QPixmap(pkg_resources.resource_filename("lcmap_tap",
+                                                                         "/".join(("Auxiliary", "icon.PNG")))))
+
+        # icon = QtGui.QIcon()
+        # icon.addPixmap(QtGui.QPixmap("../../../../../Pictures/lcmap_tap5.PNG"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+
         TAPTool.setWindowIcon(icon)
         TAPTool.setUnifiedTitleAndToolBarOnMac(False)
+
         self.centralwidget = QtWidgets.QWidget(TAPTool)
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout_3 = QtWidgets.QGridLayout(self.centralwidget)
