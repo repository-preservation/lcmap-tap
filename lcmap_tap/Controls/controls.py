@@ -16,7 +16,6 @@ from lcmap_tap.Auxiliary import projections
 from lcmap_tap.Visualization.ard_viewer_qpixelmap import ARDViewerX
 from lcmap_tap.Visualization.maps_viewer import MapsViewer
 from lcmap_tap.MapCanvas.mapcanvas import MapCanvas
-# from lcmap_tap.RetrieveData import lcmaphttp
 from lcmap_tap.logger import log, exc_handler, QtHandler
 from lcmap_tap.Auxiliary.caching import read_cache, save_cache, update_cache
 
@@ -30,7 +29,6 @@ import matplotlib.pyplot as plt
 import yaml
 from osgeo import ogr, osr
 from PyQt5.QtWidgets import QMainWindow, QFileDialog
-from PyQt5.QtCore import QThread
 
 # Tell matplotlib to use the QT5Agg Backend
 matplotlib.use('Qt5Agg')
@@ -56,12 +54,9 @@ class MainControls(QMainWindow):
         # Call the method that adds all of the widgets to the GUI
         self.ui.setupUi(self)
 
-        # Display log output to the QPlainTextEdit on the main GUI
-        # self.qt_handler = QtHandler(self.ui.plainTextEdit_results)
-
-        self.thread = QThread()
-
+        # Create an empty dict that will contain any available cached chip data
         self.cache_data = dict()
+
         self.config = None
         self.plot_window = None
         self.maps_window = None
@@ -70,7 +65,7 @@ class MainControls(QMainWindow):
         self.fig = None
         self.current_view = None
         self.tile = None
-        self.version = None
+        # self.version = None
         self.item_list = None
         self.highlighted = None
         self.artist_map = None
@@ -84,13 +79,14 @@ class MainControls(QMainWindow):
         self.begin = dt.date(year=1982, month=1, day=1)
         self.end = dt.date(year=2015, month=12, day=31)
 
+        # Used to display log output to the QPlainTextEdit on the main GUI
         self.qt_handler = QtHandler(self.ui.plainTextEdit_results)
 
         self.leaflet_map = MapCanvas(self)
 
         self.selected_units = self.ui.comboBoxUnits.currentText()
 
-        self.drive_letter = self.ui.driveLetter_comboBox.currentText()
+        # self.drive_letter = self.ui.driveLetter_comboBox.currentText()
 
         self.connect_widgets()
 
@@ -102,12 +98,13 @@ class MainControls(QMainWindow):
 
         Returns:
             None
+
         """
         if helper:
             """For testing, use some preset values if helper.yaml is found"""
             self.ui.browseoutputline.setText(helper['test_output'])
-            self.ui.browsejsonline.setText(helper['test_json'])
-            self.ui.browseARDline.setText(helper['ard_dir'])
+            # self.ui.browsejsonline.setText(helper['test_json'])
+            # self.ui.browseARDline.setText(helper['ard_dir'])
             self.ui.x1line.setText(helper['test_x'])
             self.ui.y1line.setText(helper['test_y'])
 
@@ -116,7 +113,7 @@ class MainControls(QMainWindow):
         # *** Connect the various widgets to the methods they interact with ***
         self.ui.x1line.textChanged.connect(self.set_units)
 
-        self.ui.x1line.textChanged.connect(self.get_version)
+        # self.ui.x1line.textChanged.connect(self.get_version)
 
         self.ui.x1line.textChanged.connect(self.assemble_paths)
 
@@ -124,7 +121,7 @@ class MainControls(QMainWindow):
 
         self.ui.y1line.textChanged.connect(self.set_units)
 
-        self.ui.y1line.textChanged.connect(self.get_version)
+        # self.ui.y1line.textChanged.connect(self.get_version)
 
         self.ui.y1line.textChanged.connect(self.assemble_paths)
 
@@ -132,25 +129,25 @@ class MainControls(QMainWindow):
 
         self.ui.comboBoxUnits.currentIndexChanged.connect(self.set_units)
 
-        self.ui.comboBoxUnits.currentIndexChanged.connect(self.get_version)
+        # self.ui.comboBoxUnits.currentIndexChanged.connect(self.get_version)
 
         # Call the activated signal when the user clicks on any item (new or old) in the comboBox
         # [str] calls the overloaded signal that passes the Qstring, not the index of the item
-        self.ui.version_comboBox.activated[str].connect(self.set_version)
+        # self.ui.version_comboBox.activated[str].connect(self.set_version)
 
-        self.ui.driveLetter_comboBox.currentIndexChanged.connect(self.get_drive_letter)
+        # self.ui.driveLetter_comboBox.currentIndexChanged.connect(self.get_drive_letter)
 
-        self.ui.browsejsonbutton.clicked.connect(self.browse_json)
+        # self.ui.browsejsonbutton.clicked.connect(self.browse_json)
 
         self.ui.browseoutputbutton.clicked.connect(self.browse_output)
 
-        self.ui.browseardbutton.clicked.connect(self.browse_ard)
+        # self.ui.browseardbutton.clicked.connect(self.browse_ard)
 
-        self.ui.browseclassbutton.clicked.connect(self.browse_class)
+        # self.ui.browseclassbutton.clicked.connect(self.browse_class)
 
-        self.ui.browsejsonline.textChanged.connect(self.check_values)
+        # self.ui.browsejsonline.textChanged.connect(self.check_values)
 
-        self.ui.browseARDline.textChanged.connect(self.check_values)
+        # self.ui.browseARDline.textChanged.connect(self.check_values)
 
         self.ui.browseoutputline.textChanged.connect(self.check_values)
 
@@ -177,76 +174,76 @@ class MainControls(QMainWindow):
         """
         self.leaflet_map.show()
 
-    def get_drive_letter(self):
-        """
-        Obtain the drive letter that points to the eval server
-
-        """
-        self.drive_letter = self.ui.driveLetter_comboBox.currentText()
-
-        log.info("Selected Drive Letter: %s" % self.drive_letter)
-
-        # Assemble the paths to the required datasets with the version provided
-        self.assemble_paths()
-
-        # Get the PyCCD Versions now that the appropriate drive letter has been selected
-        self.get_version()
-
-        # Assemble the paths to the required datasets with the version provided
-        self.assemble_paths()
-
-        # Check that the fields are populated and activate the Plot button
-        self.check_values()
-
-    def get_version(self):
-        """
-        Make a list of available PyCCD versions that exist for the current point and add them to the version_comboBox
-
-        """
-        # Remove previous versions since they may not exist for the current coordinate
-        self.ui.version_comboBox.clear()
-
-        try:
-            path = os.path.join(self.drive_letter + os.sep, 'bulk', 'tiles', self.tile, 'change')
-
-            log.info("Looking for versions in %s" % path)
-
-            versions_present = [c for c in os.listdir(path) if os.path.isdir(os.path.join(path, c))]
-
-            log.info("PyCCD versions found: %s" % str(versions_present))
-
-            for version in versions_present:
-                self.ui.version_comboBox.addItem(version)
-
-            self.version = self.ui.version_comboBox.currentText()
-
-        except (FileNotFoundError, TypeError):
-
-            pass
-
-    def set_version(self, version):
-        """
-        Set the PyCCD version for creating a path to the JSON files and automatically update the path to the
-        JSON directory with the selected version
-
-        Args:
-            version <QString> the text sent automatically
-
-        """
-        self.version = self.ui.version_comboBox.currentText()
-
-        # Update the browsejsonline field with the selected version
-        self.ui.browsejsonline.setText(os.path.join(self.drive_letter + os.sep,
-                                                    'bulk', 'tiles', self.tile, 'change', str(version), 'json'))
-
-        if str(self.version) == 'n-compare':
-            self.end = dt.date(year=2017, month=12, day=31)
-
-        else:
-            self.end = dt.date(year=2015, month=12, day=31)
-
-        log.debug("PyCCD Version=%s" % self.version)
-        log.debug("End Date=%s" % self.end)
+    # def get_drive_letter(self):
+    #     """
+    #     Obtain the drive letter that points to the eval server
+    #
+    #     """
+    #     self.drive_letter = self.ui.driveLetter_comboBox.currentText()
+    #
+    #     log.info("Selected Drive Letter: %s" % self.drive_letter)
+    #
+    #     # Assemble the paths to the required datasets with the version provided
+    #     self.assemble_paths()
+    #
+    #     # Get the PyCCD Versions now that the appropriate drive letter has been selected
+    #     self.get_version()
+    #
+    #     # Assemble the paths to the required datasets with the version provided
+    #     self.assemble_paths()
+    #
+    #     # Check that the fields are populated and activate the Plot button
+    #     self.check_values()
+    #
+    # def get_version(self):
+    #     """
+    #     Make a list of available PyCCD versions that exist for the current point and add them to the version_comboBox
+    #
+    #     """
+    #     # Remove previous versions since they may not exist for the current coordinate
+    #     self.ui.version_comboBox.clear()
+    #
+    #     try:
+    #         path = os.path.join(self.drive_letter + os.sep, 'bulk', 'tiles', self.tile, 'change')
+    #
+    #         log.info("Looking for versions in %s" % path)
+    #
+    #         versions_present = [c for c in os.listdir(path) if os.path.isdir(os.path.join(path, c))]
+    #
+    #         log.info("PyCCD versions found: %s" % str(versions_present))
+    #
+    #         for version in versions_present:
+    #             self.ui.version_comboBox.addItem(version)
+    #
+    #         self.version = self.ui.version_comboBox.currentText()
+    #
+    #     except (FileNotFoundError, TypeError):
+    #
+    #         pass
+    #
+    # def set_version(self, version):
+    #     """
+    #     Set the PyCCD version for creating a path to the JSON files and automatically update the path to the
+    #     JSON directory with the selected version
+    #
+    #     Args:
+    #         version <QString> the text sent automatically
+    #
+    #     """
+    #     self.version = self.ui.version_comboBox.currentText()
+    #
+    #     # Update the browsejsonline field with the selected version
+    #     self.ui.browsejsonline.setText(os.path.join(self.drive_letter + os.sep,
+    #                                                 'bulk', 'tiles', self.tile, 'change', str(version), 'json'))
+    #
+    #     if str(self.version) == 'n-compare':
+    #         self.end = dt.date(year=2017, month=12, day=31)
+    #
+    #     else:
+    #         self.end = dt.date(year=2015, month=12, day=31)
+    #
+    #     log.debug("PyCCD Version=%s" % self.version)
+    #     log.debug("End Date=%s" % self.end)
 
     def clear(self):
         """
