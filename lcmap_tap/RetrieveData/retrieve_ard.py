@@ -7,11 +7,11 @@ from lcmap_tap.logger import log, exc_handler
 import os
 import sys
 import time
-import yaml
+# import yaml
 import glob
 import merlin
 from collections import OrderedDict
-from itertools import chain
+# from itertools import chain
 from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal, QThread, QCoreApplication
 
 # TODAY = dt.datetime.now().strftime("%Y-%m-%d")
@@ -42,38 +42,6 @@ def get_image_ids(path: str) -> list:
     file_list = glob.glob(path + os.sep + "*SR*")
 
     return sorted([os.path.splitext(os.path.basename(f))[0] for f in file_list])
-
-
-def names(items: list):
-    """
-    Return a list of characters representing a selection of bands
-
-    Args:
-        items: The selected bands for plotting
-
-    Returns:
-        list: Name aliases to use
-
-    """
-    lookup = OrderedDict([('Blue', ['b']),
-                          ('Green', ['g']),
-                          ('Red', ['r']),
-                          ('NIR', ['n']),
-                          ('SWIR-1', ['s1']),
-                          ('SWIR-2', ['s2']),
-                          ('Thermal', ['t']),
-                          ('NDVI', ['r', 'n']),
-                          ('MSAVI', ['r', 'n']),
-                          ('EVI', ['b', 'r', 'n']),
-                          ('SAVI', ['r', 'n']),
-                          ('NDMI', ['n', 's1']),
-                          ('NBR', ['n', 's2']),
-                          ('NBR-2', ['s1', 's2']),
-                          ('All Spectral Bands and Indices', ['b', 'g', 'r', 'n', 's1', 's2', 't']),
-                          ('All Spectral Bands', ['b', 'g', 'r', 'n', 's1', 's2', 't']),
-                          ('All Indices', ['b', 'r', 'n', 's1', 's2'])])
-
-    return list(OrderedDict.fromkeys(list(chain(*[lookup[key] for key in lookup.keys() if key in items]))))
 
 
 class Worker(QObject):
@@ -112,12 +80,12 @@ class Worker(QObject):
 class ARDData(QObject):
     """Use lcmap-merlin to retrieve a time-series ARD for a chip"""
 
-    def __init__(self, geo, config, items, cache, controls, start='1982-01-01', stop='2017-12-31'):
+    def __init__(self, geo, url, items, cache, controls, start='1982-01-01', stop='2017-12-31'):
         """
 
         Args:
             geo (GeoInfo): Instance of the GeoInfo class
-            config (str): Absolute path to a .yaml configuration file
+            url (str): Chipmunk URL
             items (list): List of bands selected for plotting
             cache (dict): Contents of the cache file
             controls (MainControls)
@@ -126,8 +94,6 @@ class ARDData(QObject):
 
         """
         super().__init__()
-
-        # self.results = list()
 
         self.controls = controls
 
@@ -145,7 +111,7 @@ class ARDData(QObject):
         self.cached, self.required = self.check_cache(key=self.key, cache=self.cache, items=self.items)
 
         if len(self.required) > 0:
-            url = yaml.load(open(config, 'r'))['merlin']
+            # url = yaml.load(open(config, 'r'))['merlin']
 
             cfg = make_cfg(items=self.required, url=url)
 

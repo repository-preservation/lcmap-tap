@@ -243,7 +243,7 @@ class PlotWindow(QtWidgets.QMainWindow):
                     if test_str in scene:
                         self.value_holder["temp"].append(scene)
 
-                        self.gui.ui.clicked_listWidget.addItem("Scene ID: {}\n"
+                        self.gui.ui.ListWidget_selected.addItem("Scene ID: {}\n"
                                                                "Obs. Date: {:%Y-%b-%d}\n"
                                                                "{}-Value: {}".format(scene,
                                                                                      self.value_holder['temp'][1][0],

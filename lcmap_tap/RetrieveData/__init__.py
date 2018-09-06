@@ -97,3 +97,25 @@ item_lookup = {'All Spectral Bands and Indices': ['blues', 'greens', 'reds', 'ni
                'NBR': ['nirs', 'swir2s', 'qas'],
                'NBR-2': ['swir1s', 'swir2s', 'qas']
                }
+
+indices = ['ndvi', 'msavi', 'evi', 'savi', 'ndmi', 'nbr', 'nbr2']
+spectrals = ['blues', 'greens', 'reds', 'nirs', 'swir1s', 'swir2s', 'thermals']
+
+aliases = {'Blue': ['blues'],
+           'Green': ['greens'],
+           'Red': ['reds'],
+           'NIR': ['nirs'],
+           'SWIR-1': ['swir1s'],
+           'SWIR-2': ['swir2s'],
+           'Thermal': ['thermals'],
+           'NDVI': ['ndvi'],
+           'MSAVI': ['msavi'],
+           'EVI': ['evi'],
+           'SAVI': ['savi'],
+           'NDMI': ['ndmi'],
+           'NBR': ['nbr'],
+           'NBR-2': ['nbr2'],
+           'All Indices': indices,
+           'All Spectral Bands': spectrals
+           }
+

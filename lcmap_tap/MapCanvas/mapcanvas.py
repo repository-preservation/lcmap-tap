@@ -112,14 +112,14 @@ class MapCanvas(QWidget):
             coords = GeoInfo.unit_conversion(coords, src="lat/long", dest="meters")
 
         # Update the X and Y coordinates in the GUI with the new point
-        self.gui.ui.x1line.setText(str(coords.x))
+        self.gui.ui.LineEdit_x1.setText(str(coords.x))
 
-        self.gui.ui.y1line.setText(str(coords.y))
+        self.gui.ui.LineEdit_y1.setText(str(coords.y))
 
         self.gui.check_values()
 
         # Clear the list of previously clicked ARD observations because they can't be referenced in the new time-series
-        self.gui.ui.clicked_listWidget.clear()
+        self.gui.ui.ListWidget_selected.clear()
 
         # Display the coordinate in the QLabel window below the map
         self.text.setText("Point {lat}, {lng}".format(lat=lat, lng=lng))

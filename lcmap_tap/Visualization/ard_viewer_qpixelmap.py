@@ -606,7 +606,7 @@ class ARDViewerX(QtWidgets.QMainWindow):
             self.qa = gdal.Open(self.ard_file[-1]).ReadAsArray()
 
         except AttributeError:
-            self.gui.ui.plainTextEdit_results.appendPlainText("Could not open {}".format(self.ard_file))
+            self.gui.ui.PlainTextEdit_results.appendPlainText("Could not open {}".format(self.ard_file))
 
     def get_rgb(self):
         """
@@ -848,17 +848,17 @@ class ARDViewerX(QtWidgets.QMainWindow):
         # Update the X and Y coordinates in the GUI with the new point
         if units[self.gui.selected_units]["unit"] == "meters":
 
-            self.gui.ui.x1line.setText(str(coords.x))
+            self.gui.ui.LineEdit_x1.setText(str(coords.x))
 
-            self.gui.ui.y1line.setText(str(coords.y))
+            self.gui.ui.LineEdit_y1.setText(str(coords.y))
 
         # Convert to lat/long before updating the coordinate text on the GUI
         else:
             _coords = GeoInfo.unit_conversion(coords)
 
-            self.gui.ui.x1line.setText(str(_coords.x))
+            self.gui.ui.LineEdit_x1.setText(str(_coords.x))
 
-            self.gui.ui.y1line.setText(str(_coords.y))
+            self.gui.ui.LineEdit_y1.setText(str(_coords.y))
 
         # Do the plotting and generate a new figure
         self.gui.check_values()
@@ -921,4 +921,4 @@ class ARDViewerX(QtWidgets.QMainWindow):
         self.gui.plot_window.canvas.draw()
 
         # Clear the list of previously clicked ARD observations because they can't be referenced in the new time-series
-        self.gui.ui.clicked_listWidget.clear()
+        self.gui.ui.ListWidget_selected.clear()

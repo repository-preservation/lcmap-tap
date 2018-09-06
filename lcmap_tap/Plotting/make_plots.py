@@ -24,6 +24,7 @@ sys.excepthook = exc_handler
 def get_plot_items(data: PlotSpecs, items: list) -> dict:
     """
     Check to see which bands and/or indices were selected to plot.
+
     Args:
         data: An instance of the CCDReader class
         items: A dict containing the selected bands/indices to plot
@@ -40,6 +41,7 @@ def get_plot_items(data: PlotSpecs, items: list) -> dict:
 
     if len(items) > 0:
         temp_dict = [(i, data.all_lookup[i]) for i in items if i in data.all_lookup.keys()]
+
         temp_dict = OrderedDict(temp_dict)  # Turn list of tuples into an OrderedDict
 
         for a in set_lists.keys():
@@ -51,7 +53,7 @@ def get_plot_items(data: PlotSpecs, items: list) -> dict:
 
     else:
         # Do this by default if the user hasn't selected anything from the list
-        return data.all_lookup
+        return data.band_lookup
 
 
 def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure, dict, dict, ndarray]:
