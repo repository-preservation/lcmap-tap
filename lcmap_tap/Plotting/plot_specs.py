@@ -10,15 +10,25 @@ from typing import Union, List
 
 sys.excepthook = exc_handler
 
+index_functions = {'ndvi': {'func': plot_functions.ndvi, 'bands': ('reds', 'nirs'), 'inds': (2, 3)},
+                   'msavi': {'func': plot_functions.msavi, 'bands': ('reds', 'nirs'), 'inds': (2, 3)},
+                   'evi': {'func': plot_functions.evi, 'bands': ('blues', 'reds', 'nirs'), 'inds': (0, 2, 3)},
+                   'savi': {'func': plot_functions.savi, 'bands': ('reds', 'nirs'), 'inds': (2, 3)},
+                   'ndmi': {'func': plot_functions.ndmi, 'bands': ('nirs', 'swir1s'), 'inds': (3, 4)},
+                   'nbr': {'func': plot_functions.nbr, 'bands': ('nirs', 'swir2s'), 'inds': (3, 5)},
+                   'nbr2': {'func': plot_functions.nbr2, 'bands': ('swir1s', 'swir2s'), 'inds': (4, 5)}
+                   }
+
 
 class PlotSpecs:
     """
     Generate and retain the data required for plotting
 
     """
-    def __init__(self, ard: dict, change: dict, segs: List[dict],
-                 begin: dt.date=dt.date(year=1982, month=1, day=1),
-                 end: dt.date=dt.date(year=2015, month=12, day=31)):
+
+    def __init__(self, ard: dict, change: dict, segs: List[dict], items: list,
+                 begin: dt.date = dt.date(year=1982, month=1, day=1),
+                 end: dt.date = dt.date(year=2015, month=12, day=31)):
         """
 
         Args:
@@ -31,6 +41,8 @@ class PlotSpecs:
         """
         self.begin = begin
         self.end = end
+
+        self.items = items
 
         self.ard = self.make_arrays(ard)
 
@@ -58,18 +70,12 @@ class PlotSpecs:
         # # self.total_mask = np.logical_and(self.ccd_mask, self.fill_in)
         # self.total_mask = np.logical_and(self.qa_mask[date_mask], self.fill_in)
 
-        try:
-            # Fix the scaling of the Brightness Temperature
-            temp_thermal = np.copy(self.ard['thermals'])
-            temp_thermal[self.fill_mask] = temp_thermal[self.fill_mask] * 10 - 27315
-            self.ard['thermals'] = np.copy(temp_thermal)
-
-        except KeyError:  # Thermal was not selected for plotting and isn't present
-            pass
+        # Check for presence of thermals, rescale if present
+        if 'thermals' in self.ard.keys():
+            self.rescale_thermal()
 
         # This naming convention was chosen so as to match that which is used in merlin chipmunk
         self.bands = ('blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'thermal')
-        self.indices = ('ndvi', 'msavi', 'evi', 'savi', 'ndmi', 'nbr', 'nbr2')
 
         self.band_info = {b: {'coefs': [], 'inter': [], 'pred': []} for b in self.bands}
 
@@ -106,110 +112,28 @@ class PlotSpecs:
         # band number.  For example, the band values for the first change model are represented by indices 0-5,
         # the second model by indices 6-11, and so on.
 
-        try:
-            self.EVI = plot_functions.evi(B=self.ard['blues'].astype(np.float),
-                                          NIR=self.ard['nirs'].astype(np.float),
-                                          R=self.ard['reds'].astype(np.float))
+        self.index_to_observations()
 
-            self.EVI_ = [plot_functions.evi(B=self.predicted_values[m * len(self.bands)],
-                                            NIR=self.predicted_values[m * len(self.bands) + 3],
-                                            R=self.predicted_values[m * len(self.bands) + 2])
-                         for m in range(len(self.results["change_models"]))]
+        self.index_modeled = self.get_modeled_index()
 
-        except KeyError:
-            self.EVI = None
+        index_lookup = OrderedDict([('NDVI', ('ndvi', 'ndvi-modeled')),
+                                    ('MSAVI', ('msavi', 'msavi-modeled')),
+                                    ('EVI', ('evi', 'evi-modeled')),
+                                    ('SAVI', ('savi', 'savi-modeled')),
+                                    ('NDMI', ('ndmi', 'ndmi-modeled')),
+                                    ('NBR', ('nbr', 'nbr-modeled')),
+                                    ('NBR-2', ('nbr2', 'nbr2-modeled'))])
 
-            self.EVI_ = None
+        if len(self.index_modeled) > 0:
+            self.index_lookup = [(key, (self.ard[index_lookup[key][0]],
+                                        self.index_modeled[index_lookup[key][1]]))
+                                 for key in index_lookup.keys()
+                                 if index_lookup[key][0] in self.ard.keys()]
 
-        try:
-            self.NDVI = plot_functions.ndvi(R=self.ard['reds'].astype(np.float),
-                                            NIR=self.ard['nirs'].astype(np.float))
+            self.index_lookup = OrderedDict(self.index_lookup)
 
-            self.NDVI_ = [plot_functions.ndvi(NIR=self.predicted_values[m * len(self.bands) + 3],
-                                              R=self.predicted_values[m * len(self.bands) + 2])
-                          for m in range(len(self.results["change_models"]))]
-
-        except KeyError:
-            self.NDVI = None
-
-            self.NDVI_ = None
-
-        try:
-            self.MSAVI = plot_functions.msavi(R=self.ard['reds'].astype(np.float),
-                                              NIR=self.ard['nirs'].astype(np.float))
-
-            self.MSAVI_ = [plot_functions.msavi(R=self.predicted_values[m * len(self.bands) + 2],
-                                                NIR=self.predicted_values[m * len(self.bands) + 3])
-                           for m in range(len(self.results["change_models"]))]
-
-        except KeyError:
-            self.MSAVI = None
-
-            self.MSAVI_ = None
-
-        try:
-            self.SAVI = plot_functions.savi(R=self.ard['reds'].astype(np.float),
-                                            NIR=self.ard['nirs'].astype(np.float))
-
-            self.SAVI_ = [plot_functions.savi(NIR=self.predicted_values[m * len(self.bands) + 3],
-                                              R=self.predicted_values[m * len(self.bands) + 2])
-                          for m in range(len(self.results["change_models"]))]
-
-        except KeyError:
-            self.SAVI = None
-
-            self.SAVI_ = None
-
-        try:
-            self.NDMI = plot_functions.ndmi(NIR=self.ard['nirs'].astype(np.float),
-                                            SWIR1=self.ard['swir1s'].astype(np.float))
-
-            self.NDMI_ = [plot_functions.ndmi(NIR=self.predicted_values[m * len(self.bands) + 3],
-                                              SWIR1=self.predicted_values[m * len(self.bands) + 4])
-                          for m in range(len(self.results["change_models"]))]
-
-        except KeyError:
-            self.NDMI = None
-
-            self.NDMI_ = None
-
-        try:
-            self.NBR = plot_functions.nbr(NIR=self.ard['nirs'].astype(np.float),
-                                          SWIR2=self.ard['swir2s'].astype(np.float))
-
-            self.NBR_ = [plot_functions.nbr(NIR=self.predicted_values[m * len(self.bands) + 3],
-                                            SWIR2=self.predicted_values[m * len(self.bands) + 5])
-                         for m in range(len(self.results["change_models"]))]
-
-        except KeyError:
-            self.NBR = None
-
-            self.NBR_ = None
-
-        try:
-            self.NBR2 = plot_functions.nbr2(SWIR1=self.ard['swir1s'].astype(np.float),
-                                            SWIR2=self.ard['swir2s'].astype(np.float))
-
-            self.NBR2_ = [plot_functions.nbr2(SWIR1=self.predicted_values[m * len(self.bands) + 4],
-                                              SWIR2=self.predicted_values[m * len(self.bands) + 5])
-                          for m in range(len(self.results["change_models"]))]
-
-        except KeyError:
-            self.NBR2 = None
-
-            self.NBR2_ = None
-
-        # Use a list of tuples for passing to OrderedDict so the order of element insertion is preserved
-        # The dictionaries are used to map selections from the GUI to the corresponding plot data
-        self.index_lookup = [("NDVI", (self.NDVI, self.NDVI_)),
-                             ("MSAVI", (self.MSAVI, self.MSAVI_)),
-                             ("EVI", (self.EVI, self.EVI_)),
-                             ("SAVI", (self.SAVI, self.SAVI_)),
-                             ("NDMI", (self.NDMI, self.NDMI_)),
-                             ("NBR", (self.NBR, self.NBR_)),
-                             ("NBR-2", (self.NBR2, self.NBR2_))]
-
-        self.index_lookup = OrderedDict(self.index_lookup)
+        else:
+            self.index_lookup = dict()
 
         lookup = OrderedDict([("Blue", ('blues', 0)),
                               ("Green", ('greens', 1)),
@@ -221,8 +145,8 @@ class PlotSpecs:
 
         self.band_lookup = [(key, (self.ard[lookup[key][0]],
                                    self.get_predicts(lookup[key][1])))
-                             for key in lookup.keys()
-                             if lookup[key][0] in self.ard.keys()]
+                            for key in lookup.keys()
+                            if lookup[key][0] in self.ard.keys()]
 
         # Example of how the band_lookup is structured:
         # self.band_lookup = [("Blue", (self.ard['blues'], self.get_predicts(0))),
@@ -308,3 +232,67 @@ class PlotSpecs:
                 in_dict[key] = np.array(in_dict[key])
 
         return in_dict
+
+    def rescale_thermal(self):
+        """
+        Fix the scaling of the Brightness Temperature, if it was selected for plotting
+
+        """
+        temp_thermal = np.copy(self.ard['thermals'])
+
+        temp_thermal[self.fill_mask] = temp_thermal[self.fill_mask] * 10 - 27315
+
+        self.ard['thermals'] = np.copy(temp_thermal)
+
+        return None
+
+    def index_to_observations(self):
+        """
+        Add index calculated observations to the timeseries pixel rod
+
+        Returns:
+
+        """
+        indices = ['NDVI', 'MSAVI', 'EVI', 'SAVI', 'NDMI', 'NBR', 'NBR-2']
+
+        selected_indices = [i for i in indices if i in self.items or 'All Indices' in self.items]
+
+        for i in selected_indices:
+            key = i.lower().replace('-', '')
+
+            call = index_functions[key]['func']
+
+            args = tuple([self.ard[band] for band in index_functions[key]['bands']])
+
+            self.ard[key] = call(*args)
+
+        return None
+
+    def get_modeled_index(self):
+        """
+        Calculate the model-predicted index curves
+
+        Returns:
+
+        """
+        bands = ('blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'thermal')
+        indices = ('ndvi', 'msavi', 'evi', 'savi', 'ndmi', 'nbr', 'nbr2')
+
+        modeled = dict()
+
+        for key in self.ard.keys():
+            if key in indices:
+                new_key = f'{key}-modeled'
+
+                modeled[new_key] = list()
+
+                call = index_functions[key]['func']
+
+                inds = index_functions[key]['inds']
+
+                for m in range(len(self.results['change_models'])):
+                    args = tuple([self.predicted_values[m * len(bands) + ind] for ind in inds])
+
+                    modeled[new_key].append(call(*args))
+
+        return modeled
