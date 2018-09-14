@@ -2,7 +2,7 @@
 
 import sys
 import numpy as np
-from lcmap_tap.logger import log, exc_handler
+from lcmap_tap.logger import exc_handler
 
 sys.excepthook = exc_handler
 
@@ -19,19 +19,13 @@ class Rescale:
 
         self.qa = qa
 
-        # self.mask_clear = np.zeros_like(self.qa, dtype=np.bool)
-
-        # self.mask_fill = np.copy(self.mask_clear)
-
         self.mask_clear, self.mask_fill = self.get_masks(self.qa)
 
         if not np.any(self.mask_clear is True):
-            # self.limits = self.get_percentiles(qa=self.mask_fill)
             self.limits = self.get_percentiles(self.array, self.mask_fill,
                                                self.lower_percentile, self.upper_percentile)
 
         else:
-            # self.limits = self.get_percentiles(qa=self.mask_clear)
             self.limits = self.get_percentiles(self.array, self.mask_clear,
                                                self.lower_percentile, self.upper_percentile)
 
