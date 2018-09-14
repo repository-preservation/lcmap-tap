@@ -2,7 +2,7 @@
 
 import sys
 import numpy as np
-from lcmap_tap.logger import exc_handler
+from lcmap_tap.logger import log, exc_handler
 
 sys.excepthook = exc_handler
 
@@ -19,76 +19,101 @@ class Rescale:
 
         self.qa = qa
 
-        self.mask_clear = np.zeros_like(self.qa, dtype=np.bool)
+        # self.mask_clear = np.zeros_like(self.qa, dtype=np.bool)
 
-        self.mask_fill = np.copy(self.mask_clear)
+        # self.mask_fill = np.copy(self.mask_clear)
 
-        self.get_masks()
+        self.mask_clear, self.mask_fill = self.get_masks(self.qa)
 
-        if not np.any(self.mask_clear == True):
-            self.limits = self.get_percentiles(qa=self.mask_fill)
-
-        else:
-            self.limits = self.get_percentiles(qa=self.mask_clear)
-
-        self.clipped = self.clip_array()
-
-        self.rescaled = self.rescale_array()
-
-    def get_masks(self):
-        """
-
-        :return:
-        """
-
-        if self.sensor == "LC08":
-            # PIXELQA 322, 324 are clear land/water obs. with low confidence cloud and low confidence cirrus
-            self.mask_clear[self.qa == 322] = True
-            self.mask_clear[self.qa == 324] = True
+        if not np.any(self.mask_clear is True):
+            # self.limits = self.get_percentiles(qa=self.mask_fill)
+            self.limits = self.get_percentiles(self.array, self.mask_fill,
+                                               self.lower_percentile, self.upper_percentile)
 
         else:
-            # PIXELQA 66, 68 are clear land/water obs. with low confidence cloud
-            self.mask_clear[self.qa == 66] = True
-            self.mask_clear[self.qa == 68] = True
-            # print(mask_clear)
+            # self.limits = self.get_percentiles(qa=self.mask_clear)
+            self.limits = self.get_percentiles(self.array, self.mask_clear,
+                                               self.lower_percentile, self.upper_percentile)
 
-        self.mask_fill[self.qa != 1] = True
+        self.clipped = self.clip_array(self.array, self.limits)
 
-        return None
+        self.rescaled = self.rescale_array(self.clipped, self.mask_fill)
 
-    def get_percentiles(self, qa):
+    @staticmethod
+    def get_masks(qa):
         """
+        Create separate masks for the clear observations and fill values
 
-        :return:
+        Args:
+            qa (np.ndarray): The input PIXELQA values
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray]:
+                [0] - The clear observation mask
+                [1] - Fill mask
+
         """
-        return [np.percentile(self.array[qa], self.lower_percentile),
-                np.percentile(self.array[qa], self.upper_percentile)]
+        return (np.isin(element=qa, test_elements=[66, 68, 322, 324]),  # mask_clear
+                ~np.isin(element=qa, test_elements=[1]))  # mask_fill
 
-    def clip_array(self):
+    @staticmethod
+    def get_percentiles(data, truth_mask, lower_percentile, upper_percentile):
         """
+        Return the upper and lower percentiles for the input data and use a mask to ignore specific values
 
-        :return:
+        Args:
+            data (np.ndarray): The original data array
+            truth_mask (np.ndarray): A bytes array, 1 corresponds to True
+            lower_percentile
+            upper_percentile
+
+        Returns:
+            List[int, int]
+
         """
+        return [np.percentile(data[truth_mask], lower_percentile),
+                np.percentile(data[truth_mask], upper_percentile)]
 
-        clipped = np.zeros_like(self.array)
+    @staticmethod
+    def clip_array(data, limits):
+        """
+        Clip the data values to an upper and lower limit
 
-        np.clip(a=self.array, a_min=self.limits[0], a_max=self.limits[1], out=clipped)
+        Args:
+            data (np.ndarray): The input data array
+            limits (List[float, float]: The upper and lower limits to use
+
+        Returns:
+            np.ndarray
+
+        """
+        clipped = np.zeros_like(data)
+
+        np.clip(a=data, a_min=limits[0], a_max=limits[1], out=clipped)
 
         return clipped
 
-    def rescale_array(self, out_min=1.0, out_max=255.0):
+    @staticmethod
+    def rescale_array(data, fill_mask, out_min=1.0, out_max=255.0):
         """
+        Take an input array and rescale it to a range of values fitting in 8 bits by default
 
-        :param out_min:
-        :param out_max:
-        :return:
+        Args:
+            data (np.ndarray): The input data array
+            fill_mask (np.ndarray): The fill-value mask
+            out_min (float): Minimum bounding value, default is 1.0
+            out_max (float): Maximum bounding value, default is 255.0
+
+        Returns:
+            np.ndarray
+
         """
-        out_data = np.zeros_like(self.clipped, dtype=np.int32)
+        out_data = np.zeros_like(data, dtype=np.int32)
 
-        out_data[self.mask_fill] = (
-                (self.clipped[self.mask_fill] - np.min(self.clipped[self.mask_fill])) *
-                (out_max - out_min) / (np.max(self.clipped[self.mask_fill]) -
-                                       np.min(self.clipped[self.mask_fill]))
+        out_data[fill_mask] = (
+                (data[fill_mask] - np.min(data[fill_mask])) * (out_max - out_min)
+                /
+                (np.max(data[fill_mask]) - np.min(data[fill_mask]))
         )
 
         return out_data
