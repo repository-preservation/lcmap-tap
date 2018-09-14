@@ -184,7 +184,7 @@ class PlotWindow(QtWidgets.QMainWindow):
 
     def point_pick(self, event=None):
         """
-        Define a picker method to grab data off of the plot wherever the mouse cursor is when clicked
+        Define a picker method to grab data off of the plot wherever the mouse cursor is clicked
 
         Args:
             event: A mouse-click event
@@ -239,22 +239,23 @@ class PlotWindow(QtWidgets.QMainWindow):
                 # log.debug("Subplot: %s" % self.b)
 
                 # Look through the scene IDs to find which one corresponds to the selected obs. date
-                for scene in self.scenes:
-                    if test_str in scene:
-                        self.value_holder["temp"].append(scene)
+                if self.gui is not None:
+                    for scene in self.scenes:
+                        if test_str in scene:
+                            self.value_holder["temp"].append(scene)
 
-                        self.gui.ui.ListWidget_selected.addItem("Scene ID: {}\n"
-                                                               "Obs. Date: {:%Y-%b-%d}\n"
-                                                               "{}-Value: {}".format(scene,
-                                                                                     self.value_holder['temp'][1][0],
-                                                                                     self.b,
-                                                                                     self.value_holder['temp'][1][1][
-                                                                                         0]))
-                        log.info("Observation Selected: %s" % scene)
-                        log.info("Observation Date: {:%Y-%b-%d}".format(self.value_holder['temp'][1][0]))
-                        log.info("Observation %s Band Value: %s" % (self.b, self.value_holder['temp'][1][1][0]))
+                            self.gui.ui.ListWidget_selected.addItem("Scene ID: {}\n"
+                                                                   "Obs. Date: {:%Y-%b-%d}\n"
+                                                                   "{}-Value: {}".format(scene,
+                                                                                         self.value_holder['temp'][1][0],
+                                                                                         self.b,
+                                                                                         self.value_holder['temp'][1][1][
+                                                                                             0]))
+                            log.info("Observation Selected: %s" % scene)
+                            log.info("Observation Date: {:%Y-%b-%d}".format(self.value_holder['temp'][1][0]))
+                            log.info("Observation %s Band Value: %s" % (self.b, self.value_holder['temp'][1][1][0]))
 
-                        break
+                            break
 
                 self.highlight_pick()
 
@@ -264,7 +265,11 @@ class PlotWindow(QtWidgets.QMainWindow):
                 pass
 
         elif isinstance(self.artist, Line2D) and mouse_event.button == 1:
-            self.leg_pick()
+            try:
+                self.leg_pick()
+
+            except KeyError:
+                pass
 
         else:
             # Do this so nothing happens when the other mouse buttons are clicked while over a plot
