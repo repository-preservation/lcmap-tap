@@ -8,14 +8,12 @@ sys.excepthook = exc_handler
 
 
 class Rescale:
-    def __init__(self, sensor, array, qa, lower_percentile=1, upper_percentile=99):
+    def __init__(self, array, qa, lower_percentile=1, upper_percentile=99):
         self.lower_percentile = lower_percentile
 
         self.upper_percentile = upper_percentile
 
         self.array = array
-
-        self.sensor = sensor
 
         self.qa = qa
 
