@@ -664,13 +664,7 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
         self.qa = get_array(self.ard_file[-1])
 
-        index_rescale = Rescale(sensor=self.sensor, array=self.index, qa=self.qa)
-
-        self.rgb = np.zeros((self.r.shape[0], self.r.shape[0], 3), dtype=np.uint8)
-
-        self.rgb[:, :, 0] = index_rescale.rescaled
-        self.rgb[:, :, 1] = index_rescale.rescaled
-        self.rgb[:, :, 2] = index_rescale.rescaled
+        self.rgb = np.dstack([Rescale(self.index, self.qa).rescaled] * 3).astype(np.uint8)
 
         self.img = QImage(self.rgb.data, self.rgb[:, :, 0].shape[0], self.rgb[:, :, 0].shape[0],
                           self.rgb.strides[0], QImage.Format_RGB888)
@@ -687,17 +681,9 @@ class ARDViewerX(QtWidgets.QMainWindow):
         """
         bright, green, wet = tc_calculations.get_tc_bands(self.sensor, self.ard_file)
 
-        bright_rs = Rescale(self.sensor, bright, self.qa)
-
-        green_rs = Rescale(self.sensor, green, self.qa)
-
-        wet_rs = Rescale(self.sensor, wet, self.qa)
-
-        self.rgb = np.zeros((self.r.shape[0], self.r.shape[0], 3), dtype=np.uint8)
-
-        self.rgb[:, :, 0] = bright_rs.rescaled
-        self.rgb[:, :, 1] = green_rs.rescaled
-        self.rgb[:, :, 2] = wet_rs.rescaled
+        self.rgb = np.dstack((Rescale(bright, self.qa).rescaled,
+                              Rescale(green, self.qa).rescaled,
+                              Rescale(wet, self.qa).rescaled)).astype(np.uint8)
 
         self.img = QImage(self.rgb.data, self.rgb[:, :, 0].shape[0], self.rgb[:, :, 0].shape[0],
                           self.rgb.strides[0], QImage.Format_RGB888)
@@ -706,7 +692,8 @@ class ARDViewerX(QtWidgets.QMainWindow):
 
         self.display_img()
 
-    def rescale_rgb(self, r, g, b, qa):
+    @staticmethod
+    def rescale_rgb(r, g, b, qa):
         """
 
         :param r:
@@ -715,17 +702,9 @@ class ARDViewerX(QtWidgets.QMainWindow):
         :param qa:
         :return:
         """
-        rgb = np.zeros((self.r.shape[0], self.r.shape[0], 3), dtype=np.uint8)
-
-        r_rescale = Rescale(sensor=self.sensor, array=r, qa=qa)
-        g_rescale = Rescale(sensor=self.sensor, array=g, qa=qa)
-        b_rescale = Rescale(sensor=self.sensor, array=b, qa=qa)
-
-        rgb[:, :, 0] = r_rescale.rescaled
-        rgb[:, :, 1] = g_rescale.rescaled
-        rgb[:, :, 2] = b_rescale.rescaled
-
-        return rgb
+        return np.dstack((Rescale(r, qa).rescaled,
+                          Rescale(g, qa).rescaled,
+                          Rescale(b, qa).rescaled)).astype(np.uint8)
 
     def make_rect(self):
         """
