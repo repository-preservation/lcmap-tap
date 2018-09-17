@@ -10,6 +10,37 @@ from collections import OrderedDict
 warnings.simplefilter('ignore')
 
 
+def assemble(timeseries, ind, bands):
+    """
+    Populate n-number of arrays using appropriate row and column locations
+
+    Args:
+        timeseries (array_like): A series of tuples, each containing a chip of data in the time series
+        bands (list): Collection of band names that matches chipmunk bands
+        ind (int): The index location for the target date in each array_like object within the time series
+
+    Returns:
+        Dict[str: np.ndarray]
+
+    """
+    out = {b: np.zeros(shape=(100, 100), dtype=np.int) for b in bands}
+
+    for t in timeseries:
+        coord_x = t[0][2]
+        coord_y = t[0][3]
+
+        chip_coord_x = t[0][0]
+        chip_coord_y = t[0][1]
+
+        col = int((coord_x - chip_coord_x) / 30)
+        row = int((chip_coord_y - coord_y) / 30)
+
+        for b in bands:
+            out[b][row][col] = t[1][b][ind]
+
+    return out
+
+
 def temporal(df, ascending=True, field='dates'):
     """
     Sort the input data frame based on time
