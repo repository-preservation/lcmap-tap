@@ -64,5 +64,6 @@ scratch/
 **/example/
 
 *.pickle
+*.p
 
 *.yaml
