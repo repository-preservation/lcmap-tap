@@ -1,11 +1,15 @@
 """Some helpful functions for working with a pandas DataFrame object"""
 
 from lcmap_tap.Analysis import mask_values
+from lcmap_tap.logger import exc_handler
+import sys
 import warnings
 import datetime as dt
 import pandas as pd
 import numpy as np
 from collections import OrderedDict
+
+sys.excepthook = exc_handler
 
 warnings.simplefilter('ignore')
 
@@ -16,7 +20,7 @@ def assemble(timeseries, ind, bands):
 
     Args:
         timeseries (array_like): A series of tuples, each containing a chip of data in the time series
-        bands (list): Collection of band names that matches chipmunk bands
+        bands (Iterable): Collection of band names that matches chipmunk bands
         ind (int): The index location for the target date in each array_like object within the time series
 
     Returns:
@@ -227,17 +231,17 @@ def plot_data(d, field):
             [i[field] for k, i in d.items() if i[field] is not None])
 
 
-def mask(df, mask_values=mask_values, mask_field='qa', **kwargs):
+def mask(df, vals=mask_values, mask_field='qa', **kwargs):
     """
     Remove rows from the data frame that match a condition
 
     Args:
         df (pd.DataFrame): The input data
-        mask_value (Number[int, float]): The value used to filter the data frame, rows == value will be removed!
+        vals (List[Number[int, float]]): The values used to filter the data frame, rows == value will be removed!
         mask_field (str): The field to use for filtering
 
     Returns:
         pd.DataFrame
 
     """
-    return df[~df[mask_field].isin(np.array(mask_values))].reset_index(drop=True)
+    return df[~df[mask_field].isin(np.array(vals))].reset_index(drop=True)
