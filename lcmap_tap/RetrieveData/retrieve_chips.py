@@ -1,21 +1,25 @@
 """Grab some chips to make a pretty picture"""
 
+from lcmap_tap.logger import exc_handler
 from lcmap_tap.RetrieveData.retrieve_geo import GeoInfo
 from lcmap_tap.RetrieveData import GeoAffine, GeoCoordinate
 from lcmap_tap.RetrieveData.merlin_cfg import make_cfg
 import lcmap_tap.Analysis.data_tools as tools
 from lcmap_tap.Visualization.rescale import Rescale
 
+import sys
 import numpy as np
 import datetime as dt
 from multiprocessing.dummy import Pool as ThreadPool
 import merlin
 
+sys.excepthook = exc_handler
+
 
 class Chips:
     def __init__(self, x, y, date, url,
                  n=9, r_channel='reds', g_channel='greens', b_channel='blues',
-                 lower=1, upper=92):
+                 lower=1, upper=99):
         """
 
         Args:
@@ -44,23 +48,23 @@ class Chips:
 
         # 3000 = 30m pixel x 100m chip-length
         self.grid = {
-            'n': {'geo': GeoInfo(str(x), str(y + 3000))},
+            'n': {'geo': GeoInfo(str(x), str(y + 3000)), 'ind': 0, 'data': []},
 
-            'c': {'geo': GeoInfo(str(x), str(y))},
+            'c': {'geo': GeoInfo(str(x), str(y)), 'ind': 0, 'data': []},
 
-            's': {'geo': GeoInfo(str(x), str(y - 3000))},
+            's': {'geo': GeoInfo(str(x), str(y - 3000)), 'ind': 0, 'data': []},
 
-            'nw': {'geo': GeoInfo(str(x - 3000), str(y + 3000))},
+            'nw': {'geo': GeoInfo(str(x - 3000), str(y + 3000)), 'ind': 0, 'data': []},
 
-            'w': {'geo': GeoInfo(str(x - 3000), str(y))},
+            'w': {'geo': GeoInfo(str(x - 3000), str(y)), 'ind': 0, 'data': []},
 
-            'sw': {'geo': GeoInfo(str(x - 3000), str(y - 3000))},
+            'sw': {'geo': GeoInfo(str(x - 3000), str(y - 3000)), 'ind': 0, 'data': []},
 
-            'ne': {'geo': GeoInfo(str(x + 3000), str(y + 3000))},
+            'ne': {'geo': GeoInfo(str(x + 3000), str(y + 3000)), 'ind': 0, 'data': []},
 
-            'e': {'geo': GeoInfo(str(x + 3000), str(y))},
+            'e': {'geo': GeoInfo(str(x + 3000), str(y)), 'ind': 0, 'data': []},
 
-            'se': {'geo': GeoInfo(str(x + 3000), str(y - 3000))}
+            'se': {'geo': GeoInfo(str(x + 3000), str(y - 3000)), 'ind': 0, 'data': []}
         }
 
         self.params = self.get_params()
@@ -71,7 +75,7 @@ class Chips:
 
         self.pool.join()
 
-        self.ind = self.get_index(self.grid['c']['data'][0][1]['dates'], self.date)
+        self.grid_timeseries_index()
 
         self.assemble_chips()
 
@@ -84,7 +88,7 @@ class Chips:
                                                  self.qa, lower, upper),
 
                               self.rescale_array(self.mosaic(self.grid, b_channel),
-                                                 self.qa, lower, upper))).astype(np.int)
+                                                 self.qa, lower, upper))).astype(np.uint8)
 
         self.pixel_image_affine = GeoAffine(ul_x=self.grid['nw']['geo'].chip_coord.x,
                                             x_res=30,
@@ -122,7 +126,7 @@ class Chips:
 
         """
         for loc, info in self.grid.items():
-            self.grid[loc]['chip'] = tools.assemble(self.grid[loc]['data'], self.ind, self.items)
+            self.grid[loc]['chip'] = tools.assemble(self.grid[loc]['data'], self.grid[loc]['ind'], self.items)
 
     @staticmethod
     def rescale_array(array, qa, lower=1, upper=99):
@@ -170,6 +174,14 @@ class Chips:
         array[200:, 200:] = grid['se']['chip'][ubid]
 
         return array
+
+    def grid_timeseries_index(self):
+        """
+        A wrapper to get the index within a timeseries for each grid-location in regards to a target date
+
+        """
+        for loc, item in self.grid.items():
+            self.grid[loc]['ind'] = self.get_index(self.grid[loc]['data'][0][1]['dates'], self.date)
 
     @staticmethod
     def get_index(array, date):
