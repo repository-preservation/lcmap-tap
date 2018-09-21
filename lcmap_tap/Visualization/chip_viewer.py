@@ -202,6 +202,12 @@ class ChipsViewerX(QMainWindow):
 
         self.init_ui()
 
+        self.graphics_view.fitInView()
+
+        self.ui.PushButton_zoom.clicked.connect(self.zoom_to_point)
+
+        self.graphics_view.image_clicked.connect(self.update_rect)
+
     def init_ui(self):
         self.show()
 
@@ -242,6 +248,73 @@ class ChipsViewerX(QMainWindow):
 
         except AttributeError:
             pass
+
+    def zoom_to_point(self):
+        """
+        Zoom to the selected point
+
+        Returns:
+            None
+
+        """
+        def check_upper(val, limit=0):
+            for i in range(50, -1, -1):
+                val_ul = val - i
+
+                if val_ul > limit:
+                    return val_ul
+
+                elif val_ul < limit:
+                    continue
+
+                else:
+                    return limit
+
+        def check_lower(val, limit):
+            for i in range(50, -1, -1):
+                val_lr = val + i
+
+                if val_lr < limit:
+                    return val_lr
+
+                elif val_lr > limit:
+                    continue
+
+                else:
+                    return limit
+
+        row_ul = check_upper(self.row)
+        col_ul = check_upper(self.col)
+
+        row_lr = check_lower(self.row, self.chips.rgb.shape[0])
+        col_lr = check_lower(self.col, self.chips.rgb.shape[0])
+
+        upper_left = QtCore.QPointF(col_ul, row_ul)
+        bottom_right = QtCore.QPointF(col_lr, row_lr)
+
+        rect = QtCore.QRectF(upper_left, bottom_right)
+
+        view_rect = self.graphics_view.viewport().rect()
+
+        scene_rect = self.graphics_view.transform().mapRect(rect)
+
+        factor = min(view_rect.width() / scene_rect.width(),
+                     view_rect.height() / scene_rect.height())
+
+        self.graphics_view.scale(factor, factor)
+
+        self.graphics_view.centerOn(self.current_pixel)
+
+        # Arbitrary number of times to zoom out with the mouse wheel before full extent is reset
+        self.graphics_view._zoom = 18
+
+        self.graphics_view.view_holder = QtCore.QRectF(self.graphics_view.mapToScene(0, 0),
+                                                       self.graphics_view.mapToScene(self.width(),
+                                                                                     self.graphics_view.height()))
+
+        # Set the scene rectangle to the original image size, which may be larger than the current view rect
+        if not self.graphics_view.rect.isNull():
+            self.graphics_view.setSceneRect(self.graphics_view.rect)
 
     def make_rect(self):
         """
