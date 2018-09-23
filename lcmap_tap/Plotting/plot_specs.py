@@ -1,12 +1,15 @@
 """Prepare data for plotting"""
 
-from lcmap_tap.logger import exc_handler
+from lcmap_tap.logger import exc_handler, log
 from lcmap_tap.Plotting import plot_functions
+from lcmap_tap.RetrieveData.retrieve_ccd import CCDReader
+from lcmap_tap.RetrieveData.retrieve_classes import SegmentClasses
+
 import sys
 import numpy as np
 import datetime as dt
 from collections import OrderedDict
-from typing import Union, List
+from typing import Union
 
 sys.excepthook = exc_handler
 
@@ -25,8 +28,9 @@ class PlotSpecs:
     Generate and retain the data required for plotting
 
     """
+    bands = ('blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'thermal')
 
-    def __init__(self, ard: dict, change: dict, segs: List[dict], items: list,
+    def __init__(self, ard: dict, change: CCDReader, segs: SegmentClasses, items: list,
                  begin: dt.date = dt.date(year=1982, month=1, day=1),
                  end: dt.date = dt.date(year=2015, month=12, day=31)):
         """
@@ -48,7 +52,21 @@ class PlotSpecs:
 
         self.dates = self.ard['dates']
 
-        self.results = change
+        try:
+            self.results = change.results
+
+            self.ccd_mask = np.array(self.results['processing_mask'], dtype=np.bool)
+
+        except AttributeError:
+            self.results = None
+
+            self.ccd_mask = []
+
+        try:
+            self.segment_classes = segs.results
+
+        except AttributeError:
+            self.segment_classes = None
 
         self.date_mask = self.mask_daterange(dates=self.dates,
                                              start=begin,
@@ -57,8 +75,6 @@ class PlotSpecs:
         self.dates_in = self.ard['dates'][self.date_mask]
 
         self.dates_out = self.ard['dates'][~self.date_mask]
-
-        self.ccd_mask = np.array(change['processing_mask'], dtype=np.bool)
 
         self.qa_mask = np.isin(self.ard['qas'], [66, 68, 322, 324])
 
@@ -74,47 +90,64 @@ class PlotSpecs:
         if 'thermals' in self.ard.keys():
             self.rescale_thermal()
 
-        # This naming convention was chosen so as to match that which is used in merlin chipmunk
-        self.bands = ('blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'thermal')
+        self.index_to_observations()
 
-        self.band_info = {b: {'coefs': [], 'inter': [], 'pred': []} for b in self.bands}
+        if self.results is not None:
+            self.predicted_values, \
+            self.prediction_dates, \
+            self.break_dates, \
+            self.start_dates, \
+            self.end_dates = self.get_modelled_specs(self.results)
 
-        self.predicted_values = []
-        self.prediction_dates = []
-        self.break_dates = []
-        self.start_dates = []
-        self.end_dates = []
+        else:
+            self.predicted_values = []
+            self.prediction_dates = []
+            self.break_dates = []
+            self.start_dates = []
+            self.end_dates = []
 
-        for num, result in enumerate(self.results['change_models']):
+        self.index_lookup, self.band_lookup, self.all_lookup = self.get_lookups(results=self.results,
+                                                                                predicted_values=self.predicted_values)
+
+    def get_modelled_specs(self, results):
+        band_info = {b: {'coefs': [], 'inter': [], 'pred': []} for b in self.bands}
+
+        predicted_values = []
+        prediction_dates = []
+        break_dates = []
+        start_dates = []
+        end_dates = []
+
+        for num, result in enumerate(results['change_models']):
             days = np.arange(result['start_day'], result['end_day'] + 1)
 
-            self.break_dates.append(result['break_day'])
+            break_dates.append(result['break_day'])
 
-            self.start_dates.append(result['start_day'])
+            start_dates.append(result['start_day'])
 
-            self.end_dates.append(result['end_day'])
+            end_dates.append(result['end_day'])
 
             for b in self.bands:
-                self.band_info[b]['inter'] = result[b]['intercept']
+                band_info[b]['inter'] = result[b]['intercept']
 
-                self.band_info[b]['coefs'] = result[b]['coefficients']
+                band_info[b]['coefs'] = result[b]['coefficients']
 
-                self.band_info[b]['pred'] = self.predicts(days, result[b]['coefficients'], result[b]['intercept'])
+                band_info[b]['pred'] = self.predicts(days, result[b]['coefficients'], result[b]['intercept'])
 
-                self.prediction_dates.append(days)
+                prediction_dates.append(days)
 
-                self.predicted_values.append(self.band_info[b]['pred'])
+                predicted_values.append(band_info[b]['pred'])
 
+        return predicted_values, prediction_dates, break_dates, start_dates, end_dates
+
+    def get_lookups(self, results, predicted_values):
         # Calculate indices from observed values
 
         # Calculate indices from the results' change models
         # The change models are stored by order of model, then
         # band number.  For example, the band values for the first change model are represented by indices 0-5,
         # the second model by indices 6-11, and so on.
-
-        self.index_to_observations()
-
-        self.index_modeled = self.get_modeled_index()
+        index_modeled = self.get_modeled_index(ard=self.ard, results=results, predicted_values=predicted_values)
 
         index_lookup = OrderedDict([('NDVI', ('ndvi', 'ndvi-modeled')),
                                     ('MSAVI', ('msavi', 'msavi-modeled')),
@@ -124,16 +157,12 @@ class PlotSpecs:
                                     ('NBR', ('nbr', 'nbr-modeled')),
                                     ('NBR-2', ('nbr2', 'nbr2-modeled'))])
 
-        if len(self.index_modeled) > 0:
-            self.index_lookup = [(key, (self.ard[index_lookup[key][0]],
-                                        self.index_modeled[index_lookup[key][1]]))
-                                 for key in index_lookup.keys()
-                                 if index_lookup[key][0] in self.ard.keys()]
+        index_lookup = [(key, (self.ard[index_lookup[key][0]],
+                               index_modeled[index_lookup[key][1]]))
+                        for key in index_lookup.keys()
+                        if index_lookup[key][0] in self.ard.keys()]
 
-            self.index_lookup = OrderedDict(self.index_lookup)
-
-        else:
-            self.index_lookup = dict()
+        index_lookup = OrderedDict(index_lookup)
 
         lookup = OrderedDict([("Blue", ('blues', 0)),
                               ("Green", ('greens', 1)),
@@ -143,10 +172,11 @@ class PlotSpecs:
                               ("SWIR-2", ('swir2s', 5)),
                               ("Thermal", ('thermals', 6))])
 
-        self.band_lookup = [(key, (self.ard[lookup[key][0]],
-                                   self.get_predicts(lookup[key][1])))
-                            for key in lookup.keys()
-                            if lookup[key][0] in self.ard.keys()]
+        band_lookup = [(key, (self.ard[lookup[key][0]],
+                              self.get_predicts(num=lookup[key][1], bands=self.bands,
+                                                predicted_values=predicted_values, results=results)))
+                       for key in lookup.keys()
+                       if lookup[key][0] in self.ard.keys()]
 
         # Example of how the band_lookup is structured:
         # self.band_lookup = [("Blue", (self.ard['blues'], self.get_predicts(0))),
@@ -157,13 +187,13 @@ class PlotSpecs:
         #                     ("SWIR-2", (self.ard['swir2s'], self.get_predicts(5))),
         #                     ("Thermal", (self.ard['thermals'], self.get_predicts(6)))]
 
-        self.band_lookup = OrderedDict(self.band_lookup)
+        band_lookup = OrderedDict(band_lookup)
 
         # Combine these two dictionaries
         # self.all_lookup = {**self.band_lookup, **self.index_lookup}
-        self.all_lookup = plot_functions.merge_dicts(self.band_lookup, self.index_lookup)
+        all_lookup = plot_functions.merge_dicts(band_lookup, index_lookup)
 
-        self.segment_classes = segs
+        return index_lookup, band_lookup, all_lookup
 
     @staticmethod
     def mask_daterange(dates: np.array, start: dt.date, stop: dt.date) -> np.array:
@@ -199,7 +229,8 @@ class PlotSpecs:
                 coef[3] * np.cos(days * 2 * 2 * np.pi / 365.25) + coef[4] * np.sin(days * 2 * 2 * np.pi / 365.25) +
                 coef[5] * np.cos(days * 3 * 2 * np.pi / 365.25) + coef[6] * np.sin(days * 3 * 2 * np.pi / 365.25))
 
-    def get_predicts(self, num: Union[int, list]) -> list:
+    @staticmethod
+    def get_predicts(num: Union[int, list], bands: tuple, predicted_values: list, results: dict) -> list:
         """
         Return the model prediction values in the time series for a particular band or bands
 
@@ -214,8 +245,16 @@ class PlotSpecs:
         if isinstance(num, int):
             num = [num]
 
-        return [self.predicted_values[m * len(self.bands) + n] for n in num
-                for m in range(len(self.results["change_models"]))]
+        try:
+            _predicts = [predicted_values[m * len(bands) + n] for n in num
+                         for m in range(len(results["change_models"]))]
+
+        except (IndexError, TypeError) as e:
+            log.warning('Exception %s' % e)
+
+            _predicts = []
+
+        return _predicts
 
     @staticmethod
     def make_arrays(in_dict: dict) -> dict:
@@ -268,7 +307,8 @@ class PlotSpecs:
 
         return None
 
-    def get_modeled_index(self):
+    @staticmethod
+    def get_modeled_index(ard, results, predicted_values):
         """
         Calculate the model-predicted index curves
 
@@ -280,7 +320,7 @@ class PlotSpecs:
 
         modeled = dict()
 
-        for key in self.ard.keys():
+        for key in ard.keys():
             if key in indices:
                 new_key = f'{key}-modeled'
 
@@ -290,9 +330,13 @@ class PlotSpecs:
 
                 inds = index_functions[key]['inds']
 
-                for m in range(len(self.results['change_models'])):
-                    args = tuple([self.predicted_values[m * len(bands) + ind] for ind in inds])
+                try:
+                    for m in range(len(results['change_models'])):
+                        args = tuple([predicted_values[m * len(bands) + ind] for ind in inds])
 
-                    modeled[new_key].append(call(*args))
+                        modeled[new_key].append(call(*args))
+
+                except AttributeError:
+                    modeled[new_key].append([])
 
         return modeled
