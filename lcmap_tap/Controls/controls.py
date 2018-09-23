@@ -9,12 +9,11 @@ from lcmap_tap.RetrieveData.retrieve_ard import ARDData, get_image_ids
 from lcmap_tap.RetrieveData.retrieve_ccd import CCDReader
 from lcmap_tap.RetrieveData.retrieve_geo import GeoInfo
 from lcmap_tap.RetrieveData.retrieve_classes import SegmentClasses
-from lcmap_tap.RetrieveData.ard_info import ARDInfo
 from lcmap_tap.PlotFrame.plotwindow import PlotWindow
 from lcmap_tap.Plotting import make_plots
 from lcmap_tap.Plotting.plot_specs import PlotSpecs
 from lcmap_tap.Auxiliary import projections
-from lcmap_tap.Visualization.ard_viewer_qpixelmap import ARDViewerX
+from lcmap_tap.Visualization.chip_viewer import ChipsViewerX
 from lcmap_tap.Visualization.maps_viewer import MapsViewer
 from lcmap_tap.MapCanvas.mapcanvas import MapCanvas
 from lcmap_tap.logger import log, exc_handler, QtHandler
@@ -349,15 +348,6 @@ class MainControls(QMainWindow):
 
         return os.path.join(outdir, fname)
 
-        # return "{outdir}{sep}H{h}V{v}_{xy}_{t}{ext}".format(outdir=self.ui.LineEdit_outputDir.text(),
-        #                                                     sep=os.sep,
-        #                                                     h=self.geo_info.H,
-        #                                                     v=self.geo_info.V,
-        #                                                     xy=self.ui.LineEdit_x1.text() + "_" + \
-        #                                                        self.ui.LineEdit_y1.text(),
-        #                                                     t=get_time(),
-        #                                                     ext=ext)
-
     def save_fig(self):
         """
         Save the current matplotlib figure to a PNG file
@@ -398,7 +388,6 @@ class MainControls(QMainWindow):
         self.working_directory = self.ui.LineEdit_outputDir.text()
 
         if self.working_directory is None or self.working_directory is "":
-        # if not self.working_directory:
             self.working_directory = os.path.join(HOME, self.session)
 
             self.ui.LineEdit_outputDir.setText(self.working_directory)
@@ -621,8 +610,6 @@ class MainControls(QMainWindow):
 
             self.ui.PushButton_export.setEnabled(True)
 
-            # self.ard_http = lcmaphttp.LCMAPHTTP(self.config)
-
         except (IndexError, AttributeError, TypeError, ValueError) as e:
             # Clear the results window
             self.ui.PlainTextEdit_results.clear()
@@ -640,14 +627,6 @@ class MainControls(QMainWindow):
             log.error(e, exc_info=True)
 
             return None
-
-        # self.ard_specs = ARDInfo(root=self.ui.browseARDline.text(),
-        #                          h=self.geo_info.H,
-        #                          v=self.geo_info.V)
-
-        self.ard_specs = ARDInfo(root=self.ard_directory,
-                                 h=self.geo_info.H,
-                                 v=self.geo_info.V)
 
         # Display change model information for the entered coordinates
         self.show_model_params(results=self.plot_specs, geo=self.geo_info)
@@ -761,32 +740,14 @@ class MainControls(QMainWindow):
             None
         """
         try:
-            # Don't include the processing date in the scene ID
-            sceneID = clicked_item.text().split()[2][:23]
+            date = dt.datetime.strptime(clicked_item.text().split()[5], '%Y-%b-%d')
 
-            scene_files = self.ard_specs.vsipaths[sceneID]
-
-            sensor = self.ard_specs.get_sensor(sceneID)
-
-            if not self.ard:
-                self.ard = ARDViewerX(ard_file=scene_files[0:7],
-                                      geo=self.geo_info,
-                                      sensor=sensor,
-                                      gui=self,  # Provide backwards interactions with the main GUI
-                                      # Send the previous view rectangle to the new image
-                                      # current_view=self.current_view
-                                      )
-
-            else:
-                self.ard.ard_file = scene_files[0:7]
-
-                self.ard.sensor = sensor
-
-                self.ard.read_data()
-
-                self.ard.get_rgb()
-
-                self.ard.display_img()
+            self.ard = ChipsViewerX(x=self.geo_info.coord.x,
+                                    y=self.geo_info.coord.y,
+                                    date=date,
+                                    url=self.merlin_url,
+                                    gui=self,
+                                    geo=self.geo_info)
 
         except (AttributeError, IndexError) as e:
             log.warning("Display ARD raised an exception: ")

@@ -135,6 +135,7 @@ class PlotWindow(QtWidgets.QMainWindow):
         Returns:
 
         """
+
         def set_vis(visibility, line):
             """
             Change the transparency of the picked object in the legend so the user can see explicitly
@@ -245,12 +246,14 @@ class PlotWindow(QtWidgets.QMainWindow):
                             self.value_holder["temp"].append(scene)
 
                             self.gui.ui.ListWidget_selected.addItem("Scene ID: {}\n"
-                                                                   "Obs. Date: {:%Y-%b-%d}\n"
-                                                                   "{}-Value: {}".format(scene,
-                                                                                         self.value_holder['temp'][1][0],
-                                                                                         self.b,
-                                                                                         self.value_holder['temp'][1][1][
-                                                                                             0]))
+                                                                    "Obs. Date: {:%Y-%b-%d}\n"
+                                                                    "{}-Value: {}".format(
+                                scene,
+                                self.value_holder['temp'][1][0],
+                                self.b,
+                                self.value_holder['temp'][1][1][0])
+                            )
+
                             log.info("Observation Selected: %s" % scene)
                             log.info("Observation Date: {:%Y-%b-%d}".format(self.value_holder['temp'][1][0]))
                             log.info("Observation %s Band Value: %s" % (self.b, self.value_holder['temp'][1][1][0]))
