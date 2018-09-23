@@ -240,25 +240,32 @@ class PlotWindow(QtWidgets.QMainWindow):
                 # log.debug("Subplot: %s" % self.b)
 
                 # Look through the scene IDs to find which one corresponds to the selected obs. date
-                if self.gui is not None:
-                    for scene in self.scenes:
-                        if test_str in scene:
-                            self.value_holder["temp"].append(scene)
+                # if self.gui is not None:
+                #     for scene in self.scenes:
+                #         if test_str in scene:
+                #             self.value_holder["temp"].append(scene)
+                #
+                #             self.gui.ui.ListWidget_selected.addItem("Scene ID: {}\n"
+                #                                                     "Obs. Date: {:%Y-%b-%d}\n"
+                #                                                     "{}-Value: {}".format(
+                #                 scene,
+                #                 self.value_holder['temp'][1][0],
+                #                 self.b,
+                #                 self.value_holder['temp'][1][1][0])
+                #             )
+                #
+                #             # log.info("Observation Selected: %s" % scene)
+                #             log.info("Observation Date: {:%Y-%b-%d}".format(self.value_holder['temp'][1][0]))
+                #             log.info("Observation %s Band Value: %s" % (self.b, self.value_holder['temp'][1][1][0]))
+                #
+                #             break
 
-                            self.gui.ui.ListWidget_selected.addItem("Scene ID: {}\n"
-                                                                    "Obs. Date: {:%Y-%b-%d}\n"
-                                                                    "{}-Value: {}".format(
-                                scene,
-                                self.value_holder['temp'][1][0],
-                                self.b,
-                                self.value_holder['temp'][1][1][0])
-                            )
-
-                            log.info("Observation Selected: %s" % scene)
-                            log.info("Observation Date: {:%Y-%b-%d}".format(self.value_holder['temp'][1][0]))
-                            log.info("Observation %s Band Value: %s" % (self.b, self.value_holder['temp'][1][1][0]))
-
-                            break
+                self.gui.ui.ListWidget_selected.addItem("Obs. Date: {:%Y-%b-%d}\n"
+                                                        "{}-Value: {}".format(
+                    self.value_holder['temp'][1][0],
+                    self.b,
+                    self.value_holder['temp'][1][1][0])
+                )
 
                 self.highlight_pick()
 
