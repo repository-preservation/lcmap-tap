@@ -119,25 +119,29 @@ def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure,
 
     fill_out = data.fill_mask[~data.date_mask]
 
-    class_results = dict()
+    if data.segment_classes is not None:
+        class_results = dict()
 
-    for ind, result in enumerate(data.segment_classes):
-        if len(result['class_probs']) == 9:
-            class_ind = np.argmax(result['class_probs'])
+        for ind, result in enumerate(data.segment_classes):
+            if len(result['class_probs']) == 9:
+                class_ind = np.argmax(result['class_probs'])
 
-        else:
-            # The older classification results have an additional class '0' so indices are off by 1
-            class_ind = np.argmax(result['class_probs']) + 1
+            else:
+                # The older classification results have an additional class '0' so indices are off by 1
+                class_ind = np.argmax(result['class_probs']) + 1
 
-        class_label = NAMES[class_ind]
+            class_label = NAMES[class_ind]
 
-        if class_label not in class_results:
-            class_results[class_label] = {'starts': [result['start_day']],
-                                          'ends': [result['end_day']]}
+            if class_label not in class_results:
+                class_results[class_label] = {'starts': [result['start_day']],
+                                              'ends': [result['end_day']]}
 
-        else:
-            class_results[class_label]['starts'].append(result['start_day'])
-            class_results[class_label]['ends'].append(result['end_day'])
+            else:
+                class_results[class_label]['starts'].append(result['start_day'])
+                class_results[class_label]['ends'].append(result['end_day'])
+
+    else:
+        class_results = None
 
     """plot_data is a dict whose keys are band names, index names, or a combination of both
 
@@ -295,32 +299,33 @@ def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure,
                 match_lines.append(lines4)
 
         """ ---- Draw the predicted curves ---- """
-        for c in range(0, len(data.results["change_models"])):
-            lines5, = axes[num, 0].plot(data.prediction_dates[c * len(data.bands)],
-                                        plot_data[b][1][c],
-                                        "orange",
-                                        linewidth=3,
-                                        alpha=0.8)
+        if data.results is not None:
+            for c in range(0, len(data.results["change_models"])):
+                lines5, = axes[num, 0].plot(data.prediction_dates[c * len(data.bands)],
+                                            plot_data[b][1][c],
+                                            "orange",
+                                            linewidth=3,
+                                            alpha=0.8)
 
-            model_lines.append(lines5)
+                model_lines.append(lines5)
 
         """ ---- Draw horizontal color bars representing class assignments ---- """
+        if class_results is not None:
+            for key in class_results.keys():
+                if key not in class_lines:
+                    class_lines[key] = list()
 
-        for key in class_results.keys():
-            if key not in class_lines:
-                class_lines[key] = list()
+                for ind, item in enumerate(class_results[key]['starts']):
+                    lines6 = axes[num, 0].hlines(y=0,
+                                                 xmin=item,
+                                                 xmax=class_results[key]['ends'][ind],
+                                                 linewidth=6,
+                                                 colors=COLORS[key])
 
-            for ind, item in enumerate(class_results[key]['starts']):
-                lines6 = axes[num, 0].hlines(y=0,
-                                             xmin=item,
-                                             xmax=class_results[key]['ends'][ind],
-                                             linewidth=6,
-                                             colors=COLORS[key])
+                    class_lines[key].append(lines6)
 
-                class_lines[key].append(lines6)
-
-            class_handles.append(get_legend_handle(linewidth=6,
-                                                   color=COLORS[key], label=key))
+                class_handles.append(get_legend_handle(linewidth=6,
+                                                       color=COLORS[key], label=key))
 
         """ ---- Set values for the y-axis limits ---- """
         if b in data.index_lookup.keys():
@@ -408,11 +413,13 @@ def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure,
                  model_lines, date_lines]
 
     """Add whichever land cover classes are present to the legend handles and labels"""
-    for c in class_handles:
-        handles.append(c)
+    if len(class_handles) > 0:
+        for c in class_handles:
+            handles.append(c)
 
-    for cl in class_results.keys():
-        labels.append(cl)
+    if class_results is not None:
+        for cl in class_results.keys():
+            labels.append(cl)
 
     leg = axes[0, 0].legend(handles=handles, labels=labels,
                             ncol=1,
@@ -420,8 +427,9 @@ def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure,
                             bbox_to_anchor=(1.00, 1.00),
                             borderaxespad=0.)
 
-    for key in class_lines.keys():
-        lines.append(class_lines[key])
+    if len(class_lines) > 0:
+        for key in class_lines.keys():
+            lines.append(class_lines[key])
 
     for legline, origline in zip(leg.get_lines(), lines):
         # Set a tolerance of 5 pixels
