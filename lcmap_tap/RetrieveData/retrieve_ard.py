@@ -106,7 +106,7 @@ class ARDData(QObject):
 
         self.key = f'{self.chip_x}_{self.chip_y}'
 
-        self.items = [i for item in items for i in item_lookup[item]] + ['reds', 'greens', 'blues']  # get visual bands
+        self.items = [i for item in items for i in item_lookup[item]]
 
         self.cached, self.required = self.check_cache(key=self.key, cache=self.cache, items=self.items)
 
