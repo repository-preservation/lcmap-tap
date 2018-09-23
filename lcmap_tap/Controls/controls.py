@@ -25,6 +25,7 @@ import os
 import sys
 import time
 import traceback
+import re
 import matplotlib
 import matplotlib.pyplot as plt
 import yaml
@@ -546,7 +547,9 @@ class MainControls(QMainWindow):
                 self.ui.PlainTextEdit_results.appendPlainText("Change prob: {}\n".format(result["change_probability"]))
                 log.info("Change prob: {}".format(result["change_probability"]))
 
-        except ValueError:
+        except (ValueError, TypeError) as e:
+            log.warning('Exception: %s' % e)
+
             pass
 
     def plot(self):
@@ -568,65 +571,75 @@ class MainControls(QMainWindow):
         # <list> The bands and/or indices selected for plotting
         self.item_list = [str(i.text()) for i in self.ui.ListWidget_items.selectedItems()]
 
-        # If there is a problem with any of the parameters, the first erroneous parameter
-        # will cause an exception to occur which will be displayed in the GUI for the user, but the tool won't close.
+        self.geo_info = GeoInfo(x=self.ui.LineEdit_x1.text(),
+                                y=self.ui.LineEdit_y1.text(),
+                                units=units[self.selected_units]["unit"])
+
+        self.cache_data = read_cache(self.geo_info, self.cache_data)
+
+        self.qt_handler.set_active(True)
+
+        self.ard_observations = ARDData(geo=self.geo_info,
+                                        url=self.merlin_url,
+                                        items=self.item_list,
+                                        cache=self.cache_data,
+                                        controls=self)
+
+        self.qt_handler.set_active(False)
+
+        self.cache_data = update_cache(self.cache_data, self.ard_observations.cache, self.ard_observations.key)
+
         try:
-            self.geo_info = GeoInfo(x=self.ui.LineEdit_x1.text(),
-                                    y=self.ui.LineEdit_y1.text(),
-                                    units=units[self.selected_units]["unit"])
-
-            self.cache_data = read_cache(self.geo_info, self.cache_data)
-
-            self.qt_handler.set_active(True)
-
-            self.ard_observations = ARDData(geo=self.geo_info,
-                                            url=self.merlin_url,
-                                            items=self.item_list,
-                                            cache=self.cache_data,
-                                            controls=self)
-
-            self.qt_handler.set_active(False)
-
-            self.cache_data = update_cache(self.cache_data, self.ard_observations.cache, self.ard_observations.key)
-
             self.ccd_results = CCDReader(tile=self.geo_info.tile,
                                          chip_coord=self.geo_info.chip_coord,
                                          pixel_coord=self.geo_info.pixel_coord,
                                          # json_dir=self.dirs["json"])
                                          json_dir=self.ccd_directory)
 
+        except (IndexError, AttributeError, TypeError, ValueError, FileNotFoundError) as e:
+            log.warning('Exception: %s' % e)
+
+            self.ccd_results = None
+
+        try:
             self.class_results = SegmentClasses(chip_coord=self.geo_info.chip_coord,
                                                 # class_dir=self.dirs["class"],
                                                 class_dir=self.class_directory,
                                                 rc=self.geo_info.chip_pixel_rowcol,
                                                 tile=self.geo_info.tile)
 
-            self.plot_specs = PlotSpecs(ard=self.ard_observations.pixel_ard,
-                                        change=self.ccd_results.results,
-                                        segs=self.class_results.results,
-                                        items=self.item_list,
-                                        begin=self.begin,
-                                        end=self.end)
+        except (IndexError, AttributeError, TypeError, ValueError, FileNotFoundError) as e:
+            log.warning('Exception: %s' % e)
 
-            self.ui.PushButton_export.setEnabled(True)
+            self.class_results = None
 
-        except (IndexError, AttributeError, TypeError, ValueError) as e:
-            # Clear the results window
-            self.ui.PlainTextEdit_results.clear()
 
-            # Show which exception was raised
-            self.ui.PlainTextEdit_results.appendPlainText("***Plotting Error***\
-                                                          \n\nType of Exception: {}\
-                                                          \nException Value: {}\
-                                                          \nTraceback Info: {}".format(sys.exc_info()[0],
-                                                                                       sys.exc_info()[1],
-                                                                                       traceback.print_tb(
-                                                                                           sys.exc_info()[2])))
+        self.plot_specs = PlotSpecs(ard=self.ard_observations.pixel_ard,
+                                    change=self.ccd_results,
+                                    segs=self.class_results,
+                                    items=self.item_list,
+                                    begin=self.begin,
+                                    end=self.end)
 
-            log.error("Plotting Raised Exception: ")
-            log.error(e, exc_info=True)
+        self.ui.PushButton_export.setEnabled(True)
 
-            return None
+        # except (IndexError, AttributeError, TypeError, ValueError) as e:
+        #     # Clear the results window
+        #     self.ui.PlainTextEdit_results.clear()
+        #
+        #     # Show which exception was raised
+        #     self.ui.PlainTextEdit_results.appendPlainText("***Plotting Error***\
+        #                                                   \n\nType of Exception: {}\
+        #                                                   \nException Value: {}\
+        #                                                   \nTraceback Info: {}".format(sys.exc_info()[0],
+        #                                                                                sys.exc_info()[1],
+        #                                                                                traceback.print_tb(
+        #                                                                                    sys.exc_info()[2])))
+        #
+        #     log.error("Plotting Raised Exception: ")
+        #     log.error(e, exc_info=True)
+        #
+        #     return None
 
         # Display change model information for the entered coordinates
         self.show_model_params(results=self.plot_specs, geo=self.geo_info)
@@ -740,7 +753,14 @@ class MainControls(QMainWindow):
             None
         """
         try:
-            date = dt.datetime.strptime(clicked_item.text().split()[5], '%Y-%b-%d')
+            # date = dt.datetime.strptime(clicked_item.text().split()[2], '%Y-%b-%d')
+            try:
+                match = re.search(r'\d{4}-\D{3}-\d{2}', clicked_item.text()).group()
+
+                date = dt.datetime.strptime(match, '%Y-%b-%d')
+
+            except AttributeError:
+                return None
 
             self.ard = ChipsViewerX(x=self.geo_info.coord.x,
                                     y=self.geo_info.coord.y,
