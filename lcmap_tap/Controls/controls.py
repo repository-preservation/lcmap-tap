@@ -577,7 +577,7 @@ class MainControls(QMainWindow):
 
         self.cache_data = read_cache(self.geo_info, self.cache_data)
 
-        self.qt_handler.set_active(True)
+        # self.qt_handler.set_active(True)
 
         self.ard_observations = ARDData(geo=self.geo_info,
                                         url=self.merlin_url,
@@ -585,7 +585,7 @@ class MainControls(QMainWindow):
                                         cache=self.cache_data,
                                         controls=self)
 
-        self.qt_handler.set_active(False)
+        # self.qt_handler.set_active(False)
 
         self.cache_data = update_cache(self.cache_data, self.ard_observations.cache, self.ard_observations.key)
 

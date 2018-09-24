@@ -12,7 +12,8 @@ import glob
 import merlin
 from collections import OrderedDict
 # from itertools import chain
-from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal, QThread, QCoreApplication
+# from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal, QThread, QCoreApplication
+from multiprocessing.dummy import Pool as ThreadPool
 
 # TODAY = dt.datetime.now().strftime("%Y-%m-%d")
 
@@ -44,40 +45,72 @@ def get_image_ids(path: str) -> list:
     return sorted([os.path.splitext(os.path.basename(f))[0] for f in file_list])
 
 
-class Worker(QObject):
-    result = pyqtSignal(object)
+# class Worker(QObject):
+#     result = pyqtSignal(object)
+#
+#     # finished = pyqtSignal(int)
+#
+#     def __init__(self, required, geo, start, stop, url):
+#         super().__init__()
+#
+#         log.debug("Worker started")
+#
+#         self.geo = geo
+#
+#         self.start = start
+#
+#         self.stop = stop
+#
+#         self.required = required
+#
+#         self.url = url
+#
+#         # self.cfg = cfg
+#
+#         self.pool = ThreadPool(len(self.required))
+#
+#         self.params = self.get_params()
+#
+#         self.timeseries = dict()
+#
+#         self.pool.map(self.call_merlin, self.params)
+#
+#         self.pool.close()
+#
+#         self.pool.join()
+#
+#     def get_params(self):
+#         return [(self.geo, self.start, self.stop, make_cfg(items=[i], url=self.url)) for i in self.required]
+#
+#     def call_merlin(self, params):
+#         # thread_name = QThread.currentThread().objectName()
+#         #
+#         # thread_id = int(QThread.currentThreadId())
+#
+#         # log.debug("THREAD ID: %s" % thread_id)
+#
+#         log.info("Grabbing merlin timeseries")
+#
+#         data = dict(merlin.create(x=int(params[0].coord.x),
+#                                   y=int(params[0].coord.y),
+#                                   acquired="{}/{}".format(params[1], params[2]),
+#                                   cfg=params[3]))
+#
+#         for key in data.keys():
+#             try:
+#                 self.timeseries[key].update(data[key])
+#
+#             except (KeyError, TypeError):
+#                 self.timeseries[key] = data[key]
+#
+#         self.result.emit(data)
+#
+#     @pyqtSlot()
+#     def send_results(self):
+#         self.result.emit(self.timeseries)
 
-    # finished = pyqtSignal(int)
 
-    def __init__(self, geo, start, stop, cfg):
-        super().__init__()
-
-        log.debug("Worker started")
-
-        self.geo = geo
-        self.start = start
-        self.stop = stop
-        self.cfg = cfg
-
-    @pyqtSlot()
-    def call_merlin(self):
-        # thread_name = QThread.currentThread().objectName()
-        #
-        thread_id = int(QThread.currentThreadId())
-
-        log.debug("THREAD ID: %s" % thread_id)
-
-        log.debug("Grabbing merlin timeseries")
-
-        data = merlin.create(x=int(self.geo.coord.x),
-                             y=int(self.geo.coord.y),
-                             acquired="{}/{}".format(self.start, self.stop),
-                             cfg=self.cfg)
-
-        self.result.emit(data)
-
-
-class ARDData(QObject):
+class ARDData:
     """Use lcmap-merlin to retrieve a time-series ARD for a chip"""
 
     def __init__(self, geo, url, items, cache, controls, start='1982-01-01', stop='2017-12-31'):
@@ -93,13 +126,16 @@ class ARDData(QObject):
             stop (str): The stop date (YYYY-MM-DD) of the time series
 
         """
-        super().__init__()
+        # super().__init__()
 
         self.controls = controls
 
         self.cache = cache
 
         self.geo = geo
+
+        self.start = start
+        self.stop = stop
 
         self.chip_x = geo.chip_coord.x
         self.chip_y = geo.chip_coord.y
@@ -110,29 +146,57 @@ class ARDData(QObject):
 
         self.cached, self.required = self.check_cache(key=self.key, cache=self.cache, items=self.items)
 
+        self.timeseries = dict()
+
         if len(self.required) > 0:
             # url = yaml.load(open(config, 'r'))['merlin']
+            self.pool = ThreadPool(len(self.required))
 
-            cfg = make_cfg(items=self.required, url=url)
+            self.params = self.get_params(url)
 
-            self.controls.qt_handler.set_active(True)
+            self.pool.map(self.call_merlin, self.params)
 
-            self.worker = Worker(geo, start, stop, cfg)
+            self.pool.close()
 
-            self.thread = QThread()
+            self.pool.join()
 
-            self.worker.moveToThread(self.thread)
+            self._timeseries = tuple([(k, i) for k, i in self.timeseries.items()])
 
-            self.worker.result.connect(self.get_timeseries)
+            pixel_ard = self.get_sequence(timeseries=self._timeseries,
+                                          pixel_coord=self.geo.pixel_coord)
 
-            self.thread.started.connect(self.worker.call_merlin)
+            self.cache = self.update_cache(key=self.key, cache=self.cache, required=self.required,
+                                           timeseries=self._timeseries)
 
-            self.thread.start()
+            try:
+                self.pixel_ard.update(pixel_ard)
 
-            while self.thread.isRunning():
-                QCoreApplication.processEvents()
+            except AttributeError:
+                self.pixel_ard = pixel_ard
 
-            self.controls.qt_handler.set_active(False)
+            # Return to the main plotting routine
+            # self.controls.plot()
+
+            # cfg = make_cfg(items=self.required, url=url)
+            #
+            # self.controls.qt_handler.set_active(True)
+            #
+            # self.worker = Worker(self.required, geo, start, stop, url)
+            #
+            # self.thread = QThread()
+            #
+            # self.worker.moveToThread(self.thread)
+            #
+            # self.worker.result.connect(self.get_timeseries)
+            #
+            # self.thread.started.connect(self.worker.send_results)
+            #
+            # self.thread.start()
+            #
+            # while self.thread.isRunning():
+            #     QCoreApplication.processEvents()
+            #
+            # self.controls.qt_handler.set_active(False)
 
         if len(self.cached) > 0:
             cached_pixel_ard = self.get_sequence(timeseries=tuple(self.cache[self.key].items()),
@@ -146,29 +210,58 @@ class ARDData(QObject):
 
             del cached_pixel_ard
 
-    @pyqtSlot(object)
-    def get_timeseries(self, ts):
+    def get_params(self, url):
         """
 
+        Returns:
+
         """
-        self.timeseries = ts
+        return [(self.geo, self.start, self.stop, make_cfg(items=[i], url=url)) for i in self.required]
 
-        pixel_ard = self.get_sequence(timeseries=self.timeseries,
-                                      pixel_coord=self.geo.pixel_coord)
+    def call_merlin(self, params):
+        """
 
-        self.cache = self.update_cache(key=self.key, cache=self.cache, required=self.required,
-                                       timeseries=self.timeseries)
+        Args:
+            params (List[tuple]):
 
-        try:
-            self.pixel_ard.update(pixel_ard)
+        Returns:
 
-        except AttributeError:
-            self.pixel_ard = pixel_ard
+        """
+        ts = dict(merlin.create(x=int(params[0].coord.x),
+                                y=int(params[0].coord.y),
+                                acquired="{}/{}".format(params[1], params[2]),
+                                cfg=params[3]))
 
-        # Return to the main plotting routine
-        self.controls.plot()
+        for key in ts.keys():
+            try:
+                self.timeseries[key].update(ts[key])
 
-        return None
+            except (KeyError, TypeError):
+                self.timeseries[key] = ts[key]
+
+    # @pyqtSlot(object)
+    # def get_timeseries(self, ts):
+    #     """
+    #
+    #     """
+    #     self.timeseries = tuple([(k, i) for k, i in ts.items()])
+    #
+    #     pixel_ard = self.get_sequence(timeseries=self.timeseries,
+    #                                   pixel_coord=self.geo.pixel_coord)
+    #
+    #     self.cache = self.update_cache(key=self.key, cache=self.cache, required=self.required,
+    #                                    timeseries=self.timeseries)
+    #
+    #     try:
+    #         self.pixel_ard.update(pixel_ard)
+    #
+    #     except AttributeError:
+    #         self.pixel_ard = pixel_ard
+    #
+    #     # Return to the main plotting routine
+    #     self.controls.plot()
+    #
+    #     return None
 
     @staticmethod
     def get_sequence(timeseries: tuple, pixel_coord: GeoCoordinate) -> dict:

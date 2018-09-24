@@ -26,8 +26,7 @@ class Chips:
             x (coordinate_like): The point of reference x-coordinate
             y (coordinate_like): The point of reference y-coordinate
             date (dt.datetime): The target date
-                        url (str): The Chipmunk URL
-
+            url (str): The Chipmunk URL
             n (int): Number of chips in mosaic, default is 9
             r_channel (str): UBID to use for the red color channel (default is 'reds')
             g_channel (str): UBID to use for the green color channel (default is 'greens')

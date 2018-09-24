@@ -306,7 +306,7 @@ class ChipsViewerX(QMainWindow):
         self.graphics_view.centerOn(self.current_pixel)
 
         # Arbitrary number of times to zoom out with the mouse wheel before full extent is reset
-        self.graphics_view._zoom = 18
+        self.graphics_view._zoom = 5
 
         self.graphics_view.view_holder = QtCore.QRectF(self.graphics_view.mapToScene(0, 0),
                                                        self.graphics_view.mapToScene(self.width(),
