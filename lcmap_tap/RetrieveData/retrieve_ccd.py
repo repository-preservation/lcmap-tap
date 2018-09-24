@@ -98,8 +98,12 @@ class CCDReader:
         end day.
 
         """
-        for ind, result in enumerate(results):
-            if result['break_day'] < 1:
-                results[ind]['break_day'] = results[ind]['end_day']
+        # log.debug("RESULTS: %s" % results)
+        # log.debug("RESULTS KEYS: %s" % results.keys())
+        # log.debug("RESULTS CHANGE MODELS %s" % results['change_models'])
+
+        for ind, model in enumerate(results['change_models']):
+            if model['break_day'] < 1:
+                model['break_day'] = model['end_day']
 
         return results
