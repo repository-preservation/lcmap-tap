@@ -32,8 +32,9 @@ class CCDReader:
                                                                             y=chip_coord.y))
 
         if self.json_file is not None:
-            self.results = self.extract_jsoncurve(pixel_info=self.pixel_ccd_info(results_chip=self.json_file,
-                                                                             coord=pixel_coord))
+            self.results = self.check_dates(
+                self.extract_jsoncurve(pixel_info=self.pixel_ccd_info(results_chip=self.json_file,
+                                                                      coord=pixel_coord)))
 
         else:
             log.warning("No PyCCD results exist for tile %s" % tile)
@@ -89,3 +90,16 @@ class CCDReader:
 
         """
         return json.loads(pixel_info["result"])
+
+    @staticmethod
+    def check_dates(results):
+        """
+        In cases where the entire time series does not contain a break day, simply make it be equal to the model's
+        end day.
+
+        """
+        for ind, result in enumerate(results):
+            if result['break_day'] < 1:
+                results[ind]['break_day'] = results[ind]['end_day']
+
+        return results
