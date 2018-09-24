@@ -122,6 +122,9 @@ def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure,
     if data.segment_classes is not None:
         class_results = dict()
 
+        if not isinstance(data.segment_classes, list):
+            data.segment_classes = [data.segment_classes]
+
         for ind, result in enumerate(data.segment_classes):
             if len(result['class_probs']) == 9:
                 class_ind = np.argmax(result['class_probs'])
@@ -438,8 +441,12 @@ def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure,
         # Map the artist to the corresponding legend line
         lines_map[legline] = origline
 
-    # Fill in the figure canvas
-    fig.tight_layout()
+    try:
+        # Fill in the figure canvas
+        fig.tight_layout()
+
+    except ValueError:
+        pass
 
     # Make room for the legend
     fig.subplots_adjust(right=0.9)
