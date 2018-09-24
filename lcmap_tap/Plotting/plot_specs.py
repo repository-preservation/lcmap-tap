@@ -336,7 +336,7 @@ class PlotSpecs:
 
                         modeled[new_key].append(call(*args))
 
-                except AttributeError:
+                except (AttributeError, TypeError) as e:
                     modeled[new_key].append([])
 
         return modeled
