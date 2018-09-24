@@ -57,7 +57,9 @@ class PlotSpecs:
 
             self.ccd_mask = np.array(self.results['processing_mask'], dtype=np.bool)
 
-        except AttributeError:
+        except (AttributeError, TypeError) as e:
+            log.error('Exception: %s' % e, exc_info=True)
+
             self.results = None
 
             self.ccd_mask = []
@@ -65,7 +67,9 @@ class PlotSpecs:
         try:
             self.segment_classes = segs.results
 
-        except AttributeError:
+        except (AttributeError, TypeError) as e:
+            log.error('Exception: %s' % e, exc_info=True)
+
             self.segment_classes = None
 
         self.date_mask = self.mask_daterange(dates=self.dates,
@@ -250,7 +254,7 @@ class PlotSpecs:
                          for m in range(len(results["change_models"]))]
 
         except (IndexError, TypeError) as e:
-            log.warning('Exception %s' % e)
+            log.error('Exception: %s' % e, exc_info=True)
 
             _predicts = []
 
@@ -337,6 +341,8 @@ class PlotSpecs:
                         modeled[new_key].append(call(*args))
 
                 except (AttributeError, TypeError) as e:
+                    log.error('Exception: %s' % e, exc_info=True)
+
                     modeled[new_key].append([])
 
         return modeled
