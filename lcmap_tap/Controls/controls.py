@@ -2,7 +2,7 @@
 Establish the main GUI Window using PyQt, provide the main interactions with child widgets
 """
 
-from lcmap_tap.UserInterface import workshop_ui_main
+from lcmap_tap.UserInterface import ui_main_workshop
 from lcmap_tap.Controls import units
 from lcmap_tap.RetrieveData import aliases
 from lcmap_tap.RetrieveData.retrieve_ard import ARDData, get_image_ids
@@ -14,17 +14,15 @@ from lcmap_tap.Plotting import make_plots
 from lcmap_tap.Plotting.plot_specs import PlotSpecs
 from lcmap_tap.Auxiliary import projections
 from lcmap_tap.Visualization.chip_viewer import ChipsViewerX
-from lcmap_tap.Visualization.maps_viewer import MapsViewer
 from lcmap_tap.MapCanvas.mapcanvas import MapCanvas
 from lcmap_tap.logger import log, exc_handler, QtHandler
-from lcmap_tap.Auxiliary.caching import read_cache, save_cache, update_cache
+from lcmap_tap.Auxiliary.caching import read_cache, update_cache  # save_cache
 from lcmap_tap import HOME
 
 import datetime as dt
 import os
 import sys
 import time
-import traceback
 import re
 import matplotlib
 import matplotlib.pyplot as plt
@@ -46,7 +44,15 @@ matplotlib.use('Qt5Agg')
 
 sys.excepthook = exc_handler
 
-CONFIG = yaml.load(open(pkg_resources.resource_filename('lcmap_tap', 'config.yaml')))
+try:
+    CONFIG = yaml.load(open(pkg_resources.resource_filename('lcmap_tap', 'config.yaml')))
+
+except FileNotFoundError as e:
+    log.error('Exception: %s' % e, exc_info=True)
+
+    log.critical('Configuration file not present, TAP Tool will not be able to retrieve data.  Exiting')
+
+    sys.exit(1)
 
 
 def get_time():
@@ -70,7 +76,7 @@ class MainControls(QMainWindow):
         super().__init__()
 
         # Create an instance of a class that builds the user-interface, created in QT Designer and compiled with pyuic5
-        self.ui = workshop_ui_main.Ui_MainWindow_tap()
+        self.ui = ui_main_workshop.Ui_MainWindow_tap()
 
         # Call the method that adds all of the widgets to the GUI
         self.ui.setupUi(self)
@@ -80,13 +86,11 @@ class MainControls(QMainWindow):
 
         self.config = None
         self.plot_window = None
-        self.maps_window = None
         self.ard_specs = None
         self.ard = None
         self.fig = None
         self.current_view = None
         self.tile = None
-        # self.version = None
         self.item_list = None
         self.highlighted = None
         self.artist_map = None
@@ -109,8 +113,6 @@ class MainControls(QMainWindow):
 
         self.selected_units = self.ui.ComboBox_units.currentText()
 
-        # self.drive_letter = self.ui.driveLetter_comboBox.currentText()
-
         self.connect_widgets()
 
         self.show()
@@ -127,7 +129,6 @@ class MainControls(QMainWindow):
         #     """For testing, use some preset values if helper.yaml is found"""
         #     self.ui.LineEdit_outputDir.setText(helper['test_output'])
         #     # self.ui.browsejsonline.setText(helper['test_json'])
-        #     # self.ui.browseARDline.setText(helper['ard_dir'])
         #     self.ui.LineEdit_x1.setText(helper['test_x'])
         #     self.ui.LineEdit_y1.setText(helper['test_y'])
         #
@@ -136,15 +137,11 @@ class MainControls(QMainWindow):
         # *** Connect the various widgets to the methods they interact with ***
         self.ui.LineEdit_x1.textChanged.connect(self.set_units)
 
-        # self.ui.LineEdit_x1.textChanged.connect(self.get_version)
-
         self.ui.LineEdit_x1.textChanged.connect(self.assemble_paths)
 
         self.ui.LineEdit_x1.textChanged.connect(self.check_values)
 
         self.ui.LineEdit_y1.textChanged.connect(self.set_units)
-
-        # self.ui.LineEdit_y1.textChanged.connect(self.get_version)
 
         self.ui.LineEdit_y1.textChanged.connect(self.assemble_paths)
 
@@ -152,31 +149,15 @@ class MainControls(QMainWindow):
 
         self.ui.ComboBox_units.currentIndexChanged.connect(self.set_units)
 
-        # self.ui.ComboBox_units.currentIndexChanged.connect(self.get_version)
-
         # Call the activated signal when the user clicks on any item (new or old) in the comboBox
         # [str] calls the overloaded signal that passes the Qstring, not the index of the item
         # self.ui.version_comboBox.activated[str].connect(self.set_version)
 
-        # self.ui.driveLetter_comboBox.currentIndexChanged.connect(self.get_drive_letter)
-
-        # self.ui.browsejsonbutton.clicked.connect(self.browse_json)
-
         self.ui.PushButton_outputDir.clicked.connect(self.browse_output)
-
-        # self.ui.browseardbutton.clicked.connect(self.browse_ard)
-
-        # self.ui.browseclassbutton.clicked.connect(self.browse_class)
-
-        # self.ui.browsejsonline.textChanged.connect(self.check_values)
-
-        # self.ui.browseARDline.textChanged.connect(self.check_values)
 
         self.ui.LineEdit_outputDir.textChanged.connect(self.check_values)
 
         self.ui.PushButton_plot.clicked.connect(self.plot)
-
-        # self.ui.PushButton_plot.clicked.connect(self.close_ard)
 
         self.ui.PushButton_clear.clicked.connect(self.clear)
 
@@ -185,8 +166,6 @@ class MainControls(QMainWindow):
         self.ui.PushButton_close.clicked.connect(self.exit_plot)
 
         self.ui.ListWidget_selected.itemClicked.connect(self.show_ard)
-
-        self.ui.PushButton_maps.clicked.connect(self.show_maps)
 
         self.ui.PushButton_locator.clicked.connect(self.show_locator_map)
 
@@ -198,77 +177,6 @@ class MainControls(QMainWindow):
 
         """
         self.leaflet_map.show()
-
-    # def get_drive_letter(self):
-    #     """
-    #     Obtain the drive letter that points to the eval server
-    #
-    #     """
-    #     self.drive_letter = self.ui.driveLetter_comboBox.currentText()
-    #
-    #     log.info("Selected Drive Letter: %s" % self.drive_letter)
-    #
-    #     # Assemble the paths to the required datasets with the version provided
-    #     self.assemble_paths()
-    #
-    #     # Get the PyCCD Versions now that the appropriate drive letter has been selected
-    #     self.get_version()
-    #
-    #     # Assemble the paths to the required datasets with the version provided
-    #     self.assemble_paths()
-    #
-    #     # Check that the fields are populated and activate the Plot button
-    #     self.check_values()
-    #
-    # def get_version(self):
-    #     """
-    #     Make a list of available PyCCD versions that exist for the current point and add them to the version_comboBox
-    #
-    #     """
-    #     # Remove previous versions since they may not exist for the current coordinate
-    #     self.ui.version_comboBox.clear()
-    #
-    #     try:
-    #         path = os.path.join(self.drive_letter + os.sep, 'bulk', 'tiles', self.tile, 'change')
-    #
-    #         log.info("Looking for versions in %s" % path)
-    #
-    #         versions_present = [c for c in os.listdir(path) if os.path.isdir(os.path.join(path, c))]
-    #
-    #         log.info("PyCCD versions found: %s" % str(versions_present))
-    #
-    #         for version in versions_present:
-    #             self.ui.version_comboBox.addItem(version)
-    #
-    #         self.version = self.ui.version_comboBox.currentText()
-    #
-    #     except (FileNotFoundError, TypeError):
-    #
-    #         pass
-    #
-    # def set_version(self, version):
-    #     """
-    #     Set the PyCCD version for creating a path to the JSON files and automatically update the path to the
-    #     JSON directory with the selected version
-    #
-    #     Args:
-    #         version <QString> the text sent automatically
-    #
-    #     """
-    #     self.version = self.ui.version_comboBox.currentText()
-    #
-    #     # Update the browsejsonline field with the selected version
-    #     self.ui.browsejsonline.setText(os.path.join(self.drive_letter + os.sep,
-    #                                                 'bulk', 'tiles', self.tile, 'change', str(version), 'json'))
-    #
-    #     if str(self.version) == 'n-compare':
-    #         self.end = dt.date(year=2017, month=12, day=31)
-    #
-    #     else:
-    #         self.end = dt.date(year=2015, month=12, day=31)
-    #
-    #     log.debug("PyCCD Version=%s" % self.version)
-    #     log.debug("End Date=%s" % self.end)
 
     def clear(self):
         """
@@ -364,8 +272,8 @@ class MainControls(QMainWindow):
             try:
                 os.remove(fname)
 
-            except IOError:
-                pass
+            except IOError as e:
+                log.error('Exception: %s' % e, exc_info=True)
 
         plt.savefig(fname, bbox_inches="tight", dpi=150)
 
@@ -378,13 +286,9 @@ class MainControls(QMainWindow):
         """
         # self.set_units()
         if self.tile:
-            self.ard_directory = os.path.join(CONFIG['ARD'], self.tile)
-
-            self.class_directory = os.path.join(CONFIG['CCD'], self.tile, 'class', 'eval', 'pickles')
+            self.class_directory = os.path.join(CONFIG['CCD'], self.tile, 'class', 'annualized', 'pickles')
 
             self.ccd_directory = os.path.join(CONFIG['CCD'], self.tile, 'change', 'n-compare', 'json')
-
-            self.maps_directory = os.path.join(CONFIG['CCD'], self.tile, 'eval')
 
         self.working_directory = self.ui.LineEdit_outputDir.text()
 
@@ -396,17 +300,6 @@ class MainControls(QMainWindow):
         if not os.path.exists(self.working_directory):
             os.makedirs(self.working_directory)
 
-        # try:
-        #     self.ui.browseARDline.setText(os.path.join(self.drive_letter + os.sep, 'perf', 'production', self.tile))
-        #
-        #     self.ui.browseclassline.setText(os.path.join(self.drive_letter + os.sep, 'bulk', 'tiles', self.tile,
-        #                                                  'class', 'eval', 'pickles'))
-        #
-        #     self.config = os.path.join(self.drive_letter + os.sep, 'bulk', 'lcmap_tap_config', 'config.yaml')
-        #
-        # except (FileNotFoundError, TypeError):
-        #     pass
-
     def check_values(self):
         """
         Check to make sure all of the required parameters have been entered before enabling Plot
@@ -414,14 +307,6 @@ class MainControls(QMainWindow):
         """
         # <int> A container to keep track of how many parameters have been entered
         counter = 0
-
-        # <list> List containing the text() values from each of the input widgets
-        # checks = [self.ui.browsejsonline.text(),
-        #           self.ui.browseardbutton.text(),
-        #           self.ui.browseclassline.text(),
-        #           self.ui.LineEdit_x1.text(),
-        #           self.ui.LineEdit_y1.text(),
-        #           self.ui.LineEdit_outputDir.text()]
 
         checks = [self.ui.LineEdit_x1.text(),
                   self.ui.LineEdit_y1.text(),
@@ -462,34 +347,6 @@ class MainControls(QMainWindow):
 
         else:
             return True
-
-    # def browse_ard(self):
-    #     """
-    #     Open QFileDialog to manually browse to the directory containing ARD tarballs
-    #
-    #     """
-    #     ard_directory = QFileDialog.getExistingDirectory(self)
-    #
-    #     self.ui.browseARDline.setText(ard_directory)
-    #
-    # def browse_class(self):
-    #     """
-    #     Open a QFileDialog to manually browse to the directory containing class pickle files
-    #
-    #     """
-    #     class_dir = QFileDialog.getExistingDirectory(self)
-    #
-    #     self.ui.browseclassline.setText(class_dir)
-    #
-    # def browse_json(self):
-    #     """
-    #     Open a QFileDialog to manually browse to and retrieve the full path to the PyCCD results directory
-    #
-    #     """
-    #     # <str> Full path to the directory containing PyCCD results (.json files)
-    #     jsondir = QFileDialog.getExistingDirectory(self)
-    #
-    #     self.ui.browsejsonline.setText(jsondir)
 
     def browse_output(self):
         """
@@ -548,7 +405,7 @@ class MainControls(QMainWindow):
                 log.info("Change prob: {}".format(result["change_probability"]))
 
         except (ValueError, TypeError) as e:
-            log.warning('Exception: %s' % e)
+            log.error('Exception: %s' % e, exc_info=True)
 
             pass
 
@@ -557,14 +414,6 @@ class MainControls(QMainWindow):
         TODO: Add descriptive information
 
         """
-        # self.dirs = {"json": self.ui.browsejsonline.text(),
-        #              "ard": self.ui.browseARDline.text(),
-        #              "class": self.ui.browseclassline.text()}
-
-        # for key, value in self.dirs.items():
-        #     if not self.check_path(key, value):
-        #         return None
-
         if self.plot_window:
             self.plot_window.close()
 
@@ -593,26 +442,23 @@ class MainControls(QMainWindow):
             self.ccd_results = CCDReader(tile=self.geo_info.tile,
                                          chip_coord=self.geo_info.chip_coord,
                                          pixel_coord=self.geo_info.pixel_coord,
-                                         # json_dir=self.dirs["json"])
                                          json_dir=self.ccd_directory)
 
         except (IndexError, AttributeError, TypeError, ValueError, FileNotFoundError) as e:
-            log.warning('Exception: %s' % e)
+            log.error('Exception: %s' % e, exc_info=True)
 
             self.ccd_results = None
 
         try:
             self.class_results = SegmentClasses(chip_coord=self.geo_info.chip_coord,
-                                                # class_dir=self.dirs["class"],
                                                 class_dir=self.class_directory,
                                                 rc=self.geo_info.chip_pixel_rowcol,
                                                 tile=self.geo_info.tile)
 
         except (IndexError, AttributeError, TypeError, ValueError, FileNotFoundError) as e:
-            log.warning('Exception: %s' % e)
+            log.error('Exception: %s' % e, exc_info=True)
 
             self.class_results = None
-
 
         self.plot_specs = PlotSpecs(ard=self.ard_observations.pixel_ard,
                                     change=self.ccd_results,
@@ -622,24 +468,6 @@ class MainControls(QMainWindow):
                                     end=self.end)
 
         self.ui.PushButton_export.setEnabled(True)
-
-        # except (IndexError, AttributeError, TypeError, ValueError) as e:
-        #     # Clear the results window
-        #     self.ui.PlainTextEdit_results.clear()
-        #
-        #     # Show which exception was raised
-        #     self.ui.PlainTextEdit_results.appendPlainText("***Plotting Error***\
-        #                                                   \n\nType of Exception: {}\
-        #                                                   \nException Value: {}\
-        #                                                   \nTraceback Info: {}".format(sys.exc_info()[0],
-        #                                                                                sys.exc_info()[1],
-        #                                                                                traceback.print_tb(
-        #                                                                                    sys.exc_info()[2])))
-        #
-        #     log.error("Plotting Raised Exception: ")
-        #     log.error(e, exc_info=True)
-        #
-        #     return None
 
         # Display change model information for the entered coordinates
         self.show_model_params(results=self.plot_specs, geo=self.geo_info)
@@ -659,34 +487,25 @@ class MainControls(QMainWindow):
         if not os.path.exists(self.ui.LineEdit_outputDir.text()):
             os.makedirs(self.ui.LineEdit_outputDir.text())
 
-        # <bool> If True, generate a point shapefile for the entered coordinates
-        # shp_on = self.ui.radioshp.isChecked()
-
-        shp_on = True
-
         # Generate the ESRI point shapefile
-        if shp_on is True:
-            temp_shp = self.fname_generator(ext=".shp")
-            root, name = os.path.split(temp_shp)
-            root = root + os.sep + "shp"
+        temp_shp = self.fname_generator(ext=".shp")
+        root, name = os.path.split(temp_shp)
+        root = root + os.sep + "shp"
 
-            self.get_shp(coords=self.geo_info.coord,
-                         out_shp="{}{}{}".format(root, os.sep, name))
+        self.get_shp(coords=self.geo_info.coord,
+                     out_shp="{}{}{}".format(root, os.sep, name))
 
         # Show the figure in an interactive window
         self.plot_window = PlotWindow(fig=self.fig,
                                       axes=self.axes,
                                       artist_map=self.artist_map,
                                       lines_map=self.lines_map,
-                                      gui=self,
-                                      scenes=get_image_ids(path=self.ard_directory))
+                                      gui=self)
 
         # Make these buttons available once a figure has been created
         self.ui.PushButton_clear.setEnabled(True)
 
         self.ui.PushButton_saveFigure.setEnabled(True)
-
-        self.ui.PushButton_maps.setEnabled(True)
 
     @staticmethod
     def get_shp(coords, out_shp):
@@ -752,15 +571,13 @@ class MainControls(QMainWindow):
         Returns:
             None
         """
+        match = re.search(r'\d{4}-\D{3}-\d{2}', clicked_item.text()).group()
+
+        date = dt.datetime.strptime(match, '%Y-%b-%d')
+
         try:
-            # date = dt.datetime.strptime(clicked_item.text().split()[2], '%Y-%b-%d')
-            try:
-                match = re.search(r'\d{4}-\D{3}-\d{2}', clicked_item.text()).group()
-
-                date = dt.datetime.strptime(match, '%Y-%b-%d')
-
-            except AttributeError:
-                return None
+            if self.ard:
+                self.close_ard()
 
             self.ard = ChipsViewerX(x=self.geo_info.coord.x,
                                     y=self.geo_info.coord.y,
@@ -770,8 +587,7 @@ class MainControls(QMainWindow):
                                     geo=self.geo_info)
 
         except (AttributeError, IndexError) as e:
-            log.warning("Display ARD raised an exception: ")
-            log.warning(e, exc_info=True)
+            log.error("Display ARD raised an exception: %s" % e, exc_info=True)
 
     def close_ard(self):
         """
@@ -784,8 +600,8 @@ class MainControls(QMainWindow):
         try:
             self.ard.exit()
 
-        except AttributeError:
-            pass
+        except AttributeError as e:
+            log.error('Exception: %s' % e, exc_info=True)
 
     def export_data(self):
         """
@@ -793,8 +609,6 @@ class MainControls(QMainWindow):
 
         """
         data = dict()
-
-        log.debug("ITEM LIST: %s" % self.item_list)
 
         for item in self.item_list:
             if item in aliases.keys():
@@ -808,8 +622,8 @@ class MainControls(QMainWindow):
 
             data['dates'] = self.ard_observations.pixel_ard['dates']
 
-        except KeyError:
-            pass
+        except KeyError as e:
+            log.error('Exception: %s' % e, exc_info=True)
 
         data = pd.DataFrame(data).sort_values('dates').reset_index(drop=True)
 
@@ -820,18 +634,8 @@ class MainControls(QMainWindow):
 
         return None
 
-    def show_maps(self):
-        """
-        Display the mapped products viewer
-
-        """
-        # path = os.path.join(self.drive_letter + os.sep, 'bulk', 'tiles', self.tile, 'eval')
-
-        if self.ard_specs:
-            self.maps_window = MapsViewer(tile=self.ard_specs.tile_name, root=self.maps_directory, geo=self.geo_info,
-                                          version=self.version)
-
-    def exit_plot(self):
+    @staticmethod
+    def exit_plot():
         """
         Close all TAP tool windows and exit the program
 

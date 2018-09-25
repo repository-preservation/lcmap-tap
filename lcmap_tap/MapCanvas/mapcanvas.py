@@ -19,7 +19,9 @@ try:
 
     USE = 'UseWebEngineView'
 
-except ImportError:
+except ImportError as e:
+    log.error('Exception: %s' % e, exc_info=True)
+
     # noinspection PyUnresolvedReferences
     from PyQt5.QtWebKitWidgets import QWebView
 
@@ -110,6 +112,8 @@ class MapCanvas(QWidget):
         # If necessary, convert to meters before updating the coordinate text on the GUI
         if units[self.gui.selected_units]["unit"] == "meters":
             coords = GeoInfo.unit_conversion(coords, src="lat/long", dest="meters")
+
+            coords = GeoInfo.get_geocoordinate(str(int(coords.x)), str(int(coords.y)))
 
         # Update the X and Y coordinates in the GUI with the new point
         self.gui.ui.LineEdit_x1.setText(str(coords.x))

@@ -48,7 +48,7 @@ class MplCanvas(FigureCanvas):
 
 
 class PlotWindow(QtWidgets.QMainWindow):
-    def __init__(self, fig, axes, artist_map, lines_map, gui, scenes, parent=None):
+    def __init__(self, fig, axes, artist_map, lines_map, gui, parent=None):
         """
         TODO Add a summary
         Args:
@@ -57,7 +57,6 @@ class PlotWindow(QtWidgets.QMainWindow):
             artist_map:
             lines_map:
             gui:
-            scenes:
             parent:
 
         """
@@ -76,7 +75,6 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.artist_map = artist_map
         self.lines_map = lines_map
         self.gui = gui
-        self.scenes = scenes
 
         self.prev_highlight = None
         self.ind = None
@@ -238,27 +236,6 @@ class PlotWindow(QtWidgets.QMainWindow):
                 # log.debug("Nearest artist: %s" % self.value_holder)
                 # log.debug("Artist data: %s" % self.artist_data)
                 # log.debug("Subplot: %s" % self.b)
-
-                # Look through the scene IDs to find which one corresponds to the selected obs. date
-                # if self.gui is not None:
-                #     for scene in self.scenes:
-                #         if test_str in scene:
-                #             self.value_holder["temp"].append(scene)
-                #
-                #             self.gui.ui.ListWidget_selected.addItem("Scene ID: {}\n"
-                #                                                     "Obs. Date: {:%Y-%b-%d}\n"
-                #                                                     "{}-Value: {}".format(
-                #                 scene,
-                #                 self.value_holder['temp'][1][0],
-                #                 self.b,
-                #                 self.value_holder['temp'][1][1][0])
-                #             )
-                #
-                #             # log.info("Observation Selected: %s" % scene)
-                #             log.info("Observation Date: {:%Y-%b-%d}".format(self.value_holder['temp'][1][0]))
-                #             log.info("Observation %s Band Value: %s" % (self.b, self.value_holder['temp'][1][1][0]))
-                #
-                #             break
 
                 self.gui.ui.ListWidget_selected.addItem("Obs. Date: {:%Y-%b-%d}\n"
                                                         "{}-Value: {}".format(

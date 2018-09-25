@@ -180,6 +180,10 @@ class ChipsViewerX(QMainWindow):
 
         self.pixel_rowcol = GeoInfo.geo_to_rowcol(affine=self.pixel_image_affine, coord=self.geo_info.coord)
 
+        self.row = self.pixel_rowcol.row
+
+        self.col = self.pixel_rowcol.column
+
         self.ui = Ui_MainWindow_chipviewer()
 
         self.ui.setupUi(self)
@@ -380,26 +384,26 @@ class ChipsViewerX(QMainWindow):
             None
 
         """
-        self.pixel_rowcol = GeoInfo.geo_to_rowcol(affine=self.pixel_image_affine, coord=self.geo_info.coord)
-
-        self.row = self.pixel_rowcol.row
-
-        self.col = self.pixel_rowcol.column
-
         # Before generating the new plot, create a reference to the previously clicked date and subplot
         self.ax = self.gui.plot_window.b  # Subplot name
 
-        # log.debug("self.ax = %s" % self.ax)
-
         self.date_x = self.gui.plot_window.x  # Date in ordinal datetime format, the x coordinate
-
-        # log.debug("self.date_x = %s" % self.date_x)
 
         # Gather information to retrieve necessary data for the new plot
         rowcol = RowColumn(row=self.row, column=self.col)
 
         coords = GeoInfo.rowcol_to_geo(affine=self.pixel_image_affine,
                                        rowcol=rowcol)
+
+        self.pixel_rowcol = GeoInfo.geo_to_rowcol(affine=self.pixel_image_affine, coord=self.geo_info.coord)
+
+        self.row = self.pixel_rowcol.row
+
+        self.col = self.pixel_rowcol.column
+
+        # log.debug("self.ax = %s" % self.ax)
+
+        # log.debug("self.date_x = %s" % self.date_x)
 
         log.info("New point selected: %s" % str(coords))
 

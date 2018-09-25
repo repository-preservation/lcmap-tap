@@ -194,7 +194,6 @@ class PlotSpecs:
         band_lookup = OrderedDict(band_lookup)
 
         # Combine these two dictionaries
-        # self.all_lookup = {**self.band_lookup, **self.index_lookup}
         all_lookup = plot_functions.merge_dicts(band_lookup, index_lookup)
 
         return index_lookup, band_lookup, all_lookup

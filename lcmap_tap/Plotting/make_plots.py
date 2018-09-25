@@ -6,7 +6,6 @@ from lcmap_tap.Plotting import NAMES, COLORS
 from lcmap_tap.logger import log, exc_handler
 
 import sys
-import traceback
 import datetime as dt
 from collections import OrderedDict
 from typing import Tuple
@@ -445,8 +444,8 @@ def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure,
         # Fill in the figure canvas
         fig.tight_layout()
 
-    except ValueError:
-        pass
+    except ValueError as e:
+        log.error('Exception: %s' % e, exc_info=True)
 
     # Make room for the legend
     fig.subplots_adjust(right=0.9)
