@@ -1,4 +1,10 @@
-"""UI created using Qt Designer 5.9.6 and converted to python using pyuic5.bat"""
+# -*- coding: utf-8 -*-
+
+# Form implementation generated from reading ui file 'UI_MAIN.UI'
+#
+# Created by: PyQt5 UI code generator 5.9.2
+#
+# WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 import pkg_resources
@@ -13,11 +19,10 @@ class Ui_MainWindow_tap(object):
 
         MainWindow_tap.setWindowIcon(icon)
         MainWindow_tap.setUnifiedTitleAndToolBarOnMac(False)
-
         self.centralwidget = QtWidgets.QWidget(MainWindow_tap)
         self.centralwidget.setObjectName("centralwidget")
-        self.GridLayout_main = QtWidgets.QGridLayout(self.centralwidget)
-        self.GridLayout_main.setObjectName("GridLayout_main")
+        self.gridLayout_3 = QtWidgets.QGridLayout(self.centralwidget)
+        self.gridLayout_3.setObjectName("gridLayout_3")
         self.GridLayout_coordinates = QtWidgets.QGridLayout()
         self.GridLayout_coordinates.setObjectName("GridLayout_coordinates")
         self.LineEdit_y1 = QtWidgets.QLineEdit(self.centralwidget)
@@ -131,7 +136,7 @@ class Ui_MainWindow_tap(object):
         self.LineEdit_y2.setReadOnly(True)
         self.LineEdit_y2.setObjectName("LineEdit_y2")
         self.GridLayout_coordinates.addWidget(self.LineEdit_y2, 3, 1, 1, 1)
-        self.GridLayout_main.addLayout(self.GridLayout_coordinates, 0, 0, 1, 1)
+        self.gridLayout_3.addLayout(self.GridLayout_coordinates, 0, 0, 1, 1)
         self.HBoxLayout_buttons = QtWidgets.QHBoxLayout()
         self.HBoxLayout_buttons.setObjectName("HBoxLayout_buttons")
         self.PushButton_locator = QtWidgets.QPushButton(self.centralwidget)
@@ -177,17 +182,6 @@ class Ui_MainWindow_tap(object):
         self.PushButton_export.setMaximumSize(QtCore.QSize(75, 16777215))
         self.PushButton_export.setObjectName("PushButton_export")
         self.HBoxLayout_buttons.addWidget(self.PushButton_export)
-        self.PushButton_maps = QtWidgets.QPushButton(self.centralwidget)
-        self.PushButton_maps.setEnabled(False)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.PushButton_maps.sizePolicy().hasHeightForWidth())
-        self.PushButton_maps.setSizePolicy(sizePolicy)
-        self.PushButton_maps.setMinimumSize(QtCore.QSize(75, 0))
-        self.PushButton_maps.setMaximumSize(QtCore.QSize(75, 16777215))
-        self.PushButton_maps.setObjectName("PushButton_maps")
-        self.HBoxLayout_buttons.addWidget(self.PushButton_maps)
         self.PushButton_clear = QtWidgets.QPushButton(self.centralwidget)
         self.PushButton_clear.setEnabled(False)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
@@ -209,7 +203,7 @@ class Ui_MainWindow_tap(object):
         self.PushButton_close.setMaximumSize(QtCore.QSize(75, 16777215))
         self.PushButton_close.setObjectName("PushButton_close")
         self.HBoxLayout_buttons.addWidget(self.PushButton_close)
-        self.GridLayout_main.addLayout(self.HBoxLayout_buttons, 5, 0, 1, 1)
+        self.gridLayout_3.addLayout(self.HBoxLayout_buttons, 5, 0, 1, 1)
         self.VBoxLayout_main = QtWidgets.QVBoxLayout()
         self.VBoxLayout_main.setObjectName("VBoxLayout_main")
         self.Label_outputDir = QtWidgets.QLabel(self.centralwidget)
@@ -277,7 +271,7 @@ class Ui_MainWindow_tap(object):
         self.ListWidget_selected.setAlternatingRowColors(True)
         self.ListWidget_selected.setObjectName("ListWidget_selected")
         self.VBoxLayout_main.addWidget(self.ListWidget_selected)
-        self.GridLayout_main.addLayout(self.VBoxLayout_main, 4, 0, 1, 1)
+        self.gridLayout_3.addLayout(self.VBoxLayout_main, 4, 0, 1, 1)
         MainWindow_tap.setCentralWidget(self.centralwidget)
         self.statusbar = QtWidgets.QStatusBar(MainWindow_tap)
         self.statusbar.setObjectName("statusbar")
@@ -292,56 +286,33 @@ class Ui_MainWindow_tap(object):
         MainWindow_tap.setTabOrder(self.LineEdit_outputDir, self.PushButton_outputDir)
         MainWindow_tap.setTabOrder(self.PushButton_outputDir, self.PushButton_plot)
         MainWindow_tap.setTabOrder(self.PushButton_plot, self.PushButton_saveFigure)
-        MainWindow_tap.setTabOrder(self.PushButton_saveFigure, self.PushButton_maps)
-        MainWindow_tap.setTabOrder(self.PushButton_maps, self.ListWidget_selected)
+        MainWindow_tap.setTabOrder(self.PushButton_saveFigure, self.ListWidget_selected)
         MainWindow_tap.setTabOrder(self.ListWidget_selected, self.PlainTextEdit_results)
         MainWindow_tap.setTabOrder(self.PlainTextEdit_results, self.LineEdit_y2)
         MainWindow_tap.setTabOrder(self.LineEdit_y2, self.LineEdit_x2)
 
     def retranslateUi(self, MainWindow_tap):
         _translate = QtCore.QCoreApplication.translate
-
         MainWindow_tap.setWindowTitle(_translate("MainWindow_tap", "Time Series Analysis and Plotting Tool"))
-
         self.Label_x1.setText(_translate("MainWindow_tap", "X (meters)"))
-
         self.ComboBox_units.setCurrentText(_translate("MainWindow_tap", "Projected Meters - Albers CONUS WGS 84"))
         self.ComboBox_units.setItemText(0, _translate("MainWindow_tap", "Projected Meters - Albers CONUS WGS 84"))
         self.ComboBox_units.setItemText(1, _translate("MainWindow_tap", "Geographic Lat/Long - Decimal Degrees WGS 84"))
-
         self.Label_y2.setText(_translate("MainWindow_tap", "Lat (dec. deg.)"))
-
-        self.Label_convertedUnits.setText(_translate("MainWindow_tap",
-                                                     "Geographic Lat/Long - Decimal Degrees WGS 84"))
-
+        self.Label_convertedUnits.setText(_translate("MainWindow_tap", "Geographic  Lat/Long - Decimal Degrees WGS 84"))
         self.Label_x2.setText(_translate("MainWindow_tap", "Long (dec. deg.)"))
-
         self.Label_units.setText(_translate("MainWindow_tap", "Units"))
-
         self.Label_y1.setText(_translate("MainWindow_tap", "Y (meters)"))
-
         self.PushButton_locator.setText(_translate("MainWindow_tap", "Locator Map"))
-
         self.PushButton_plot.setText(_translate("MainWindow_tap", "Plot"))
-
         self.PushButton_saveFigure.setText(_translate("MainWindow_tap", "Save Figure"))
-
         self.PushButton_export.setText(_translate("MainWindow_tap", "Export"))
-
-        self.PushButton_maps.setText(_translate("MainWindow_tap", "Maps"))
-
         self.PushButton_clear.setText(_translate("MainWindow_tap", "Clear"))
-
         self.PushButton_close.setText(_translate("MainWindow_tap", "Close"))
-
         self.Label_outputDir.setText(_translate("MainWindow_tap", "Specify working directory:"))
-
         self.PushButton_outputDir.setText(_translate("MainWindow_tap", "..."))
-
         __sortingEnabled = self.ListWidget_items.isSortingEnabled()
-
         self.ListWidget_items.setSortingEnabled(False)
-
         item = self.ListWidget_items.item(0)
         item.setText(_translate("MainWindow_tap", "All Spectral Bands"))
         item = self.ListWidget_items.item(1)
@@ -374,9 +345,7 @@ class Ui_MainWindow_tap(object):
         item.setText(_translate("MainWindow_tap", "NBR"))
         item = self.ListWidget_items.item(15)
         item.setText(_translate("MainWindow_tap", "NBR-2"))
-
         self.ListWidget_items.setSortingEnabled(__sortingEnabled)
-
         self.Label_results.setText(_translate("MainWindow_tap", "Model Results:"))
-
         self.Label_selected.setText(_translate("MainWindow_tap", "Selected Observations:"))
+
