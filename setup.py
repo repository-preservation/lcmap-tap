@@ -23,13 +23,14 @@ setup(
     packages=find_packages(),
 
     install_requires=[
-        'matplotlib',
-        'numpy',
-        'gdal',
+        'matplotlib==2.2.2',
+        'numpy==1.14.5',
+        'gdal==2.2.2',
         'pyyaml',
         'cytoolz',
         'cython',
         'requests',
+        'pandas',
         'lcmap-merlin'
     ],
 
@@ -37,7 +38,7 @@ setup(
 
     python_requires='>=3.6',
 
-    include_package_data = True,
+    include_package_data=True,
 
     author='Daniel Zelenak',
 
