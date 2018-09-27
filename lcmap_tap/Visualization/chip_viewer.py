@@ -164,6 +164,10 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
 
 class ChipsViewerX(QMainWindow):
+    bands = {'R': 'null',
+             'G': 'null',
+             'B': 'null'}
+
     def __init__(self, x, y, date, url, gui, geo, **params):
         super().__init__()
 
@@ -215,6 +219,8 @@ class ChipsViewerX(QMainWindow):
         self.init_ui()
 
         self.graphics_view.fitInView()
+
+        # self.ui.ComboBox_blue.currentTextChanged()
 
         self.ui.PushButton_zoom.clicked.connect(self.zoom_to_point)
 
