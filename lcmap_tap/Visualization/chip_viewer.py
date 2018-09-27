@@ -6,9 +6,11 @@ from lcmap_tap.RetrieveData.retrieve_geo import GeoInfo
 from lcmap_tap.RetrieveData.retrieve_chips import Chips
 from lcmap_tap.Visualization.chipviewer_main import Ui_MainWindow_chipviewer
 
+import os
 import sys
 import time
 import numpy as np
+import datetime as dt
 from PyQt5 import QtCore
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5 import QtWidgets, QtGui
@@ -165,6 +167,8 @@ class ChipsViewerX(QMainWindow):
     def __init__(self, x, y, date, url, gui, geo, **params):
         super().__init__()
 
+        self.date = date.strftime('%Y%m%d')
+
         self.chips = Chips(x, y, date, url, **params)
 
         self.gui = gui
@@ -187,6 +191,10 @@ class ChipsViewerX(QMainWindow):
         self.ui = Ui_MainWindow_chipviewer()
 
         self.ui.setupUi(self)
+
+        self.ui.ComboBox_red.setCurrentIndex(3)
+        self.ui.ComboBox_green.setCurrentIndex(2)
+        self.ui.ComboBox_blue.setCurrentIndex(1)
 
         self.sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
 
@@ -212,8 +220,67 @@ class ChipsViewerX(QMainWindow):
 
         self.graphics_view.image_clicked.connect(self.update_rect)
 
+        self.ui.PushButton_save.clicked.connect(self.save_img)
+
+
     def init_ui(self):
         self.show()
+
+    def save_img(self):
+        """
+
+        Returns:
+
+        """
+        # default_fmt = ".png"
+
+        # fmts = [".bmp", ".jpg", ".png"]
+
+        r = self.ui.ComboBox_red.currentText().lower()
+        g = self.ui.ComboBox_green.currentText().lower()
+        b = self.ui.ComboBox_blue.currentText().lower()
+
+        try:
+            outdir = self.gui.working_directory
+
+            outfile = os.path.join(outdir, f'{r}_{g}_{b}_{self.date}.png')
+            # browse = QtWidgets.QFileDialog.getSaveFileName()[0]
+
+            # If no file extension was specified, make it .png
+            # if os.path.splitext(browse)[1] == '':
+            #     browse = browse + default_fmt
+
+            # If a file extension was specified, make sure it is valid for a QImage
+            # elif os.path.splitext(browse)[1] != '':
+            #
+            #     if not any([f == os.path.splitext(browse)[1] for f in fmts]):
+                    # If the file extension isn't valid, set it to .png instead
+            #         browse = os.path.splitext(browse)[0] + default_fmt
+            import matplotlib.pyplot as plt
+
+            fig, ax = plt.subplots(figsize=(10,10))
+
+            plt.axis('off')
+
+            ax.grid(False)
+
+            text = 'Chip Mosaic for Imagery Acquired %s' % \
+                   dt.datetime.fromordinal(self.chips.grid['c']['data'][0][1]['dates'][self.chips.grid['c']['ind']]
+                                           ).strftime('%Y-%m-%d')
+
+            ax.set_title(text)
+
+            ax.imshow(self.chips.rgb, interpolation='bicubic')
+
+            ax.scatter(x=self.chips.pixel_rowcol.column, y=self.chips.pixel_rowcol.row, marker='x', color='yellow',
+                       s=75, linewidth=3)
+
+            plt.savefig(outfile)
+
+            # self.img.save(outfile, quality=100)
+
+        except (TypeError, ValueError) as e:
+            log.error('Exception: %s' % e, exc_info=True)
 
     def display_img(self):
         """
