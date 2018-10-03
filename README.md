@@ -100,7 +100,7 @@ the LCMAP TAP tool and its dependencies.
     ...
     Proceed ([y]/n)? y
     ```
-* Install lcmap-merlin
+* Install [lcmap-merlin](https://pypi.org/project/lcmap-merlin/) from the Python Package Index using pip:
     ```
     (env-name)$pip install lcmap-merlin --trusted-host pypi.org --trusted-host python.pypi.org --trusted-host files.pythonhosted.org
     ```
