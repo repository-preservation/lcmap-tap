@@ -1,16 +1,13 @@
 # Time Series Analysis and Plotting (TAP) Tool
 
+***Warning:  This branch of the TAP tool is under active development and is not considered stable.  It may contain bugs or not function at all.***
+##
 #### Abstract:
 
-This plotting tool is being developed to provide visualization and
-analysis support of LCMAP products generated with PyCCD.  Additionally, it provides 
-plotting of time-series ARD.  Multi-spectral
-time-series models and calculated indices at a specified point (i.e. pixel) location
-can be plotted.  The GUI provides customization for which components are included
-on the plot.  The default setting is to include all ARD observations, PyCCD time-segment
-model-fits, time-segment attributes including start, end, and break
-dates, and datelines representing annual increments on day 1 (January 1) of each
-year.  The tool leverages [matplotlib](https://matplotlib.org/) and 
+The TAP tool is being developed to provide visualization and
+analysis of time-series ARD and LCMAP products.  Multi-spectral
+time-series models, calculated band indices, and Landsat ARD observations at a specified point (i.e. pixel) location
+can be plotted.  The tool leverages [matplotlib](https://matplotlib.org/) and 
 [Qt](https://www.qt.io/) to generate an interactive figure that contains the
 specified bands and indices, with each of these being drawn on its
 own subplot within the figure.   Interactive capabilities of the figure
@@ -26,12 +23,13 @@ observation in a window on the GUI.  Then, clicking on the selected observation
 in this window will open a new display showing the ARD observation.  This ARD-viewer
 provides additional options for selecting different band combinations, along with interactive
 zooming with the mouse scroll-wheel.  The pixel featured in the plot will also be
-highlighted by a magenta boundary along the pixel extent.  Left-clicking elsewhere
+highlighted by a yellow boundary approximating the pixel extent.  Left-clicking elsewhere
 on the ARD viewer will cause a new plot to be automatically generated for that 
 pixel location.  Button controls on
 the GUI allow for generating and displaying the plot, clearing the
 list of clicked observations, saving the figure in its current state
-to a .PNG image file, and exiting out of the tool.
+to a .PNG image file, and exiting out of the tool.  The currently plotted ARD observations can be exported
+to a .CSV file for further analysis.
 
 ## Installation
 These instructions work for both Windows and Linux systems.
@@ -54,6 +52,8 @@ numpy == 1.14.5
 
 GDAL == 2.2.2
 
+pandas
+
 pyyaml
 
 cytoolz
@@ -62,14 +62,13 @@ cython
 
 requests
 
-lcmap-merlin == 2.2.0
+lcmap-merlin
 #
 
 The tool also currently requires:
-
-* All available ARD observations stored in tarballs, *see* [EarthExplorer](https://earthexplorer.usgs.gov/).
-  *  A Python script that uses [EarthExplorer API](https://earthexplorer.usgs.gov/inventory/documentation) (requires account log in) for downloading ARD is [here](https://github.com/danzelenak-usgs/Landsat-ARD-Tools/blob/master/download_ard_edit.py).
 * JSON files produced by [PyCCD](https://github.com/USGS-EROS/lcmap-pyccd).
+* A configuration .YAML file containing the URL which will be used to request ARD observations.  These are
+used for both plotting and displaying the ARD imagery.
       
 
 ##### Note:
@@ -96,7 +95,7 @@ the LCMAP TAP tool and its dependencies.
 
     **Windows and Linux**
     ```bash
-    (env-name)$conda install numpy gdal matplotlib pyyaml cytoolz requests cython
+    (env-name)$conda install numpy gdal=2.2.2 matplotlib=2.2.2 pyyaml cytoolz requests cython pandas
     The following NEW packages will be INSTALLED:
     ...
     Proceed ([y]/n)? y
@@ -108,7 +107,7 @@ the LCMAP TAP tool and its dependencies.
 
 #### Retrieving and installing LCMAP_TAP code 
 
-* [Download](https://github.com/USGS-EROS/lcmap-tap/archive/master.zip) lcmap_tap as a zipped folder.
+* [Download](https://github.com/USGS-EROS/lcmap-tap/archive/0.5.0-workshop.zip) lcmap_tap as a zipped folder.
 
 * Unzip, then using the command prompt enter into the unzipped folder:
     ```bash
@@ -127,4 +126,4 @@ $activate env-name
 (env-name)$lcmap_tap
 ```
 
-
+A desktop shortcut icon can also be created for running the TAP tool.  Make a like to the lcmap_tap.exe file located in your conda environment directory.
