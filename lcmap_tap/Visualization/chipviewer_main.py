@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'ChipViewer_main.ui'
+# Form implementation generated from reading ui file 'chipviewer_main.ui'
 #
 # Created by: PyQt5 UI code generator 5.9.2
 #
@@ -9,11 +9,10 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 import pkg_resources
 
-
 class Ui_MainWindow_chipviewer(object):
     def setupUi(self, MainWindow_chipviewer):
         MainWindow_chipviewer.setObjectName("MainWindow_chipviewer")
-        MainWindow_chipviewer.resize(646, 782)
+        MainWindow_chipviewer.resize(646, 772)
 
         icon = QtGui.QIcon(QtGui.QPixmap(pkg_resources.resource_filename("lcmap_tap",
                                                                          "/".join(("Auxiliary", "icon.PNG")))))
@@ -28,7 +27,7 @@ class Ui_MainWindow_chipviewer(object):
         self.ScrollArea_viewer.setWidgetResizable(True)
         self.ScrollArea_viewer.setObjectName("ScrollArea_viewer")
         self.Widget_ScrollAreaContents = QtWidgets.QWidget()
-        self.Widget_ScrollAreaContents.setGeometry(QtCore.QRect(0, 0, 626, 598))
+        self.Widget_ScrollAreaContents.setGeometry(QtCore.QRect(0, 0, 626, 539))
         self.Widget_ScrollAreaContents.setObjectName("Widget_ScrollAreaContents")
         self.ScrollArea_viewer.setWidget(self.Widget_ScrollAreaContents)
         self.gridLayout.addWidget(self.ScrollArea_viewer, 0, 0, 1, 1)
@@ -51,6 +50,35 @@ class Ui_MainWindow_chipviewer(object):
         self.HBoxLayout_controls.addLayout(self.VBoxLayout_enable)
         self.VBoxLayout_update = QtWidgets.QVBoxLayout()
         self.VBoxLayout_update.setObjectName("VBoxLayout_update")
+        self.HBoxLayout_percents = QtWidgets.QHBoxLayout()
+        self.HBoxLayout_percents.setObjectName("HBoxLayout_percents")
+        self.VBoxLayout_lower = QtWidgets.QVBoxLayout()
+        self.VBoxLayout_lower.setObjectName("VBoxLayout_lower")
+        self.Label_lower = QtWidgets.QLabel(self.Widget_central)
+        self.Label_lower.setObjectName("Label_lower")
+        self.VBoxLayout_lower.addWidget(self.Label_lower, 0, QtCore.Qt.AlignHCenter)
+        self.LineEdit_lower = QtWidgets.QLineEdit(self.Widget_central)
+        self.LineEdit_lower.setMaximumSize(QtCore.QSize(40, 16777215))
+        self.LineEdit_lower.setLayoutDirection(QtCore.Qt.LeftToRight)
+        self.LineEdit_lower.setMaxLength(6)
+        self.LineEdit_lower.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
+        self.LineEdit_lower.setObjectName("LineEdit_lower")
+        self.VBoxLayout_lower.addWidget(self.LineEdit_lower, 0, QtCore.Qt.AlignHCenter)
+        self.HBoxLayout_percents.addLayout(self.VBoxLayout_lower)
+        self.VBoxLayout_upper = QtWidgets.QVBoxLayout()
+        self.VBoxLayout_upper.setObjectName("VBoxLayout_upper")
+        self.Label_upper = QtWidgets.QLabel(self.Widget_central)
+        self.Label_upper.setObjectName("Label_upper")
+        self.VBoxLayout_upper.addWidget(self.Label_upper, 0, QtCore.Qt.AlignHCenter)
+        self.LineEdit_upper = QtWidgets.QLineEdit(self.Widget_central)
+        self.LineEdit_upper.setMaximumSize(QtCore.QSize(40, 16777215))
+        self.LineEdit_upper.setLayoutDirection(QtCore.Qt.LeftToRight)
+        self.LineEdit_upper.setMaxLength(6)
+        self.LineEdit_upper.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
+        self.LineEdit_upper.setObjectName("LineEdit_upper")
+        self.VBoxLayout_upper.addWidget(self.LineEdit_upper, 0, QtCore.Qt.AlignHCenter)
+        self.HBoxLayout_percents.addLayout(self.VBoxLayout_upper)
+        self.VBoxLayout_update.addLayout(self.HBoxLayout_percents)
         self.HBoxLayout_red = QtWidgets.QHBoxLayout()
         self.HBoxLayout_red.setObjectName("HBoxLayout_red")
         self.VBoxLayout_red_label = QtWidgets.QVBoxLayout()
@@ -187,6 +215,10 @@ class Ui_MainWindow_chipviewer(object):
         self.QLable_rightclick.setText(_translate("MainWindow_chipviewer", "Right Click - Toggle Pan On/Off"))
         self.QLabel_leftclick.setText(_translate("MainWindow_chipviewer", "Left Click - Return Point Location"))
         self.QLabel_zoom.setText(_translate("MainWindow_chipviewer", "Wheel  - Zoom In/Out"))
+        self.Label_lower.setText(_translate("MainWindow_chipviewer", "Lower"))
+        self.LineEdit_lower.setText(_translate("MainWindow_chipviewer", "1"))
+        self.Label_upper.setText(_translate("MainWindow_chipviewer", "Upper"))
+        self.LineEdit_upper.setText(_translate("MainWindow_chipviewer", "99"))
         self.Label_red.setText(_translate("MainWindow_chipviewer", "Red Channel: "))
         self.ComboBox_red.setItemText(1, _translate("MainWindow_chipviewer", "Blue"))
         self.ComboBox_red.setItemText(2, _translate("MainWindow_chipviewer", "Green"))
@@ -235,3 +267,4 @@ class Ui_MainWindow_chipviewer(object):
         self.PushButton_update.setText(_translate("MainWindow_chipviewer", "Update"))
         self.PushButton_zoom.setText(_translate("MainWindow_chipviewer", "Zoom to Point"))
         self.PushButton_save.setText(_translate("MainWindow_chipviewer", "Save Figure"))
+
