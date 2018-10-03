@@ -11,6 +11,8 @@ import sys
 import time
 import numpy as np
 import datetime as dt
+import matplotlib.pyplot as plt
+
 from PyQt5 import QtCore
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5 import QtWidgets, QtGui
@@ -164,20 +166,51 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
 
 class ChipsViewerX(QMainWindow):
-    bands = {'R': 'null',
-             'G': 'null',
-             'B': 'null'}
+
+    channel_lookup = {'Blue': ['blues'],
+                      'Green': ['greens'],
+                      'Red': ['reds'],
+                      'NIR': ['nirs'],
+                      'SWIR-1': ['swir1s'],
+                      'SWIR-2': ['swir2s'],
+                      'Thermal': ['thermals'],
+                      'NDVI': ['reds', 'nirs'],
+                      'MSAVI': ['reds', 'nirs'],
+                      'SAVI': ['reds', 'nirs'],
+                      'EVI': ['blues', 'reds', 'nirs'],
+                      'NDMI': ['nirs', 'swir1s'],
+                      'NBR-1': ['nirs', 'swir2s'],
+                      'NBR-2': ['swir1s', 'swir2s']}
+
+    channels = {'r_channel': ('Red', channel_lookup['Red']),
+                'g_channel': ('Green', channel_lookup['Green']),
+                'b_channel': ('Blue', channel_lookup['Blue'])}
 
     def __init__(self, x, y, date, url, gui, geo, **params):
         super().__init__()
 
-        self.date = date.strftime('%Y%m%d')
-
-        self.chips = Chips(x, y, date, url, **params)
+        self.x = x
+        self.y = y
+        self.date = date
+        self.url = url
 
         self.gui = gui
 
         self.geo_info = geo
+
+        self.ui = Ui_MainWindow_chipviewer()
+
+        self.ui.setupUi(self)
+
+        self.ui.ComboBox_red.setCurrentIndex(3)
+        self.ui.ComboBox_green.setCurrentIndex(2)
+        self.ui.ComboBox_blue.setCurrentIndex(1)
+
+        self.lower = float(self.ui.LineEdit_lower.text())
+        self.upper = float(self.ui.LineEdit_upper.text())
+
+        self.chips = Chips(x=self.x, y=self.y, date=self.date, url=self.url,
+                           lower=self.lower, upper=self.upper, **self.channels)
 
         self.pixel_image_affine = GeoAffine(ul_x=self.chips.grid['nw']['geo'].chip_coord.x,
                                             x_res=30,
@@ -192,19 +225,13 @@ class ChipsViewerX(QMainWindow):
 
         self.col = self.pixel_rowcol.column
 
-        self.ui = Ui_MainWindow_chipviewer()
-
-        self.ui.setupUi(self)
-
-        self.ui.ComboBox_red.setCurrentIndex(3)
-        self.ui.ComboBox_green.setCurrentIndex(2)
-        self.ui.ComboBox_blue.setCurrentIndex(1)
-
         self.sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
 
         self.graphics_view = ImageViewer()
 
         self.ui.ScrollArea_viewer.setWidget(self.graphics_view)
+
+
 
         self.img = QImage(self.chips.rgb.data, self.chips.rgb.shape[1], self.chips.rgb.shape[0],
                           self.chips.rgb.strides[0],
@@ -220,7 +247,7 @@ class ChipsViewerX(QMainWindow):
 
         self.graphics_view.fitInView()
 
-        # self.ui.ComboBox_blue.currentTextChanged()
+        self.ui.PushButton_update.clicked.connect(self.update_channels)
 
         self.ui.PushButton_zoom.clicked.connect(self.zoom_to_point)
 
@@ -228,9 +255,23 @@ class ChipsViewerX(QMainWindow):
 
         self.ui.PushButton_save.clicked.connect(self.save_img)
 
-
     def init_ui(self):
         self.show()
+
+    def update_percentiles(self):
+        try:
+            self.lower = float(self.ui.LineEdit_lower.text())
+
+            self.upper = float(self.ui.LineEdit_upper.text())
+
+        except (ValueError, TypeError):
+            self.lower = 1.0
+
+            self.upper = 99.0
+
+            self.ui.LineEdit_lower.setText('1.0')
+
+            self.ui.LineEdit_upper.setText('99.0')
 
     def save_img(self):
         """
@@ -238,9 +279,7 @@ class ChipsViewerX(QMainWindow):
         Returns:
 
         """
-        # default_fmt = ".png"
-
-        # fmts = [".bmp", ".jpg", ".png"]
+        date = self.date.strftime('%Y%m%d')
 
         r = self.ui.ComboBox_red.currentText().lower()
         g = self.ui.ComboBox_green.currentText().lower()
@@ -249,22 +288,13 @@ class ChipsViewerX(QMainWindow):
         try:
             outdir = self.gui.working_directory
 
-            outfile = os.path.join(outdir, f'{r}_{g}_{b}_{self.date}.png')
-            # browse = QtWidgets.QFileDialog.getSaveFileName()[0]
+            if r == b and r == g:
+                outfile = os.path.join(outdir, f'{r}_{date}.png')
 
-            # If no file extension was specified, make it .png
-            # if os.path.splitext(browse)[1] == '':
-            #     browse = browse + default_fmt
+            else:
+                outfile = os.path.join(outdir, f'{r}_{g}_{b}_{date}.png')
 
-            # If a file extension was specified, make sure it is valid for a QImage
-            # elif os.path.splitext(browse)[1] != '':
-            #
-            #     if not any([f == os.path.splitext(browse)[1] for f in fmts]):
-                    # If the file extension isn't valid, set it to .png instead
-            #         browse = os.path.splitext(browse)[0] + default_fmt
-            import matplotlib.pyplot as plt
-
-            fig, ax = plt.subplots(figsize=(10,10))
+            fig, ax = plt.subplots(figsize=(10, 10))
 
             plt.axis('off')
 
@@ -276,10 +306,10 @@ class ChipsViewerX(QMainWindow):
 
             ax.set_title(text)
 
-            ax.imshow(self.chips.rgb, interpolation='bicubic')
+            ax.imshow(self.chips.rgb, interpolation='nearest')
 
-            ax.scatter(x=self.chips.pixel_rowcol.column, y=self.chips.pixel_rowcol.row, marker='x', color='yellow',
-                       s=75, linewidth=3)
+            ax.scatter(x=self.chips.pixel_rowcol.column, y=self.chips.pixel_rowcol.row, marker='s', facecolor='none',
+                       color='yellow', s=15, linewidth=1)
 
             plt.savefig(outfile)
 
@@ -287,6 +317,35 @@ class ChipsViewerX(QMainWindow):
 
         except (TypeError, ValueError) as e:
             log.error('Exception: %s' % e, exc_info=True)
+
+    def update_channels(self):
+        """
+        Update which channels have been selected for visualization
+
+        """
+        self.channels['r_channel'] = (self.ui.ComboBox_red.currentText(),
+                                      self.channel_lookup[self.ui.ComboBox_red.currentText()])
+
+        self.channels['g_channel'] = (self.ui.ComboBox_green.currentText(),
+                                      self.channel_lookup[self.ui.ComboBox_green.currentText()])
+
+        self.channels['b_channel'] = (self.ui.ComboBox_blue.currentText(),
+                                      self.channel_lookup[self.ui.ComboBox_blue.currentText()])
+
+        self.update_percentiles()
+
+        self.chips = Chips(x=self.x, y=self.y, date=self.date, url=self.url,
+                           lower=self.lower, upper=self.upper, **self.channels)
+
+        self.img = QImage(self.chips.rgb.data, self.chips.rgb.shape[1], self.chips.rgb.shape[0],
+                          self.chips.rgb.strides[0],
+                          QImage.Format_RGB888)
+
+        self.img.ndarray = self.chips.rgb
+
+        self.display_img()
+
+        self.make_rect()
 
     def display_img(self):
         """
@@ -317,11 +376,8 @@ class ChipsViewerX(QMainWindow):
             self.graphics_view.scale(factor, factor)
 
             # Set the scene rectangle to the original image size, which may be larger than the current view rect
-
             if not self.graphics_view.rect.isNull():
                 self.graphics_view.setSceneRect(self.graphics_view.rect)
-
-                # log.debug("self.graphics_view.rect used to set SceneRect")
 
         except AttributeError:
             pass
@@ -474,10 +530,6 @@ class ChipsViewerX(QMainWindow):
 
         self.col = self.pixel_rowcol.column
 
-        # log.debug("self.ax = %s" % self.ax)
-
-        # log.debug("self.date_x = %s" % self.date_x)
-
         log.info("New point selected: %s" % str(coords))
 
         # Update the X and Y coordinates in the GUI with the new point
@@ -525,8 +577,6 @@ class ChipsViewerX(QMainWindow):
 
         for key, x in x_look_thru.items():
             if self.date_x in x:
-                log.info("Found date clicked %s in %s" % (self.date_x, key))
-
                 self.x_series = x
 
                 self.y_series = y_look_thru[key]
@@ -539,16 +589,8 @@ class ChipsViewerX(QMainWindow):
         #: the reflectance or index value for the new time series
         self.data_y = np.take(self.y_series, ind)
 
-        # log.debug("Y-series value returned: %s" % self.data_y)
-
-        # log.debug("From plot_window X: %s" % self.date_x)
-
-        # log.debug("From plot_window Y: %s" % self.data_y)
-
         # Display the highlighted pixel in the new plot
         highlight = self.gui.plot_window.artist_map[self.ax][0]
-
-        # log.debug("method update_plot, highlight=%s" % str(highlight))
 
         # highlight.set_data(self.date_x[0], self.data_y[0])
         highlight.set_data(self.date_x, self.data_y)
