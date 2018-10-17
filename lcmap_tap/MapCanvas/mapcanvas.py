@@ -55,6 +55,8 @@ class MapCanvas(QWidget):
 
         self.setWindowIcon(icon)
 
+        self.setWindowTitle('Locator Map')
+
         self.gui = gui
 
         self.setMinimumSize(400, 400)
