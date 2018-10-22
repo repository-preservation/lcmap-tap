@@ -12,6 +12,7 @@ import time
 import numpy as np
 import datetime as dt
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QPixmap, QImage
@@ -300,16 +301,33 @@ class ChipsViewerX(QMainWindow):
 
             ax.grid(False)
 
-            text = 'Chip Mosaic for Imagery Acquired %s' % \
-                   dt.datetime.fromordinal(self.chips.grid['c']['data'][0][1]['dates'][self.chips.grid['c']['ind']]
-                                           ).strftime('%Y-%m-%d')
+            _date = dt.datetime.fromordinal(self.chips.grid['c']['data'][0][1]['dates']
+                                           [self.chips.grid['c']['ind']]).strftime('%Y-%m-%d')
 
-            ax.set_title(text)
+            title = f'Date: {_date}'
+
+            text = f'X: {self.x}\nY: {self.y}'
+
+            ax.set_title(title)
 
             ax.imshow(self.chips.rgb, interpolation='nearest')
 
             ax.scatter(x=self.chips.pixel_rowcol.column, y=self.chips.pixel_rowcol.row, marker='s', facecolor='none',
                        color='yellow', s=15, linewidth=1)
+
+            # build a rectangle in axes coords
+            # left, width = .25, .5
+            # bottom, height = .25, .5
+            # right = left + width
+            # top = bottom + height
+            #
+            # p = patches.Rectangle(
+            #     (left, bottom), width, height,
+            #     fill=False, transform=ax.transAxes, clip_on=False)
+
+            # ax.add_patch(p)
+
+            ax.text(0, -.01, text, horizontalalignment='left', verticalalignment='top', transform=ax.transAxes)
 
             plt.savefig(outfile)
 

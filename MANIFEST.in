@@ -1,4 +1,5 @@
-include lcmap_tap/Auxiliary/*.png
+include lcmap_tap/Auxiliary/icon.png
+include lcmap_tap/Auxiliary/*.kml
 include lcmap_tap/config.yaml
 recursive-include lcmap_tap/MapCanvas *.html
 recursive-include lcmap_tap/MapCanvas *.css

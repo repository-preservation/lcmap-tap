@@ -66,6 +66,8 @@ class PlotWindow(QtWidgets.QMainWindow):
 
         self.setWindowIcon(icon)
 
+        self.setWindowTitle('Plot Window')
+
         self.widget = QtWidgets.QWidget()
         self.setCentralWidget(self.widget)
         self.widget.setLayout(QtWidgets.QVBoxLayout())

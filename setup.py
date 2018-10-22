@@ -23,9 +23,9 @@ setup(
     packages=find_packages(),
 
     install_requires=[
-        'matplotlib==2.2.2',
-        'numpy==1.14.5',
-        'gdal==2.2.2',
+        'matplotlib',
+        'numpy',
+        'gdal',
         'pyyaml',
         'cytoolz',
         'cython',
