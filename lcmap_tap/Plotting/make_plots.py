@@ -306,8 +306,8 @@ def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure,
                 lines5, = axes[num, 0].plot(data.prediction_dates[c * len(data.bands)],
                                             plot_data[b][1][c],
                                             "black",
-                                            linewidth=3.5,
-                                            alpha=1)
+                                            linewidth=3,
+                                            alpha=0.75)
 
                 model_lines.append(lines5)
 
