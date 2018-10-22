@@ -229,7 +229,7 @@ def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure,
         obs = axes[num, 0].scatter(x=data.dates_in[total_mask[data.date_mask]],
                                    y=plot_data[b][0][data.date_mask][total_mask[data.date_mask]],
                                    s=40,
-                                   c="forestgreen",
+                                   c="lightgreen",
                                    marker="o",
                                    edgecolors="black",
                                    picker=3,
@@ -306,8 +306,8 @@ def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure,
                 lines5, = axes[num, 0].plot(data.prediction_dates[c * len(data.bands)],
                                             plot_data[b][1][c],
                                             "black",
-                                            linewidth=3,
-                                            alpha=0.8)
+                                            linewidth=3.5,
+                                            alpha=1)
 
                 model_lines.append(lines5)
 
@@ -372,7 +372,7 @@ def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure,
     empty_leg = get_legend_handle(marker="D", ms=8, color="none", mec="lime", mew=1.75, linewidth=0,
                                   label="Selected")
 
-    obs_leg = get_legend_handle(marker="o", ms=8, color="limegreen", mec="k", mew=0.3, linewidth=0,
+    obs_leg = get_legend_handle(marker="o", ms=8, color="lightgreen", mec="k", mew=0.3, linewidth=0,
                                 label="Clear")
 
     mask_leg = get_legend_handle(marker="o", ms=4, color="0.65", linewidth=0,
@@ -389,7 +389,7 @@ def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure,
 
     match_leg = get_legend_handle(color='magenta', linewidth=1.5, label="Start Date = Break Date")
 
-    model_leg = get_legend_handle(color="black", linewidth=3, alpha=0.8, label="Model Fit")
+    model_leg = get_legend_handle(color="black", linewidth=3.5, alpha=1, label="Model Fit")
 
     date_leg = get_legend_handle(color='dimgray', linewidth=1.5, label="Datelines")
 
