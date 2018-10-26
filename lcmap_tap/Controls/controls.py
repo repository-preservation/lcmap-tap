@@ -5,7 +5,7 @@ Establish the main GUI Window using PyQt, provide the main interactions with chi
 from lcmap_tap.UserInterface import ui_main_workshop
 from lcmap_tap.Controls import units
 from lcmap_tap.RetrieveData import aliases
-from lcmap_tap.RetrieveData.retrieve_ard import ARDData, get_image_ids
+from lcmap_tap.RetrieveData.retrieve_ard import ARDData
 from lcmap_tap.RetrieveData.retrieve_ccd import CCDReader
 from lcmap_tap.RetrieveData.retrieve_geo import GeoInfo
 from lcmap_tap.RetrieveData.retrieve_classes import SegmentClasses
@@ -272,7 +272,7 @@ class MainControls(QMainWindow):
             try:
                 os.remove(fname)
 
-            except IOError as e:
+            except (IOError, PermissionError) as e:
                 log.error('Exception: %s' % e, exc_info=True)
 
         plt.savefig(fname, bbox_inches="tight", dpi=150)
@@ -368,9 +368,6 @@ class MainControls(QMainWindow):
             geo: Class instance containing geographic info
 
         """
-        # TODO Possibly add all logging output to QPlainTextEditor
-        # self.ui.PlainTextEdit_results.clear()
-
         log.info("Plotting for tile H{:02}V{:02} at point ({}, {}) meters".format(geo.H, geo.V,
                                                                                   geo.coord.x,
                                                                                   geo.coord.y))
