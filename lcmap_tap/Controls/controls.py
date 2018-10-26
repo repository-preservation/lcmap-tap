@@ -16,7 +16,7 @@ from lcmap_tap.Auxiliary import projections
 from lcmap_tap.Visualization.chip_viewer import ChipsViewerX
 from lcmap_tap.MapCanvas.mapcanvas import MapCanvas
 from lcmap_tap.logger import log, exc_handler, QtHandler
-from lcmap_tap.Auxiliary.caching import read_cache, update_cache  # save_cache
+from lcmap_tap.Auxiliary.caching import read_cache, update_cache
 from lcmap_tap import HOME
 
 import datetime as dt
@@ -103,6 +103,8 @@ class MainControls(QMainWindow):
         self.plot_specs = None  # container for plotting data
         self.begin = dt.date(year=1982, month=1, day=1)
         self.end = dt.date(year=2017, month=12, day=31)
+
+        self.fig_num = 0
 
         self.working_directory = None
 
@@ -275,6 +277,9 @@ class MainControls(QMainWindow):
             except (IOError, PermissionError) as e:
                 log.error('Exception: %s' % e, exc_info=True)
 
+        # Make sure the timeseries plot is set as the current figure
+        plt.figure(f'timeseries_figure_{self.fig_num}')
+
         plt.savefig(fname, bbox_inches="tight", dpi=150)
 
         log.debug("Plot figure saved to file {}".format(fname))
@@ -414,6 +419,8 @@ class MainControls(QMainWindow):
         if self.plot_window:
             self.plot_window.close()
 
+        self.fig_num += 1
+
         # <list> The bands and/or indices selected for plotting
         self.item_list = [str(i.text()) for i in self.ui.ListWidget_items.selectedItems()]
 
@@ -479,7 +486,8 @@ class MainControls(QMainWindow):
         axes <ndarray> 2D array of matplotlib.axes.Axes objects
         """
         self.fig, self.artist_map, self.lines_map, self.axes = make_plots.draw_figure(data=self.plot_specs,
-                                                                                      items=self.item_list)
+                                                                                      items=self.item_list,
+                                                                                      fig_num=self.fig_num)
 
         if not os.path.exists(self.ui.LineEdit_outputDir.text()):
             os.makedirs(self.ui.LineEdit_outputDir.text())
@@ -637,8 +645,6 @@ class MainControls(QMainWindow):
         Close all TAP tool windows and exit the program
 
         """
-        # save_cache(self.cache_data)
-
         log.info("Exiting TAP Tool")
 
         sys.exit(0)

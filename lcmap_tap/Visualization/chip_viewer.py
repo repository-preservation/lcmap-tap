@@ -1,3 +1,4 @@
+"""Make a QWidget that will hold a matplotlib figure to visualize a mosaic of ARD chips"""
 
 from lcmap_tap.logger import log, exc_handler
 from lcmap_tap.Controls import units
@@ -12,7 +13,6 @@ import time
 import numpy as np
 import datetime as dt
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QPixmap, QImage
@@ -20,6 +20,17 @@ from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtWidgets import QMainWindow
 
 sys.excepthook = exc_handler
+
+
+def get_time():
+    """
+    Return the current time stamp
+
+    Returns:
+        A formatted string containing the current date and time
+
+    """
+    return time.strftime("%Y%m%d-%H%M%S")
 
 
 class ImageViewer(QtWidgets.QGraphicsView):
@@ -195,6 +206,8 @@ class ChipsViewerX(QMainWindow):
         self.date = date
         self.url = url
 
+        self.fig_num = 1
+
         self.gui = gui
 
         self.geo_info = geo
@@ -290,12 +303,15 @@ class ChipsViewerX(QMainWindow):
             outdir = self.gui.working_directory
 
             if r == b and r == g:
-                outfile = os.path.join(outdir, f'{r}_{date}.png')
+                outfile = os.path.join(outdir, f'{r}_{date}_{get_time()}.png')
 
             else:
-                outfile = os.path.join(outdir, f'{r}_{g}_{b}_{date}.png')
+                outfile = os.path.join(outdir, f'{r}_{g}_{b}_{date}_{get_time()}.png')
 
-            fig, ax = plt.subplots(figsize=(10, 10))
+            fig, ax = plt.subplots(figsize=(10, 10), num=f'ard_figure_{self.fig_num}')
+
+            # Make sure that the ARD figure is active
+            plt.figure(f'ard_figure_{self.fig_num}')
 
             plt.axis('off')
 
@@ -315,26 +331,18 @@ class ChipsViewerX(QMainWindow):
             ax.scatter(x=self.chips.pixel_rowcol.column, y=self.chips.pixel_rowcol.row, marker='s', facecolor='none',
                        color='yellow', s=15, linewidth=1)
 
-            # build a rectangle in axes coords
-            # left, width = .25, .5
-            # bottom, height = .25, .5
-            # right = left + width
-            # top = bottom + height
-            #
-            # p = patches.Rectangle(
-            #     (left, bottom), width, height,
-            #     fill=False, transform=ax.transAxes, clip_on=False)
-
-            # ax.add_patch(p)
-
             ax.text(0, -.01, text, horizontalalignment='left', verticalalignment='top', transform=ax.transAxes)
 
-            plt.savefig(outfile)
+            plt.savefig(outfile, bbox_inches='tight', dpi=200)
 
-            # self.img.save(outfile, quality=100)
+            log.debug("Plot figure saved to file {}".format(outfile))
+
+            plt.gcf().clear()
+
+            self.fig_num += 1
 
         except (TypeError, ValueError) as e:
-            log.error('Exception: %s' % e, exc_info=True)
+            log.error('ARD save_img raised exception: %s' % e, exc_info=True)
 
     def update_channels(self):
         """
