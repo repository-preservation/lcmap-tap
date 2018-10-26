@@ -55,12 +55,13 @@ def get_plot_items(data: PlotSpecs, items: list) -> dict:
         return data.band_lookup
 
 
-def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure, dict, dict, ndarray]:
+def draw_figure(data: PlotSpecs, items: list, fig_num: int) -> Tuple[matplotlib.figure.Figure, dict, dict, ndarray]:
     """
 
     Args:
         data: an instance of the CCDReader class, contains all of the plotting attributes and data
         items: A list of strings representing the subplots to be plotted
+        fig_num: Will be used as a figure identifier
 
     Returns:
         fig: A matplotlib.figure.Figure object
@@ -69,7 +70,6 @@ def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure,
         axes: Using squeeze=False, returns a 2D numpy array of matplotlib.axes.Axes objects
 
     """
-
     def check_for_matches(starts: list, breaks: list):
         """
         Check if there are any instances of start date equalling break date
@@ -175,7 +175,7 @@ def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure,
     when referencing a subplot because will always return a 2D array
     e.g. axes[num, 0] for subplot 'num'"""
     fig, axes = plt.subplots(nrows=len(plot_data), ncols=1, figsize=(18, len(plot_data) * 5),
-                             dpi=65, squeeze=False, sharex='all', sharey='none')
+                             dpi=65, squeeze=False, sharex='all', sharey='none', num=f'timeseries_figure_{fig_num}')
 
     """Define list objects that will contain the matplotlib artist objects within all subplots"""
     end_lines = list()
