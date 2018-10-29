@@ -199,6 +199,17 @@ class ChipsViewerX(QMainWindow):
                 'b_channel': ('Blue', channel_lookup['Blue'])}
 
     def __init__(self, x, y, date, url, gui, geo, **params):
+        """
+
+        Args:
+            x:
+            y:
+            date:
+            url:
+            gui:
+            geo:
+            **params:
+        """
         super().__init__()
 
         self.x = x
@@ -244,8 +255,6 @@ class ChipsViewerX(QMainWindow):
         self.graphics_view = ImageViewer()
 
         self.ui.ScrollArea_viewer.setWidget(self.graphics_view)
-
-
 
         self.img = QImage(self.chips.rgb.data, self.chips.rgb.shape[1], self.chips.rgb.shape[0],
                           self.chips.rgb.strides[0],
@@ -328,7 +337,7 @@ class ChipsViewerX(QMainWindow):
 
             ax.imshow(self.chips.rgb, interpolation='nearest')
 
-            ax.scatter(x=self.chips.pixel_rowcol.column, y=self.chips.pixel_rowcol.row, marker='s', facecolor='none',
+            ax.scatter(x=self.col, y=self.row, marker='s', facecolor='none',
                        color='yellow', s=15, linewidth=1)
 
             ax.text(0, -.01, text, horizontalalignment='left', verticalalignment='top', transform=ax.transAxes)
@@ -486,9 +495,6 @@ class ChipsViewerX(QMainWindow):
         pen = QtGui.QPen(QtCore.Qt.yellow)
         pen.setWidthF(0.3)
 
-        self.row = self.pixel_rowcol.row
-        self.col = self.pixel_rowcol.column
-
         upper_left = QtCore.QPointF(self.col, self.row)
         bottom_right = QtCore.QPointF(self.col + 1, self.row + 1)
 
@@ -549,12 +555,6 @@ class ChipsViewerX(QMainWindow):
 
         coords = GeoInfo.rowcol_to_geo(affine=self.pixel_image_affine,
                                        rowcol=rowcol)
-
-        self.pixel_rowcol = GeoInfo.geo_to_rowcol(affine=self.pixel_image_affine, coord=self.geo_info.coord)
-
-        self.row = self.pixel_rowcol.row
-
-        self.col = self.pixel_rowcol.column
 
         log.info("New point selected: %s" % str(coords))
 
