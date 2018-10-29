@@ -104,6 +104,11 @@ class MainControls(QMainWindow):
         self.begin = dt.date(year=1982, month=1, day=1)
         self.end = dt.date(year=2017, month=12, day=31)
 
+        # Use these to store ARD viewer color channels
+        self.store_r = 3
+        self.store_g = 2
+        self.store_b = 1
+
         self.fig_num = 0
 
         self.working_directory = None
@@ -582,6 +587,12 @@ class MainControls(QMainWindow):
 
         try:
             if self.ard:
+
+                # Update with the previously selected color channels so they are displayed in the new ARD viewer
+                self.store_r = self.ard.r
+                self.store_g = self.ard.g
+                self.store_b = self.ard.b
+
                 self.close_ard()
 
             self.ard = ChipsViewerX(x=self.geo_info.coord.x,
@@ -589,7 +600,10 @@ class MainControls(QMainWindow):
                                     date=date,
                                     url=self.merlin_url,
                                     gui=self,
-                                    geo=self.geo_info)
+                                    geo=self.geo_info,
+                                    r=self.store_r,
+                                    g=self.store_g,
+                                    b=self.store_b)
 
         except (AttributeError, IndexError) as e:
             log.error("Display ARD raised an exception: %s" % e, exc_info=True)

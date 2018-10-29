@@ -198,7 +198,7 @@ class ChipsViewerX(QMainWindow):
                 'g_channel': ('Green', channel_lookup['Green']),
                 'b_channel': ('Blue', channel_lookup['Blue'])}
 
-    def __init__(self, x, y, date, url, gui, geo, **params):
+    def __init__(self, x, y, date, url, gui, geo, r, g, b, **params):
         """
 
         Args:
@@ -208,6 +208,9 @@ class ChipsViewerX(QMainWindow):
             url:
             gui:
             geo:
+            r:
+            g:
+            b:
             **params:
         """
         super().__init__()
@@ -216,6 +219,9 @@ class ChipsViewerX(QMainWindow):
         self.y = y
         self.date = date
         self.url = url
+        self.r = r
+        self.g = g
+        self.b = b
 
         self.fig_num = 1
 
@@ -227,9 +233,9 @@ class ChipsViewerX(QMainWindow):
 
         self.ui.setupUi(self)
 
-        self.ui.ComboBox_red.setCurrentIndex(3)
-        self.ui.ComboBox_green.setCurrentIndex(2)
-        self.ui.ComboBox_blue.setCurrentIndex(1)
+        self.ui.ComboBox_red.setCurrentIndex(self.r)
+        self.ui.ComboBox_green.setCurrentIndex(self.g)
+        self.ui.ComboBox_blue.setCurrentIndex(self.b)
 
         self.lower = float(self.ui.LineEdit_lower.text())
         self.upper = float(self.ui.LineEdit_upper.text())
@@ -366,6 +372,10 @@ class ChipsViewerX(QMainWindow):
 
         self.channels['b_channel'] = (self.ui.ComboBox_blue.currentText(),
                                       self.channel_lookup[self.ui.ComboBox_blue.currentText()])
+
+        self.r = self.ui.ComboBox_red.currentIndex()
+        self.g = self.ui.ComboBox_green.currentIndex()
+        self.b = self.ui.ComboBox_blue.currentIndex()
 
         self.update_percentiles()
 
@@ -555,6 +565,10 @@ class ChipsViewerX(QMainWindow):
 
         coords = GeoInfo.rowcol_to_geo(affine=self.pixel_image_affine,
                                        rowcol=rowcol)
+
+        # Update the x and y so that they are displayed correctly with save_img
+        self.x = coords.x
+        self.y = coords.y
 
         log.info("New point selected: %s" % str(coords))
 
