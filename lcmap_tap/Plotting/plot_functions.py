@@ -1,7 +1,6 @@
 """Define various functions to make life easier (ideally)"""
 
 import numpy as np
-from numpy import ndarray
 from collections import OrderedDict
 
 
@@ -24,9 +23,38 @@ def merge_dicts(*dict_args) -> OrderedDict:
     return result
 
 
-def test_for_zero(num: ndarray) -> ndarray:
+def apply_scaling_factor(num: np.ndarray, factor: float=0.0001) -> np.ndarray:
+    """
+    Apply a scaling factor to input data
+
+    Args:
+        num: input array containing reflectance data to be re-scaled
+        factor: scaling factor, default is 0.0001
+
+    Returns:
+        The re-scaled reflectance data
+
+    """
+    return num * factor
+
+
+def replace_negative_reflectance(num: np.ndarray) -> np.ndarray:
+    """
+    If any values of the array are negative, replace them with 0.  There should be no negative reflectance values.
+
+    Args:
+        num: The input reflectance data for any SR-band
+
+    """
+    num[num < 0] = 0
+
+    return num
+
+
+def mask_zero(num: np.ndarray) -> np.ndarray:
     """
     Return a mask to avoid division by zero
+
     Args:
         num: The input array
 
@@ -41,9 +69,10 @@ def test_for_zero(num: ndarray) -> ndarray:
     return mask
 
 
-def test_for_negative(num: ndarray) -> ndarray:
+def mask_negative(num: np.ndarray) -> np.ndarray:
     """
     Return a mask to avoid taking the square root of a negative number
+
     Args:
         num: The input array
 
@@ -58,7 +87,7 @@ def test_for_negative(num: ndarray) -> ndarray:
     return mask
 
 
-def ndvi(R: ndarray, NIR: ndarray) -> ndarray:
+def ndvi(R: np.ndarray, NIR: np.ndarray) -> np.ndarray:
     """
     Normalized Difference Vegetation Index
     (NIR - R) / (NIR + R)
@@ -71,15 +100,15 @@ def ndvi(R: ndarray, NIR: ndarray) -> ndarray:
         result: The calculated NDVI
 
     """
-    R_ = R * 0.0001
+    _R = replace_negative_reflectance(apply_scaling_factor(R))
 
-    NIR_ = NIR * 0.0001
+    _NIR = replace_negative_reflectance(apply_scaling_factor(NIR))
 
-    num = np.subtract(NIR_, R_)
+    num = np.subtract(_NIR, _R)
 
-    den = np.add(NIR_, R_)
+    den = np.add(_NIR, _R)
 
-    mask = test_for_zero(den)
+    mask = mask_zero(den)
 
     result = np.zeros_like(den, dtype=np.float64)
 
@@ -88,7 +117,7 @@ def ndvi(R: ndarray, NIR: ndarray) -> ndarray:
     return result
 
 
-def msavi(R: ndarray, NIR: ndarray) -> ndarray:
+def msavi(R: np.ndarray, NIR: np.ndarray) -> np.ndarray:
     """
     Modified Soil Adjusted Vegetation Index
     (2.0 * NIR + 1.0 - ((2.0 * NIR + 1.0) ** 2.0 - 8.0 * (NIR - R)) ** 0.5) / 2.0
@@ -101,22 +130,22 @@ def msavi(R: ndarray, NIR: ndarray) -> ndarray:
         result: The calculated MSAVI
 
     """
-    R_ = R * 0.0001
+    _R = replace_negative_reflectance(apply_scaling_factor(R))
 
-    NIR_ = NIR * 0.0001
+    _NIR = replace_negative_reflectance(apply_scaling_factor(NIR))
 
-    sqrt = ((2.0 * NIR_) + 1.0) ** 2.0 - (8.0 * (NIR_ - R_))
+    sqrt = ((2.0 * _NIR) + 1.0) ** 2.0 - (8.0 * (_NIR - _R))
 
-    mask = test_for_negative(sqrt)
+    mask = mask_negative(sqrt)
 
     result = np.zeros_like(R, dtype=np.float64)
 
-    result[mask] = ((2.0 * NIR_[mask]) + 1 - np.sqrt(sqrt[mask])) / 2.0
+    result[mask] = ((2.0 * _NIR[mask]) + 1 - np.sqrt(sqrt[mask])) / 2.0
 
     return result
 
 
-def evi(B: ndarray, R: ndarray, NIR: ndarray, G=2.5, L=1.0, C1=6.0, C2=7.5) -> ndarray:
+def evi(B: np.ndarray, R: np.ndarray, NIR: np.ndarray, G=2.5, L=1.0, C1=6.0, C2=7.5) -> np.ndarray:
     """
     Enhanced Vegetation Index
     G * ((NIR - R) / (NIR + C1 * R - C2 * B + L))
@@ -134,17 +163,18 @@ def evi(B: ndarray, R: ndarray, NIR: ndarray, G=2.5, L=1.0, C1=6.0, C2=7.5) -> n
         result: The calculated EVI
 
     """
-    NIR_ = NIR * 0.0001
+    _NIR = replace_negative_reflectance(apply_scaling_factor(NIR))
 
-    R_ = R * 0.0001
+    _R = replace_negative_reflectance(apply_scaling_factor(R))
 
-    B_ = B * 0.0001
+    _B = replace_negative_reflectance(apply_scaling_factor(B))
 
-    num = np.subtract(NIR_, R_)
 
-    den = NIR_ + (C1 * R_) - (C2 * B_) + L
+    num = np.subtract(_NIR, _R)
 
-    mask = test_for_zero(den)
+    den = _NIR + (C1 * _R) - (C2 * _B) + L
+
+    mask = mask_zero(den)
 
     result = np.zeros_like(NIR, dtype=np.float64)
 
@@ -153,7 +183,7 @@ def evi(B: ndarray, R: ndarray, NIR: ndarray, G=2.5, L=1.0, C1=6.0, C2=7.5) -> n
     return result
 
 
-def savi(R: ndarray, NIR: ndarray, L=0.5) -> ndarray:
+def savi(R: np.ndarray, NIR: np.ndarray, L=0.5) -> np.ndarray:
     """
     Soil Adjusted Vegetation Index
     ((NIR - R) / (NIR + R + L)) * (1 + L)
@@ -167,15 +197,15 @@ def savi(R: ndarray, NIR: ndarray, L=0.5) -> ndarray:
         result: The calculated SAVI
 
     """
-    NIR_ = NIR * 0.0001
+    _NIR = replace_negative_reflectance(apply_scaling_factor(NIR))
 
-    R_ = R * 0.0001
+    _R = replace_negative_reflectance(apply_scaling_factor(R))
 
-    num = np.subtract(NIR_, R_)
+    num = np.subtract(_NIR, _R)
 
-    den = NIR_ + R_ + L
+    den = _NIR + _R + L
 
-    mask = test_for_zero(den)
+    mask = mask_zero(den)
 
     result = np.zeros_like(R, dtype=np.float)
 
@@ -184,7 +214,7 @@ def savi(R: ndarray, NIR: ndarray, L=0.5) -> ndarray:
     return result
 
 
-def ndmi(NIR: ndarray, SWIR1: ndarray) -> ndarray:
+def ndmi(NIR: np.ndarray, SWIR1: np.ndarray) -> np.ndarray:
     """
     Normalized Difference Moisture Index
     (NIR - SWIR1) / (NIR + SWIR1)
@@ -197,20 +227,24 @@ def ndmi(NIR: ndarray, SWIR1: ndarray) -> ndarray:
         result: The calculated NDMI
 
     """
-    num = np.subtract(NIR, SWIR1)
+    _NIR = replace_negative_reflectance(apply_scaling_factor(NIR))
 
-    den = np.add(NIR, SWIR1)
+    _SWIR1 = replace_negative_reflectance(apply_scaling_factor(SWIR1))
 
-    mask = test_for_zero(den)
+    num = np.subtract(_NIR, _SWIR1)
 
-    result = np.zeros_like(NIR, dtype=np.float)
+    den = np.add(_NIR, _SWIR1)
+
+    mask = mask_zero(den)
+
+    result = np.zeros_like(_NIR, dtype=np.float)
 
     result[mask] = num[mask] / den[mask]
 
     return result
 
 
-def nbr(NIR: ndarray, SWIR2: ndarray) -> ndarray:
+def nbr(NIR: np.ndarray, SWIR2: np.ndarray) -> np.ndarray:
     """
     Normalized Burn Ratio
     (NIR - SWIR2) / (NIR + SWIR2)
@@ -223,20 +257,24 @@ def nbr(NIR: ndarray, SWIR2: ndarray) -> ndarray:
         result: The calculated NBR
 
     """
-    num = np.subtract(NIR, SWIR2)
+    _NIR = replace_negative_reflectance(apply_scaling_factor(NIR))
 
-    den = np.add(NIR, SWIR2)
+    _SWIR2 = replace_negative_reflectance(apply_scaling_factor(SWIR2))
 
-    mask = test_for_zero(den)
+    num = np.subtract(_NIR, _SWIR2)
 
-    result = np.zeros_like(NIR, dtype=np.float)
+    den = np.add(_NIR, _SWIR2)
+
+    mask = mask_zero(den)
+
+    result = np.zeros_like(_NIR, dtype=np.float)
 
     result[mask] = num[mask] / den[mask]
 
     return result
 
 
-def nbr2(SWIR1: ndarray, SWIR2: ndarray) -> ndarray:
+def nbr2(SWIR1: np.ndarray, SWIR2: np.ndarray) -> np.ndarray:
     """
     Normalized Burn Ratio 2
     (SWIR1 - SWIR2) / (SWIR1 + SWIR2)
@@ -249,13 +287,17 @@ def nbr2(SWIR1: ndarray, SWIR2: ndarray) -> ndarray:
         result: The calculated NBR-2
 
     """
-    num = np.subtract(SWIR1, SWIR2)
+    _SWIR1 = replace_negative_reflectance(apply_scaling_factor(SWIR1))
 
-    den = np.add(SWIR1, SWIR2)
+    _SWIR2 = replace_negative_reflectance(apply_scaling_factor(SWIR2))
 
-    mask = test_for_zero(den)
+    num = np.subtract(_SWIR1, _SWIR2)
 
-    result = np.zeros_like(SWIR1, dtype=np.float)
+    den = np.add(_SWIR1, _SWIR2)
+
+    mask = mask_zero(den)
+
+    result = np.zeros_like(_SWIR1, dtype=np.float)
 
     result[mask] = num[mask] / den[mask]
 
