@@ -44,11 +44,11 @@ This version of the tool (1.0.0-workshop) was developed for the LCMAP workshop s
 
 python >= 3.6
 
-matplotlib >= 2.2.2
-
 PyQt5 == 5.10.1
 
-numpy == 1.14.5
+matplotlib >= 2.2.2
+
+numpy
 
 GDAL
 
@@ -79,11 +79,11 @@ method of installation for GDAL.  Otherwise, information for installing GDAL man
 * Install Anaconda or Miniconda
   * Download [here](https://www.anaconda.com/download/)
 * Create a virtual environment with python 3.6, include the following dependencies in the environment creation:
-  * #####GDAL
-  * #####cython
-  * #####cytoolz
-  * #####numpy
-  * #####pandas
+  * __GDAL__
+  * __cython__
+  * __cytoolz__
+  * __numpy__
+  * __pandas__
   
   ```bash
   $conda create -n <env-name> python=3.6 gdal cython cytoolz numpy pandas
