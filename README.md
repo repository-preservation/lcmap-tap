@@ -34,23 +34,23 @@ to a .CSV file for further analysis.
 ## Installation
 These instructions work for both Windows and Linux systems.
 
-lcmap_tap has been installed and run successfully on Windows 7 & 10, and CentOS Linux (version 7).
+lcmap_tap has been installed and tested successfully on Windows 7 & 10, and CentOS Linux (version 7).
 
-The current version of the tool (0.5.0-workshop) was developed using python 3.6
+This version of the tool (1.0.0-workshop) was developed for the LCMAP workshop sessions Nov. 6-8, 2018 at USGS EROS.
 
 ##
 
 ##### System Requirements:
 
-python == 3.6
+python >= 3.6
 
-matplotlib == 2.2.2
+matplotlib >= 2.2.2
 
-PyQt5 >= 5.6
+PyQt5 == 5.10.1
 
 numpy == 1.14.5
 
-GDAL == 2.2.2
+GDAL
 
 pandas
 
@@ -62,7 +62,7 @@ cython
 
 requests
 
-lcmap-merlin
+[lcmap-merlin](https://pypi.org/project/lcmap-merlin/)
 #
 
 The tool also currently requires:
@@ -72,58 +72,47 @@ used for both plotting and displaying the ARD imagery.
       
 
 ##### Note:
-It is recommended to use an [Anaconda](https://www.anaconda.com/) virtual environment for installing
-the LCMAP TAP tool and its dependencies.
+It is recommended to use an [Anaconda](https://www.anaconda.com/) virtual environment since it provides an easier 
+method of installation for GDAL.  Otherwise, information for installing GDAL manually can be found [here](https://www.gdal.org/index.html).
 
 
 * Install Anaconda or Miniconda
   * Download [here](https://www.anaconda.com/download/)
-* Create a virtual environment with python 3.6:
-    ```bash
-    $conda create -n <env-name> python=3.6
-    ```
-#### Installing Python Dependencies
-[GDAL](http://www.gdal.org/index.html) and the other required python packages are easily installed with the 'conda install' command.
+* Create a virtual environment with python 3.6, include the following dependencies in the environment creation:
+  * #####GDAL
+  * #####cython
+  * #####cytoolz
+  * #####numpy
+  * #####pandas
+  
+  ```bash
+  $conda create -n <env-name> python=3.6 gdal cython cytoolz numpy pandas
+  The following NEW packages will be INSTALLED:
+  ...
+  Proceed ([y]/n)? y
 
-* From the command line, activate the virtual environment:
-    
-    Windows |Linux
-    --------|-------
-    $activate env-name |$source activate env-name
-    
-* Install the required packages
+  ```
+
+* Download the TAP source code [here](https://github.com/USGS-EROS/lcmap-tap/archive/workshop.zip) and extract the
+zipped folder.  From the command line, cd into the extracted folder.
+#### Installing TAP
+
+* From the command line, activate the virtual environment (must use source if using bash)
+        
+* Use pip to install TAP and the remaining dependencies
 
     **Windows and Linux**
     ```bash
-    (env-name)$conda install numpy gdal=2.2.2 matplotlib=2.2.2 pyyaml cytoolz requests cython pandas
-    The following NEW packages will be INSTALLED:
+    pip install --trusted-host pypi.org --trusted-host python.pypi.org --trusted-host files.pythonhosted.org .
     ...
-    Proceed ([y]/n)? y
-    ```
-* Install [lcmap-merlin](https://pypi.org/project/lcmap-merlin/) from the Python Package Index using pip:
-    ```
-    (env-name)$pip install lcmap-merlin --trusted-host pypi.org --trusted-host python.pypi.org --trusted-host files.pythonhosted.org
+
     ```
 
-#### Retrieving and installing LCMAP_TAP code 
-
-* [Download](https://github.com/USGS-EROS/lcmap-tap/archive/0.5.0-workshop.zip) lcmap_tap as a zipped folder.
-
-* Unzip, then using the command prompt enter into the unzipped folder:
-    ```bash
-    $cd <some-path-to-the-target-folder>\LCMAP_TAP\
-    ```
-* Install the plotting tool by running 'pip install' in the currently active
-virtual env
-    ```bash
-    (env-name)$ pip install .
-    ```
 ## Run the Tool
 
-Once installed, lcmap_tap can be executed directly from the command line:
+Once installed, lcmap_tap can be executed directly from the command line if the virtual environment 
+is activated:
 ```bash
 $activate env-name
-(env-name)$lcmap_tap
+$lcmap_tap
 ```
-
-A desktop shortcut icon can also be created for running the TAP tool.  Make a like to the lcmap_tap.exe file located in your conda environment directory.
