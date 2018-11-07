@@ -18,11 +18,12 @@ from setuptools import setup, find_packages
 setup(
     name='lcmap_tap',
 
-    version='0.5.0-workshop',
+    version='1.0.0-workshop',
 
     packages=find_packages(),
 
     install_requires=[
+        'PyQt5 == 5.10.1',
         'matplotlib',
         'numpy',
         'gdal',
