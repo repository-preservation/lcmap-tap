@@ -2,9 +2,6 @@
 __pycache__/
 *.py[cod]
 
-# C extensions
-*.so
-
 # Distribution / packaging
 bin/
 build/
@@ -25,45 +22,21 @@ var/
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports
-.tox/
-.coverage
-.cache
-nosetests.xml
-coverage.xml
-
-# Translations
-*.mo
-
-# Mr Developer
-.mr.developer.cfg
-.project
-.pydevproject
-
-# Rope
-.ropeproject
-
-# Django stuff:
-*.log
-*.pot
-
-# Sphinx documentation
-docs/_build/
-
 # JetBrains and Notebooks and more
 .idea/
 .ipynb_checkpoints/
-
-Notebooks/Working/
+Notebooks/
 *.ipynb
 
 # Other Dev Stuff
 Testing/
-scratch/
 **/dev/
 **/example/
 
+# Serialized Data used for testing
 *.pickle
 *.p
+*.json
 
+# Configuration files
 *.yaml
