@@ -169,7 +169,6 @@ def evi(B: np.ndarray, R: np.ndarray, NIR: np.ndarray, G=2.5, L=1.0, C1=6.0, C2=
 
     _B = replace_negative_reflectance(apply_scaling_factor(B))
 
-
     num = np.subtract(_NIR, _R)
 
     den = _NIR + (C1 * _R) - (C2 * _B) + L
