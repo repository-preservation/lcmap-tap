@@ -1,6 +1,6 @@
 """Find the class segments for the current time series"""
 
-from lcmap_tap.logger import log
+from lcmap_tap.logger import log, exc_handler
 from lcmap_tap.RetrieveData.retrieve_geo import GeoCoordinate, RowColumn
 from lcmap_tap.RetrieveData.retrieve_ccd import CCDReader
 import os
@@ -8,21 +8,6 @@ import sys
 import pickle
 import numpy as np
 from typing import List
-
-
-def exc_handler(exc_type, exc_value, exc_traceback):
-    """
-    Customized handling of top-level exceptions
-    Args:
-        exc_type: exception class
-        exc_value: exception instance
-        exc_traceback: traceback object
-
-    Returns:
-
-    """
-    log.critical("Exception: ", exc_info=(exc_type, exc_value, exc_traceback))
-
 
 sys.excepthook = exc_handler
 

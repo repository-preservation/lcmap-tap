@@ -1,25 +1,10 @@
 """Retrieve PyCCD attributes and results for the pixel coordinates"""
 
-from lcmap_tap.RetrieveData.retrieve_data import GeoCoordinate
-from lcmap_tap.logger import log
+from lcmap_tap.RetrieveData import GeoCoordinate
+from lcmap_tap.logger import log, exc_handler
 import os
 import sys
 import json
-
-
-def exc_handler(exc_type, exc_value, exc_traceback):
-    """
-    Customized handling of top-level exceptions
-    Args:
-        exc_type: exception class
-        exc_value: exception instance
-        exc_traceback: traceback object
-
-    Returns:
-
-    """
-    log.critical("Uncaught Exception: ", exc_info=(exc_type, exc_value, exc_traceback))
-
 
 sys.excepthook = exc_handler
 
@@ -46,8 +31,15 @@ class CCDReader:
                                                                             x=chip_coord.x,
                                                                             y=chip_coord.y))
 
-        self.results = self.extract_jsoncurve(pixel_info=self.pixel_ccd_info(results_chip=self.json_file,
-                                                                             coord=pixel_coord))
+        if self.json_file is not None:
+            self.results = self.check_dates(
+                self.extract_jsoncurve(pixel_info=self.pixel_ccd_info(results_chip=self.json_file,
+                                                                      coord=pixel_coord)))
+
+        else:
+            log.warning("No PyCCD results exist for tile %s" % tile)
+
+            self.results = [{}]
 
     @staticmethod
     def find_file(file_ls, string) -> str:
@@ -65,6 +57,20 @@ class CCDReader:
         gen = filter(lambda x: string.casefold() in x.casefold(), file_ls)
 
         return next(gen, None)
+
+    @staticmethod
+    def load_ccd(results_chip: str) -> dict:
+        """
+        Method for loading a JSON file
+
+        Args:
+            results_chip: The full path to a JSON file
+
+        Returns:
+            Information from a JSON file stored in a dict structure
+
+        """
+        return json.load(open(results_chip, 'r'))
 
     @staticmethod
     def pixel_ccd_info(results_chip: str, coord: GeoCoordinate) -> dict:
@@ -98,3 +104,20 @@ class CCDReader:
 
         """
         return json.loads(pixel_info["result"])
+
+    @staticmethod
+    def check_dates(results):
+        """
+        In cases where the entire time series does not contain a break day, simply make it be equal to the model's
+        end day.
+
+        """
+        # log.debug("RESULTS: %s" % results)
+        # log.debug("RESULTS KEYS: %s" % results.keys())
+        # log.debug("RESULTS CHANGE MODELS %s" % results['change_models'])
+
+        for ind, model in enumerate(results['change_models']):
+            if model['break_day'] < 1:
+                model['break_day'] = model['end_day']
+
+        return results

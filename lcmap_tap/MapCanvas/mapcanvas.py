@@ -2,14 +2,14 @@
 
 from lcmap_tap.RetrieveData.retrieve_geo import GeoInfo
 from lcmap_tap.Controls import units
-from lcmap_tap.logger import log
+from lcmap_tap.logger import log, exc_handler
 
 import sys
 import pkg_resources
 
 from PyQt5.Qt import PYQT_VERSION_STR
 from PyQt5.QtCore import QDir, QObject, QUrl, pyqtSlot, pyqtSignal, Qt
-from PyQt5.QtWidgets import QTextEdit, QVBoxLayout, QWidget, QLabel
+from PyQt5.QtWidgets import QVBoxLayout, QWidget, QLabel
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWebChannel import QWebChannel
 
@@ -19,7 +19,9 @@ try:
 
     USE = 'UseWebEngineView'
 
-except ImportError:
+except ImportError as e:
+    log.error('Exception: %s' % e, exc_info=True)
+
     # noinspection PyUnresolvedReferences
     from PyQt5.QtWebKitWidgets import QWebView
 
@@ -29,23 +31,6 @@ HTML = pkg_resources.resource_filename('lcmap_tap', '/'.join(('MapCanvas', USE, 
 
 log.info("PyQt version=%s" % PYQT_VERSION_STR)
 log.info("Qt Web Map using %s" % USE)
-
-
-def exc_handler(exc_type, exc_value, exc_traceback):
-    """
-    Customized handling of top-level exceptions
-
-    Args:
-        exc_type: exception class
-        exc_value: exception instance
-        exc_traceback: traceback object
-
-    Returns:
-        None
-
-    """
-    log.critical("Uncaught Exception: ", exc_info=(exc_type, exc_value, exc_traceback))
-
 
 sys.excepthook = exc_handler
 
@@ -69,6 +54,8 @@ class MapCanvas(QWidget):
         icon = QIcon(QPixmap(pkg_resources.resource_filename('lcmap_tap', '/'.join(('Auxiliary', 'icon.PNG')))))
 
         self.setWindowIcon(icon)
+
+        self.setWindowTitle('Locator Map')
 
         self.gui = gui
 
@@ -128,15 +115,17 @@ class MapCanvas(QWidget):
         if units[self.gui.selected_units]["unit"] == "meters":
             coords = GeoInfo.unit_conversion(coords, src="lat/long", dest="meters")
 
-        # Update the X and Y coordinates in the GUI with the new point
-        self.gui.ui.x1line.setText(str(coords.x))
+            coords = GeoInfo.get_geocoordinate(str(int(coords.x)), str(int(coords.y)))
 
-        self.gui.ui.y1line.setText(str(coords.y))
+        # Update the X and Y coordinates in the GUI with the new point
+        self.gui.ui.LineEdit_x1.setText(str(coords.x))
+
+        self.gui.ui.LineEdit_y1.setText(str(coords.y))
 
         self.gui.check_values()
 
         # Clear the list of previously clicked ARD observations because they can't be referenced in the new time-series
-        self.gui.ui.clicked_listWidget.clear()
+        self.gui.ui.ListWidget_selected.clear()
 
         # Display the coordinate in the QLabel window below the map
         self.text.setText("Point {lat}, {lng}".format(lat=lat, lng=lng))
