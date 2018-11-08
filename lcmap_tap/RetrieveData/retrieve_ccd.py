@@ -59,9 +59,9 @@ class CCDReader:
         return next(gen, None)
 
     @staticmethod
-    def load_ccd(results_chip: str) -> dict:
+    def chip_results(results_chip: str) -> dict:
         """
-        Method for loading a JSON file
+        Method for loading and returning the contents of a JSON file that contains a chip of change results.
 
         Args:
             results_chip: The full path to a JSON file

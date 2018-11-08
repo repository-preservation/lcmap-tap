@@ -25,12 +25,10 @@ class SegmentClasses:
             tile: String-formatted H-V tile name
 
         """
-        self.results = self.extract_results(class_file=CCDReader.find_file(
-            file_ls=[os.path.join(class_dir, f) for f in os.listdir(class_dir)],
-            string="{tile}_{x}_{y}_class.p".format(tile=tile,
-                                                   x=chip_coord.x,
-                                                   y=chip_coord.y)),
-            rc=rc)
+        self.p_file = CCDReader.find_file(file_ls=[os.path.join(class_dir, f) for f in os.listdir(class_dir)],
+                                          string=f'{tile}_{chip_coord.x}_{chip_coord.y}_class.p')
+
+        self.results = self.extract_results(class_file=self.p_file, rc=rc)
 
     @staticmethod
     def extract_results(class_file: str, rc: RowColumn) -> List[dict]:
@@ -48,3 +46,17 @@ class SegmentClasses:
         results = np.reshape(pickle.load(open(class_file, "rb")), (100, 100))
 
         return results[rc.row, rc.column]
+
+    @staticmethod
+    def chip_results(class_file: str) -> np.ndarray:
+        """
+        A method for opening and returning all of the contents within a p file that contains classification results
+
+        Args:
+            class_file: The full path to a pickle file containing a chip of classification results
+
+        Returns:
+            The file contents in a chip-shaped array
+
+        """
+        return pickle.load(open(class_file, 'rb'))
