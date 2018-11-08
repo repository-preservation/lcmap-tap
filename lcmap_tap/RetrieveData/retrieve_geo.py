@@ -1,6 +1,6 @@
 """Generate useful geographic information for tile, chip, and pixel granularities"""
 
-from lcmap_tap.logger import log, exc_handler
+from lcmap_tap.logger import exc_handler
 from lcmap_tap.Auxiliary import projections
 from lcmap_tap.RetrieveData import GeoExtent, GeoAffine, GeoCoordinate, RowColumn, CONUS_EXTENT
 import sys
@@ -39,11 +39,13 @@ class GeoInfo:
             # <GeoCoordinate> Containing the input coordinate in meters
             self.coord = self.unit_conversion(coord=self.geo_coord, src="lat/long", dest="meters")
 
+        self.CONUS_EXTENT = CONUS_EXTENT
+
         self.H, self.V = self.get_hv(x=self.coord.x, y=self.coord.y)
 
         self.tile = "h{:02}v{:02}".format(self.H, self.V)
 
-        self.EXTENT, self.PIXEL_AFFINE = self.geospatial_hv(loc=CONUS_EXTENT,
+        self.EXTENT, self.PIXEL_AFFINE = self.geospatial_hv(loc=self.CONUS_EXTENT,
                                                             h=self.H,
                                                             v=self.V)
 
@@ -68,6 +70,10 @@ class GeoInfo:
                                            ul_y=self.chip_coord.y,
                                            rot_2=0,
                                            y_res=-30)
+
+        self.CHIP_EXTENT = self.geospatial_chip(loc=self.EXTENT,
+                                                column=self.chip_rowcol.column,
+                                                row=self.chip_rowcol.row)
 
         self.chip_pixel_rowcol = self.geo_to_rowcol(self.PIXEL_CHIP_AFFINE, self.pixel_coord)
 
@@ -103,26 +109,54 @@ class GeoInfo:
         return h, v
 
     @staticmethod
-    def geospatial_hv(loc: GeoExtent, h: int, v: int) -> tuple:
+    def geospatial_hv(loc: GeoExtent, h: int, v: int,
+                      block_length: int=5000, res: int=30) -> Tuple[GeoExtent, GeoAffine]:
         """
         Return the tile extent and affine
 
         Args:
-            loc: Containing xmin, xmax, ymin, ymax values
+            loc: The larger encompassing extent (i.e. CONUS) containing xmin, xmax, ymin, ymax values
             h: H designation
             v: V designation
+            block_length: The length of one side of a grid block
+            res: The length of one side of a pixel
 
         Returns:
-            A tuple whose index 0 holds the GeoExtent, index 1 holds the GeoAffine
+            The extent and affine transformation for an ARD tile
 
         """
-        xmin = loc.x_min + h * 5000 * 30
-        xmax = loc.x_min + h * 5000 * 30 + 5000 * 30
-        ymax = loc.y_max - v * 5000 * 30
-        ymin = loc.y_max - v * 5000 * 30 - 5000 * 30
+        xmin = loc.x_min + h * block_length * res
+        xmax = loc.x_min + h * block_length * res + block_length * res
+        ymax = loc.y_max - v * block_length * res
+        ymin = loc.y_max - v * block_length * res - block_length * res
 
         return (GeoExtent(x_min=xmin, x_max=xmax, y_max=ymax, y_min=ymin),
-                GeoAffine(ul_x=xmin, x_res=30, rot_1=0, ul_y=ymax, rot_2=0, y_res=-30))
+                GeoAffine(ul_x=xmin, x_res=res, rot_1=0, ul_y=ymax, rot_2=0, y_res=-res))
+
+    @staticmethod
+    def geospatial_chip(loc: GeoExtent, column: int, row: int,
+                        chip_length: int=100, res: int=30) -> Tuple[GeoExtent, GeoAffine]:
+        """
+        Return the chip extent and affine
+
+        Args:
+            loc: Containing xmin, xmax, ymin, ymax values
+            column: The chip column within an ARD tile
+            row: The chip row within an ARD tile
+            chip_length: The length of one side of a chip
+            res: The length of one side of a pixel
+
+        Returns:
+            The extent and affine transformation for a chip
+
+        """
+        xmin = loc.x_min + column * chip_length * res
+        xmax = loc.x_min + column * chip_length * res + chip_length * res
+        ymax = loc.y_max - row * chip_length * res
+        ymin = loc.y_max - row * chip_length * res - chip_length * res
+
+        return (GeoExtent(x_min=xmin, x_max=xmax, y_max=ymax, y_min=ymin),
+                GeoAffine(ul_x=xmin, x_res=res, rot_1=0, ul_y=ymax, rot_2=0, y_res=-res))
 
     @staticmethod
     def get_geocoordinate(xstring: str, ystring: str) -> GeoCoordinate:

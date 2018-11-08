@@ -6,10 +6,12 @@ from lcmap_tap.logger import exc_handler
 from merlin import chipmunk, dates, specs, formats
 from functools import partial
 from cytoolz import assoc
+from typing import Iterable
 
 sys.excepthook = exc_handler
 
-def get_ubids(items: list) -> dict:
+
+def get_ubids(items: Iterable) -> dict:
     """
     Return a dictionary for custom-selected chipmunk-ard ubids
 
@@ -62,7 +64,7 @@ def get_profile(ubids: dict, url: str) -> dict:
                                resource=env.get('CHIPMUNK_SNAP_RESOURCE', '/grid/snap'))}
 
 
-def make_cfg(items: list, url: str, profile: str='chipmunk-ard') -> dict:
+def make_cfg(items: Iterable, url: str, profile: str='chipmunk-ard') -> dict:
     """
     Wrapper to generate the custom profile and ubids in one function
 

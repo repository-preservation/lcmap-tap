@@ -6,7 +6,6 @@ from lcmap_tap.Plotting import NAMES, COLORS
 from lcmap_tap.logger import log, exc_handler
 
 import sys
-import traceback
 import datetime as dt
 from collections import OrderedDict
 from typing import Tuple
@@ -24,6 +23,7 @@ sys.excepthook = exc_handler
 def get_plot_items(data: PlotSpecs, items: list) -> dict:
     """
     Check to see which bands and/or indices were selected to plot.
+
     Args:
         data: An instance of the CCDReader class
         items: A dict containing the selected bands/indices to plot
@@ -40,6 +40,7 @@ def get_plot_items(data: PlotSpecs, items: list) -> dict:
 
     if len(items) > 0:
         temp_dict = [(i, data.all_lookup[i]) for i in items if i in data.all_lookup.keys()]
+
         temp_dict = OrderedDict(temp_dict)  # Turn list of tuples into an OrderedDict
 
         for a in set_lists.keys():
@@ -51,15 +52,16 @@ def get_plot_items(data: PlotSpecs, items: list) -> dict:
 
     else:
         # Do this by default if the user hasn't selected anything from the list
-        return data.all_lookup
+        return data.band_lookup
 
 
-def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure, dict, dict, ndarray]:
+def draw_figure(data: PlotSpecs, items: list, fig_num: int) -> Tuple[matplotlib.figure.Figure, dict, dict, ndarray]:
     """
 
     Args:
         data: an instance of the CCDReader class, contains all of the plotting attributes and data
         items: A list of strings representing the subplots to be plotted
+        fig_num: Will be used as a figure identifier
 
     Returns:
         fig: A matplotlib.figure.Figure object
@@ -68,7 +70,6 @@ def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure,
         axes: Using squeeze=False, returns a 2D numpy array of matplotlib.axes.Axes objects
 
     """
-
     def check_for_matches(starts: list, breaks: list):
         """
         Check if there are any instances of start date equalling break date
@@ -117,25 +118,32 @@ def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure,
 
     fill_out = data.fill_mask[~data.date_mask]
 
-    class_results = dict()
+    if data.segment_classes is not None:
+        class_results = dict()
 
-    for ind, result in enumerate(data.segment_classes):
-        if len(result['class_probs']) == 9:
-            class_ind = np.argmax(result['class_probs'])
+        if not isinstance(data.segment_classes, list):
+            data.segment_classes = [data.segment_classes]
 
-        else:
-            # The older classification results have an additional class '0' so indices are off by 1
-            class_ind = np.argmax(result['class_probs']) + 1
+        for ind, result in enumerate(data.segment_classes):
+            if len(result['class_probs']) == 9:
+                class_ind = np.argmax(result['class_probs'])
 
-        class_label = NAMES[class_ind]
+            else:
+                # The older classification results have an additional class '0' so indices are off by 1
+                class_ind = np.argmax(result['class_probs']) + 1
 
-        if class_label not in class_results:
-            class_results[class_label] = {'starts': [result['start_day']],
-                                          'ends': [result['end_day']]}
+            class_label = NAMES[class_ind]
 
-        else:
-            class_results[class_label]['starts'].append(result['start_day'])
-            class_results[class_label]['ends'].append(result['end_day'])
+            if class_label not in class_results:
+                class_results[class_label] = {'starts': [result['start_day']],
+                                              'ends': [result['end_day']]}
+
+            else:
+                class_results[class_label]['starts'].append(result['start_day'])
+                class_results[class_label]['ends'].append(result['end_day'])
+
+    else:
+        class_results = None
 
     """plot_data is a dict whose keys are band names, index names, or a combination of both
 
@@ -167,7 +175,7 @@ def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure,
     when referencing a subplot because will always return a 2D array
     e.g. axes[num, 0] for subplot 'num'"""
     fig, axes = plt.subplots(nrows=len(plot_data), ncols=1, figsize=(18, len(plot_data) * 5),
-                             dpi=65, squeeze=False, sharex='all', sharey='none')
+                             dpi=65, squeeze=False, sharex='all', sharey='none', num=f'timeseries_figure_{fig_num}')
 
     """Define list objects that will contain the matplotlib artist objects within all subplots"""
     end_lines = list()
@@ -293,32 +301,33 @@ def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure,
                 match_lines.append(lines4)
 
         """ ---- Draw the predicted curves ---- """
-        for c in range(0, len(data.results["change_models"])):
-            lines5, = axes[num, 0].plot(data.prediction_dates[c * len(data.bands)],
-                                        plot_data[b][1][c],
-                                        "orange",
-                                        linewidth=3,
-                                        alpha=0.8)
+        if data.results is not None:
+            for c in range(0, len(data.results["change_models"])):
+                lines5, = axes[num, 0].plot(data.prediction_dates[c * len(data.bands)],
+                                            plot_data[b][1][c],
+                                            "orange",
+                                            linewidth=3,
+                                            alpha=0.8)
 
-            model_lines.append(lines5)
+                model_lines.append(lines5)
 
         """ ---- Draw horizontal color bars representing class assignments ---- """
+        if class_results is not None:
+            for key in class_results.keys():
+                if key not in class_lines:
+                    class_lines[key] = list()
 
-        for key in class_results.keys():
-            if key not in class_lines:
-                class_lines[key] = list()
+                for ind, item in enumerate(class_results[key]['starts']):
+                    lines6 = axes[num, 0].hlines(y=0,
+                                                 xmin=item,
+                                                 xmax=class_results[key]['ends'][ind],
+                                                 linewidth=6,
+                                                 colors=COLORS[key])
 
-            for ind, item in enumerate(class_results[key]['starts']):
-                lines6 = axes[num, 0].hlines(y=0,
-                                             xmin=item,
-                                             xmax=class_results[key]['ends'][ind],
-                                             linewidth=6,
-                                             colors=COLORS[key])
+                    class_lines[key].append(lines6)
 
-                class_lines[key].append(lines6)
-
-            class_handles.append(get_legend_handle(linewidth=6,
-                                                   color=COLORS[key], label=key))
+                class_handles.append(get_legend_handle(linewidth=6,
+                                                       color=COLORS[key], label=key))
 
         """ ---- Set values for the y-axis limits ---- """
         if b in data.index_lookup.keys():
@@ -406,11 +415,13 @@ def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure,
                  model_lines, date_lines]
 
     """Add whichever land cover classes are present to the legend handles and labels"""
-    for c in class_handles:
-        handles.append(c)
+    if len(class_handles) > 0:
+        for c in class_handles:
+            handles.append(c)
 
-    for cl in class_results.keys():
-        labels.append(cl)
+    if class_results is not None:
+        for cl in class_results.keys():
+            labels.append(cl)
 
     leg = axes[0, 0].legend(handles=handles, labels=labels,
                             ncol=1,
@@ -418,8 +429,9 @@ def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure,
                             bbox_to_anchor=(1.00, 1.00),
                             borderaxespad=0.)
 
-    for key in class_lines.keys():
-        lines.append(class_lines[key])
+    if len(class_lines) > 0:
+        for key in class_lines.keys():
+            lines.append(class_lines[key])
 
     for legline, origline in zip(leg.get_lines(), lines):
         # Set a tolerance of 5 pixels
@@ -428,8 +440,12 @@ def draw_figure(data: PlotSpecs, items: list) -> Tuple[matplotlib.figure.Figure,
         # Map the artist to the corresponding legend line
         lines_map[legline] = origline
 
-    # Fill in the figure canvas
-    fig.tight_layout()
+    try:
+        # Fill in the figure canvas
+        fig.tight_layout()
+
+    except ValueError as e:
+        log.error('Exception: %s' % e, exc_info=True)
 
     # Make room for the legend
     fig.subplots_adjust(right=0.9)

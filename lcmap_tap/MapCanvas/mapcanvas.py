@@ -19,7 +19,9 @@ try:
 
     USE = 'UseWebEngineView'
 
-except ImportError:
+except ImportError as e:
+    log.error('Exception: %s' % e, exc_info=True)
+
     # noinspection PyUnresolvedReferences
     from PyQt5.QtWebKitWidgets import QWebView
 
@@ -52,6 +54,8 @@ class MapCanvas(QWidget):
         icon = QIcon(QPixmap(pkg_resources.resource_filename('lcmap_tap', '/'.join(('Auxiliary', 'icon.PNG')))))
 
         self.setWindowIcon(icon)
+
+        self.setWindowTitle('Locator Map')
 
         self.gui = gui
 
@@ -111,15 +115,17 @@ class MapCanvas(QWidget):
         if units[self.gui.selected_units]["unit"] == "meters":
             coords = GeoInfo.unit_conversion(coords, src="lat/long", dest="meters")
 
-        # Update the X and Y coordinates in the GUI with the new point
-        self.gui.ui.x1line.setText(str(coords.x))
+            coords = GeoInfo.get_geocoordinate(str(int(coords.x)), str(int(coords.y)))
 
-        self.gui.ui.y1line.setText(str(coords.y))
+        # Update the X and Y coordinates in the GUI with the new point
+        self.gui.ui.LineEdit_x1.setText(str(coords.x))
+
+        self.gui.ui.LineEdit_y1.setText(str(coords.y))
 
         self.gui.check_values()
 
         # Clear the list of previously clicked ARD observations because they can't be referenced in the new time-series
-        self.gui.ui.clicked_listWidget.clear()
+        self.gui.ui.ListWidget_selected.clear()
 
         # Display the coordinate in the QLabel window below the map
         self.text.setText("Point {lat}, {lng}".format(lat=lat, lng=lng))
