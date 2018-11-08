@@ -59,6 +59,20 @@ class CCDReader:
         return next(gen, None)
 
     @staticmethod
+    def load_ccd(results_chip: str) -> dict:
+        """
+        Method for loading a JSON file
+
+        Args:
+            results_chip: The full path to a JSON file
+
+        Returns:
+            Information from a JSON file stored in a dict structure
+
+        """
+        return json.load(open(results_chip, 'r'))
+
+    @staticmethod
     def pixel_ccd_info(results_chip: str, coord: GeoCoordinate) -> dict:
         """
         Find the CCD output for a specific pixel from within the chip by matching the pixel coordinates
