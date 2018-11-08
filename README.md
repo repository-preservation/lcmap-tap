@@ -38,7 +38,7 @@ These instructions work for both Windows and Linux systems.
 
 lcmap_tap has been installed and run successfully on Windows 7 & 10, and CentOS Linux (version 7).
 
-The current version of the tool (0.4.0) was developed using python 3.6
+This version 0.4.0-research-development is intended to use for anyone wishing to test multiple versions of PyCCD
 
 ##
 
@@ -62,7 +62,7 @@ cython
 
 requests
 
-lcmap-merlin == 2.2.0
+lcmap-merlin
 #
 
 The tool also currently requires:

@@ -11,14 +11,19 @@ resolution at smaller scales. Each subplot has interactive picking within the pl
 Left-clicking on observation points in the subplot displays the information associated with that observation in a
 window on the GUI. Left-clicking on items in the legend turns on/off those items in the subplot. Button controls on
 the GUI allow for generating and displaying the plot, clearing the list of clicked observations, saving the figure in
-its current state to a .PNG image file, and exiting out of the tool. """
+its current state to a .PNG image file, and exiting out of the tool.
+
+This version provides the user with more control over selecting input data and PyCCD versions.  It is intended
+for users involved with algorithm research and development.
+
+"""
 
 from setuptools import setup, find_packages
 
 setup(
     name='lcmap_tap',
 
-    version='0.4.0',
+    version='0.4.0-research-development',
 
     packages=find_packages(),
 
