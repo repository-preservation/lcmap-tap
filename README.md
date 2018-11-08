@@ -36,8 +36,9 @@ These instructions work for both Windows and Linux systems.
 
 lcmap_tap has been installed and tested successfully on Windows 7 & 10, and CentOS Linux (version 7).
 
-This version of the tool (1.0.0-workshop) was developed for the LCMAP workshop sessions Nov. 6-8, 2018 at USGS EROS.
+Version 1.0.0
 
+_Note: some functionality may still be unstable_
 ##
 
 ##### System Requirements:
