@@ -103,7 +103,7 @@ method of installation for GDAL.  Otherwise, information for installing GDAL man
 
   ```
 
-* Download the TAP source code [here](https://github.com/USGS-EROS/lcmap-tap/archive/workshop.zip) and extract the
+* Download the TAP source code [here](https://github.com/USGS-EROS/lcmap-tap/archive/master.zip) and extract the
 zipped folder.  From the command line, cd into the extracted folder.
 #### Installing TAP
 
