@@ -18,7 +18,7 @@ def get_time():
     return time.strftime("%Y%m%d-%I%M%S")
 
 
-log = logging.getLogger()
+log = logging.getLogger(__name__)
 
 stdout_handler = logging.StreamHandler(sys.stdout)
 file_handler = logging.FileHandler(os.path.join(HOME, "lcmap_tap_{}.log".format(get_time())))
