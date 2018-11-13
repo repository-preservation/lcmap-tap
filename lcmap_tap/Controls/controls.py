@@ -132,15 +132,6 @@ class MainControls(QMainWindow):
             None
 
         """
-        # if helper:
-        #     """For testing, use some preset values if helper.yaml is found"""
-        #     self.ui.LineEdit_outputDir.setText(helper['test_output'])
-        #     # self.ui.browsejsonline.setText(helper['test_json'])
-        #     self.ui.LineEdit_x1.setText(helper['test_x'])
-        #     self.ui.LineEdit_y1.setText(helper['test_y'])
-        #
-        #     self.check_values()
-
         # *** Connect the various widgets to the methods they interact with ***
         self.ui.LineEdit_x1.textChanged.connect(self.set_units)
 
@@ -258,7 +249,7 @@ class MainControls(QMainWindow):
         """
         outdir = self.ui.LineEdit_outputDir.text()
 
-        coord = f"{self.ui.LineEdit_x1.text()}_{self.ui.LineEdit_y1.text()}"
+        coord = f"{self.geo_info.coord.x}_{self.geo_info.coord.y}"
 
         fname = f"H{self.geo_info.H}V{self.geo_info.V}_{coord}_{get_time()}{ext}"
 
