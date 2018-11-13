@@ -39,6 +39,9 @@ class GeoInfo:
             # <GeoCoordinate> Containing the input coordinate in meters
             self.coord = self.unit_conversion(coord=self.geo_coord, src="lat/long", dest="meters")
 
+            # Convert the meters to integer format
+            self.coord = GeoCoordinate(x=int(self.coord.x), y=int(self.coord.y))
+
         self.CONUS_EXTENT = CONUS_EXTENT
 
         self.H, self.V = self.get_hv(x=self.coord.x, y=self.coord.y)
