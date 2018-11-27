@@ -59,28 +59,26 @@ class GeoInfo:
                                           rot_2=0,
                                           y_res=-3000)
 
-        self.pixel_rowcol = self.geo_to_rowcol(self.PIXEL_AFFINE, self.coord)
+        self.tile_pixel_rowcol = self.geo_to_rowcol(self.PIXEL_AFFINE, self.coord)
 
-        self.pixel_coord = self.rowcol_to_geo(self.PIXEL_AFFINE, self.pixel_rowcol)
+        self.pixel_coord_ul = self.rowcol_to_geo(self.PIXEL_AFFINE, self.tile_pixel_rowcol)
 
-        self.chip_rowcol = self.geo_to_rowcol(self.TILE_CHIP_AFFINE, self.coord)
+        self.tile_chip_rowcol = self.geo_to_rowcol(self.TILE_CHIP_AFFINE, self.coord)
 
-        self.chip_coord = self.rowcol_to_geo(self.TILE_CHIP_AFFINE, self.chip_rowcol)
+        self.chip_coord_ul = self.rowcol_to_geo(self.TILE_CHIP_AFFINE, self.tile_chip_rowcol)
 
-        self.PIXEL_CHIP_AFFINE = GeoAffine(ul_x=self.chip_coord.x,
+        self.PIXEL_CHIP_AFFINE = GeoAffine(ul_x=self.chip_coord_ul.x,
                                            x_res=30,
                                            rot_1=0,
-                                           ul_y=self.chip_coord.y,
+                                           ul_y=self.chip_coord_ul.y,
                                            rot_2=0,
                                            y_res=-30)
 
         self.CHIP_EXTENT = self.geospatial_chip(loc=self.EXTENT,
-                                                column=self.chip_rowcol.column,
-                                                row=self.chip_rowcol.row)
+                                                column=self.tile_chip_rowcol.column,
+                                                row=self.tile_chip_rowcol.row)
 
-        self.chip_pixel_rowcol = self.geo_to_rowcol(self.PIXEL_CHIP_AFFINE, self.pixel_coord)
-
-        self.chip_pixel_coord = self.rowcol_to_geo(self.PIXEL_CHIP_AFFINE, self.chip_pixel_rowcol)
+        self.chip_pixel_rowcol = self.geo_to_rowcol(self.PIXEL_CHIP_AFFINE, self.pixel_coord_ul)
 
         self.rowcol = self.geo_to_rowcol(self.PIXEL_AFFINE, self.coord)
 
@@ -275,3 +273,41 @@ class GeoInfo:
         y = affine.ul_y + rowcol.column * affine.rot_2 + rowcol.row * affine.y_res
 
         return GeoCoordinate(x=x, y=y)
+
+    @staticmethod
+    def get_affine(ulx, uly, size=30):
+        """
+        Source: Kelcy Smith
+        Return a GDAL affine transformation for a given upper left coordinate
+
+        Args:
+            ulx (int): x-coordinate for the upper left location of the extent
+            uly (int): y-coordinate for the uppef left location of the extent
+            size (int): The resolution, default is 30 meters
+
+        Returns:
+            GeoAffine ["ul_x", "x_res", "rot_1", "ul_y", "rot_2", "y_res"]
+
+        """
+        return GeoAffine(ul_x=ulx, x_res=size, rot_1=0, ul_y=uly, rot_2=0, y_res=-size)
+
+    @staticmethod
+    def find_ul(coord_ls):
+        """
+        Source: Kelcy Smith
+        Helper function to identify the upper left coordinate from a list of coordinates.
+        """
+        xs, ys = zip(*coord_ls)
+
+        return GeoCoordinate(x=min(xs), y=max(ys))
+
+    @staticmethod
+    def find_lr(coord_ls):
+        """
+        Source: Kelcy Smith
+        Helper function to identify the lower left coordinate from a list of coordinates.
+        Note this is not the LR of the extent.
+        """
+        xs, ys = zip(*coord_ls)
+
+        return GeoCoordinate(x=max(xs), y=min(ys))

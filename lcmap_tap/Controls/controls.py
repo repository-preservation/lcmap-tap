@@ -270,8 +270,8 @@ class MainControls(QMainWindow):
             try:
                 os.remove(fname)
 
-            except (IOError, PermissionError) as e:
-                log.error('Exception: %s' % e, exc_info=True)
+            except (IOError, PermissionError) as _e:
+                log.error('Exception: %s' % _e, exc_info=True)
 
         # Make sure the timeseries plot is set as the current figure
         plt.figure(f'timeseries_figure_{self.fig_num}')
@@ -402,8 +402,8 @@ class MainControls(QMainWindow):
                 self.ui.PlainTextEdit_results.appendPlainText("Change prob: {}\n".format(result["change_probability"]))
                 log.info("Change prob: {}".format(result["change_probability"]))
 
-        except (ValueError, TypeError) as e:
-            log.error('Exception: %s' % e, exc_info=True)
+        except (ValueError, TypeError) as _e:
+            log.error('Exception: %s' % _e, exc_info=True)
 
             pass
 
@@ -426,37 +426,33 @@ class MainControls(QMainWindow):
 
         self.cache_data = read_cache(self.geo_info, self.cache_data)
 
-        # self.qt_handler.set_active(True)
-
         self.ard_observations = ARDData(geo=self.geo_info,
                                         url=self.merlin_url,
                                         items=self.item_list,
                                         cache=self.cache_data,
                                         controls=self)
 
-        # self.qt_handler.set_active(False)
-
         self.cache_data = update_cache(self.cache_data, self.ard_observations.cache, self.ard_observations.key)
 
         try:
             self.ccd_results = CCDReader(tile=self.geo_info.tile,
-                                         chip_coord=self.geo_info.chip_coord,
-                                         pixel_coord=self.geo_info.pixel_coord,
+                                         chip_coord=self.geo_info.chip_coord_ul,
+                                         pixel_coord=self.geo_info.pixel_coord_ul,
                                          json_dir=self.ccd_directory)
 
-        except (IndexError, AttributeError, TypeError, ValueError, FileNotFoundError) as e:
-            log.error('Exception: %s' % e, exc_info=True)
+        except (IndexError, AttributeError, TypeError, ValueError, FileNotFoundError) as _e:
+            log.error('Exception: %s' % _e, exc_info=True)
 
             self.ccd_results = None
 
         try:
-            self.class_results = SegmentClasses(chip_coord=self.geo_info.chip_coord,
+            self.class_results = SegmentClasses(chip_coord_ul=self.geo_info.chip_coord_ul,
                                                 class_dir=self.class_directory,
                                                 rc=self.geo_info.chip_pixel_rowcol,
                                                 tile=self.geo_info.tile)
 
-        except (IndexError, AttributeError, TypeError, ValueError, FileNotFoundError) as e:
-            log.error('Exception: %s' % e, exc_info=True)
+        except (IndexError, AttributeError, TypeError, ValueError, FileNotFoundError) as _e:
+            log.error('Exception: %s' % _e, exc_info=True)
 
             self.class_results = None
 
@@ -521,10 +517,10 @@ class MainControls(QMainWindow):
             try:
                 os.makedirs(os.path.split(out_shp)[0])
 
-            except PermissionError as e:
+            except PermissionError as _e:
 
                 log.warning("Generating shapefile raised exception: ")
-                log.warning(e, exc_info=True)
+                log.warning(_e, exc_info=True)
 
                 return None
 
@@ -596,8 +592,8 @@ class MainControls(QMainWindow):
                                     g=self.store_g,
                                     b=self.store_b)
 
-        except (AttributeError, IndexError) as e:
-            log.error("Display ARD raised an exception: %s" % e, exc_info=True)
+        except (AttributeError, IndexError) as _e:
+            log.error("Display ARD raised an exception: %s" % _e, exc_info=True)
 
     def close_ard(self):
         """
@@ -610,8 +606,8 @@ class MainControls(QMainWindow):
         try:
             self.ard.exit()
 
-        except AttributeError as e:
-            log.error('Exception: %s' % e, exc_info=True)
+        except AttributeError as _e:
+            log.error('Exception: %s' % _e, exc_info=True)
 
     def export_data(self):
         """
@@ -632,15 +628,15 @@ class MainControls(QMainWindow):
 
             data['dates'] = self.ard_observations.pixel_ard['dates']
 
-        except KeyError as e:
-            log.error('Exception: %s' % e, exc_info=True)
+        except KeyError as _e:
+            log.error('Exception: %s' % _e, exc_info=True)
 
         data = pd.DataFrame(data).sort_values('dates').reset_index(drop=True)
 
         data['dates'] = data['dates'].apply(lambda x: dt.datetime.fromordinal(x))
 
         data.to_csv(os.path.join(self.working_directory,
-                                 f'{get_time()}_{self.geo_info.pixel_coord.x}_{self.geo_info.pixel_coord.y}.csv'))
+                                 f'{get_time()}_{self.geo_info.pixel_coord_ul.x}_{self.geo_info.pixel_coord_ul.y}.csv'))
 
         return None
 

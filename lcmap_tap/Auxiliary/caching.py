@@ -26,7 +26,7 @@ def read_cache(geo_info, cache_data):
 
     """
     # The pickle file to look for within the zip archive
-    fname = f'{geo_info.chip_coord.x}_{geo_info.chip_coord.y}.p'
+    fname = f'{geo_info.chip_coord_ul.x}_{geo_info.chip_coord_ul.y}.p'
 
     # The key to be used in the cache_data dict
     key = os.path.splitext(fname)[0]

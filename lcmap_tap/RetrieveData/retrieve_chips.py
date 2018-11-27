@@ -1,9 +1,9 @@
 """Grab some chips to make a pretty picture"""
 
-from lcmap_tap.logger import exc_handler
+from lcmap_tap.logger import exc_handler, log
 from lcmap_tap.RetrieveData.retrieve_geo import GeoInfo
 from lcmap_tap.RetrieveData.retrieve_ard import ARDData
-from lcmap_tap.RetrieveData import GeoAffine, GeoCoordinate
+from lcmap_tap.RetrieveData import GeoCoordinate
 from lcmap_tap.RetrieveData.merlin_cfg import make_cfg
 import lcmap_tap.Analysis.data_tools as tools
 from lcmap_tap.Visualization.rescale import Rescale
@@ -59,30 +59,26 @@ class Chips:
 
         self.date = date
 
-        self.start, self.stop = self.get_acquired_dates(self.date)
+        self.start, self.stop = self.get_acquired_dates(self.date, 0)
 
         self.cfg = make_cfg(self.items, url)
 
-        # 3000 = 30m pixel x 100m chip-length
-        self.grid = {
-            'n': {'geo': GeoInfo(str(x), str(y + 3000))},
+        # A list of upper left chip coordinates to identify which chips to request
+        self.coords_snap = tools.zoomout(*tools.align(x, y, url))
 
-            'c': {'geo': GeoInfo(str(x), str(y))},
+        self.coords = tools.zoomout(int(x), int(y))
 
-            's': {'geo': GeoInfo(str(x), str(y - 3000))},
+        self.ul = GeoInfo.find_ul(self.coords)
 
-            'nw': {'geo': GeoInfo(str(x - 3000), str(y + 3000))},
+        self.affine = GeoInfo.get_affine(self.ul.x, self.ul.y)
 
-            'w': {'geo': GeoInfo(str(x - 3000), str(y))},
-
-            'sw': {'geo': GeoInfo(str(x - 3000), str(y - 3000))},
-
-            'ne': {'geo': GeoInfo(str(x + 3000), str(y + 3000))},
-
-            'e': {'geo': GeoInfo(str(x + 3000), str(y))},
-
-            'se': {'geo': GeoInfo(str(x + 3000), str(y - 3000))}
-        }
+        self.grid = {c_ul: {'x': c[0],
+                            'y': c[1],
+                            'x_ul': c_ul[0],
+                            'y_ul': c_ul[1],
+                            'data': [],
+                            'ind': 0
+                            } for c_ul, c in zip(self.coords_snap, self.coords)}
 
         self.params = self.get_params()
 
@@ -98,25 +94,27 @@ class Chips:
 
         self.check_indices()
 
-        self.qa = self.mosaic(self.grid, 'qas')
+        # Note: This is the UL coord of the upper left chip in the mosaic
+        self.mosaic_coord_ul = GeoInfo.find_ul(self.coords)
 
-        self.rgb = np.dstack((self.rescale_array(self.mosaic(self.grid, self.r_channel[0]),
+        # Note: This is the UL coord of the lower right chip in the mosaic
+        self.mosaic_coord_lr = GeoInfo.find_lr(self.coords)
+
+        self.qa = self.mosaic(grid=self.grid, ubid='qas', ul=self.mosaic_coord_ul, lr=self.mosaic_coord_lr)
+
+        self.rgb = np.dstack((self.rescale_array(self.mosaic(grid=self.grid, ubid=self.r_channel[0],
+                                                             ul=self.mosaic_coord_ul, lr=self.mosaic_coord_lr),
                                                  self.qa, lower, upper),
 
-                              self.rescale_array(self.mosaic(self.grid, self.g_channel[0]),
+                              self.rescale_array(self.mosaic(grid=self.grid, ubid=self.g_channel[0],
+                                                             ul=self.mosaic_coord_ul, lr=self.mosaic_coord_lr),
                                                  self.qa, lower, upper),
 
-                              self.rescale_array(self.mosaic(self.grid, self.b_channel[0]),
+                              self.rescale_array(self.mosaic(grid=self.grid, ubid=self.b_channel[0],
+                                                             ul=self.mosaic_coord_ul, lr=self.mosaic_coord_lr),
                                                  self.qa, lower, upper))).astype(np.uint8)
 
-        self.pixel_image_affine = GeoAffine(ul_x=self.grid['nw']['geo'].chip_coord.x,
-                                            x_res=30,
-                                            rot_1=0,
-                                            ul_y=self.grid['nw']['geo'].chip_coord.y,
-                                            rot_2=0,
-                                            y_res=-30)
-
-        self.pixel_rowcol = GeoInfo.geo_to_rowcol(self.pixel_image_affine, GeoCoordinate(x, y))
+        self.pixel_rowcol = GeoInfo.geo_to_rowcol(self.affine, GeoCoordinate(x, y))
 
     def check_indices(self):
         """
@@ -134,7 +132,7 @@ class Chips:
                 for loc, item in self.grid.items():
                     args = tuple([self.grid[loc]['chip'][band] for band in self.index_functions[i]['bands']])
 
-                    # Calculate the index
+                    # Calculate the index and add it to the dictionary referenced by 'chip'
                     self.grid[loc]['chip'][i] = call(*args)
 
     def get_params(self):
@@ -142,7 +140,13 @@ class Chips:
         Get an iterable containing the parameters for each chip to request via merlin
 
         """
-        return [(data['geo'], self.start, self.stop, self.cfg, loc) for loc, data in self.grid.items()]
+        return [{'x': info['x'],
+                 'y': info['y'],
+                 'start': self.start,
+                 'stop': self.stop,
+                 'cfg': self.cfg,
+                 'id': key}
+                for key, info in self.grid.items()]
 
     def retrieve_data(self):
         """
@@ -150,20 +154,25 @@ class Chips:
         """
         self.pool.map(self.merlin_call, self.params)
 
-    def merlin_call(self, args):
+    def merlin_call(self, params):
         """
 
         """
-        self.grid[args[4]]['data'] = merlin.create(x=args[0].coord.x,
-                                                    y=args[0].coord.y,
-                                                    acquired=f'{args[1]}/{args[2]}',
-                                                    cfg=args[3])
+        # self.grid[args[4]]['data'] = merlin.create(x=args[0].coord.x,
+        #                                             y=args[0].coord.y,
+        #                                             acquired=f'{args[1]}/{args[2]}',
+        #                                             cfg=args[3])
+
+        self.grid[params['id']]['data'] = merlin.create(x=params['x'],
+                                                        y=params['y'],
+                                                        acquired=f"{params['start']}/{params['stop']}",
+                                                        cfg=params['cfg'])
 
     def assemble_chips(self):
         """
 
         """
-        for loc, info in self.grid.items():
+        for loc in self.grid.keys():
             self.grid[loc]['chip'] = tools.assemble(self.grid[loc]['data'], self.grid[loc]['ind'], self.items)
 
     @staticmethod
@@ -185,13 +194,15 @@ class Chips:
         return Rescale(array, qa, lower, upper).rescaled
 
     @staticmethod
-    def mosaic(grid, ubid):
+    def mosaic(grid, ubid, ul, lr):
         """
         Place values from each chip into a larger array
 
         Args:
             grid (dict): The data structure containing chip arrays
             ubid (str): The band identifier
+            ul (GeoCoordinate): The upper left coordinate of the upper left chip in the mosaic
+            lr (GeoCoordinate): The upper left coordinate of the lower right chip in the mosaic
 
         Returns:
             np.ndarray
@@ -211,21 +222,16 @@ class Chips:
                        'NDMI': {'ubid': 'NDMI', 'dtype': np.float64},
                        'NBR-1': {'ubid': 'NBR-1', 'dtype': np.float64},
                        'NBR-2': {'ubid': 'NBR-2', 'dtype': np.float64},
-                       'qas': {'ubid': 'qas', 'dtype': np.int16},}
+                       'qas': {'ubid': 'qas', 'dtype': np.int16}, }
 
-        array = np.zeros((300, 300), dtype=ubid_lookup[ubid]['dtype'])
+        array = np.zeros(shape=tools.findrowscols(ul, lr))
 
-        array[0:100, 0:100] = grid['nw']['chip'][ubid_lookup[ubid]['ubid']]
-        array[100:200, 0:100] = grid['w']['chip'][ubid_lookup[ubid]['ubid']]
-        array[200:, 0:100] = grid['sw']['chip'][ubid_lookup[ubid]['ubid']]
+        for chip in grid.keys():
+            coord = GeoCoordinate(x=grid[chip]['x'], y=grid[chip]['y'])
 
-        array[0:100, 100:200] = grid['n']['chip'][ubid_lookup[ubid]['ubid']]
-        array[100:200, 100:200] = grid['c']['chip'][ubid_lookup[ubid]['ubid']]
-        array[200:, 100:200] = grid['s']['chip'][ubid_lookup[ubid]['ubid']]
+            row, column = GeoInfo.geo_to_rowcol(GeoInfo.get_affine(ul.x, ul.y), coord)
 
-        array[0:100, 200:] = grid['ne']['chip'][ubid_lookup[ubid]['ubid']]
-        array[100:200, 200:] = grid['e']['chip'][ubid_lookup[ubid]['ubid']]
-        array[200:, 200:] = grid['se']['chip'][ubid_lookup[ubid]['ubid']]
+            array[row: row + 100, column: column + 100] = grid[chip]['chip'][ubid_lookup[ubid]['ubid']]
 
         return array
 
@@ -234,21 +240,16 @@ class Chips:
         A wrapper to get the index within a timeseries for each grid-location in regards to a target date
 
         """
-        temp = ARDData.get_sequence(self.grid['c']['data'], self.tile_geo.pixel_coord)
+        log.debug("coords_snap: %s" % str(self.coords_snap[0]))
+
+        log.debug("tile_geo pixel_coord_ul: %s" % str(self.tile_geo.pixel_coord_ul))
+
+        temp = ARDData.get_sequence(timeseries=self.grid[self.tile_geo.chip_coord_ul]['data'],
+                                    pixel_coord=self.tile_geo.pixel_coord_ul)
 
         ind = self.get_index(temp['dates'], self.date)
 
         for loc, item in self.grid.items():
-            # temp = ARDData.get_sequence(timeseries=self.grid[loc]['data'], pixel_coord=self.tile_geo.pixel_coord)
-
-            # self.grid[loc]['ind'] = self.get_index(array=self.grid[loc]['data'][0][1]['dates'],
-            #                                        qa=self.grid[loc]['data'][0][1]['qas'],
-            #                                        date=self.date)
-
-            # self.grid[loc]['ind'] = self.get_index(array=temp['dates'],
-            #                                        qa=temp['qas'],
-            #                                        date=self.date)
-
             self.grid[loc]['ind'] = ind
 
     @staticmethod
