@@ -15,18 +15,18 @@ sys.excepthook = exc_handler
 class SegmentClasses:
     """Find and retain the classification results for the current time series"""
 
-    def __init__(self, chip_coord: GeoCoordinate, class_dir: str, rc: RowColumn, tile: str):
+    def __init__(self, chip_coord_ul: GeoCoordinate, class_dir: str, rc: RowColumn, tile: str):
         """
 
         Args:
-            chip_coord: The upper left coordinate of the chip in projected meters
+            chip_coord_ul: The upper left coordinate of the chip in projected meters
             class_dir: Absolute path to the directory containing classification results stored as pickle files
             rc: Row and column of the pixel within the chip array
             tile: String-formatted H-V tile name
 
         """
         self.p_file = CCDReader.find_file(file_ls=[os.path.join(class_dir, f) for f in os.listdir(class_dir)],
-                                          string=f'{tile}_{chip_coord.x}_{chip_coord.y}_class.p')
+                                          string=f'{tile}_{chip_coord_ul.x}_{chip_coord_ul.y}_class.p')
 
         self.results = self.extract_results(class_file=self.p_file, rc=rc)
 
