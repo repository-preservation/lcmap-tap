@@ -2,7 +2,7 @@
 
 from lcmap_tap.logger import log, exc_handler
 from lcmap_tap.Controls import units
-from lcmap_tap.RetrieveData import RowColumn, GeoAffine
+from lcmap_tap.RetrieveData import RowColumn # , GeoAffine
 from lcmap_tap.RetrieveData.retrieve_geo import GeoInfo
 from lcmap_tap.RetrieveData.retrieve_chips import Chips
 from lcmap_tap.Visualization.chipviewer_main import Ui_MainWindow_chipviewer
@@ -243,12 +243,7 @@ class ChipsViewerX(QMainWindow):
         self.chips = Chips(x=self.x, y=self.y, date=self.date, url=self.url,
                            lower=self.lower, upper=self.upper, **self.channels)
 
-        self.pixel_image_affine = GeoAffine(ul_x=self.chips.grid['nw']['geo'].chip_coord.x,
-                                            x_res=30,
-                                            rot_1=0,
-                                            ul_y=self.chips.grid['nw']['geo'].chip_coord.y,
-                                            rot_2=0,
-                                            y_res=-30)
+        self.pixel_image_affine = GeoInfo.get_affine(self.chips.mosaic_coord_ul.x, self.chips.mosaic_coord_ul.y)
 
         self.pixel_rowcol = GeoInfo.geo_to_rowcol(affine=self.pixel_image_affine, coord=self.geo_info.coord)
 
@@ -332,8 +327,10 @@ class ChipsViewerX(QMainWindow):
 
             ax.grid(False)
 
-            _date = dt.datetime.fromordinal(self.chips.grid['c']['data'][0][1]['dates']
-                                           [self.chips.grid['c']['ind']]).strftime('%Y-%m-%d')
+            center = self.chips.tile_geo.chip_coord_ul
+
+            _date = dt.datetime.fromordinal(self.chips.grid[center]['data'][0][1]['dates']
+                                           [self.chips.grid[center]['ind']]).strftime('%Y-%m-%d')
 
             title = f'Date: {_date}'
 
@@ -540,7 +537,6 @@ class ChipsViewerX(QMainWindow):
             self.current_pixel = QtWidgets.QGraphicsRectItem(QtCore.QRectF(upper_left, bottom_right))
             self.current_pixel.setPen(pen)
 
-            # self.graphics_view.scene.addRect(self.rect, pen)
             self.graphics_view.scene.addItem(self.current_pixel)
 
             time.sleep(1)
