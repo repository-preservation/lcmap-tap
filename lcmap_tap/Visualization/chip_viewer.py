@@ -243,7 +243,7 @@ class ChipsViewerX(QMainWindow):
         self.chips = Chips(x=self.x, y=self.y, date=self.date, url=self.url,
                            lower=self.lower, upper=self.upper, **self.channels)
 
-        self.pixel_image_affine = GeoInfo.get_affine(self.chips.mosaic_coord_ul.x, self.chips.mosaic_coord_ul.y)
+        self.pixel_image_affine = GeoInfo.get_affine(self.chips.chips_ul.x, self.chips.chips_ul.y)
 
         self.pixel_rowcol = GeoInfo.geo_to_rowcol(affine=self.pixel_image_affine, coord=self.geo_info.coord)
 
@@ -270,6 +270,11 @@ class ChipsViewerX(QMainWindow):
         self.init_ui()
 
         self.graphics_view.fitInView()
+
+        # Before generating the new plot, create a reference to the previously clicked date and subplot
+        self.ax = self.gui.plot_window.b  # Subplot name
+
+        self.date_x = self.gui.plot_window.x  # Date in ordinal datetime format, the x coordinate
 
         self.ui.PushButton_update.clicked.connect(self.update_channels)
 
@@ -522,8 +527,10 @@ class ChipsViewerX(QMainWindow):
         # Only draw a new plot and update the rectangle if this option is selected
         if self.ui.RadioButton_plot.isChecked():
             # Remove the previous rectangle from the scene
-            if self.current_pixel:
-                self.graphics_view.scene.removeItem(self.current_pixel)
+            # if self.current_pixel:
+            self.graphics_view.scene.removeItem(self.current_pixel)
+
+            time.sleep(1)
 
             pen = QtGui.QPen(QtCore.Qt.yellow)
             pen.setWidthF(0.3)
@@ -551,10 +558,7 @@ class ChipsViewerX(QMainWindow):
             None
 
         """
-        # Before generating the new plot, create a reference to the previously clicked date and subplot
-        self.ax = self.gui.plot_window.b  # Subplot name
 
-        self.date_x = self.gui.plot_window.x  # Date in ordinal datetime format, the x coordinate
 
         # Gather information to retrieve necessary data for the new plot
         rowcol = RowColumn(row=self.row, column=self.col)
@@ -611,6 +615,8 @@ class ChipsViewerX(QMainWindow):
                                self.gui.plot_specs.date_mask]]
                        }
 
+        log.debug("y look thru {}".format(y_look_thru))
+
         for key, x in x_look_thru.items():
             if self.date_x in x:
                 self.x_series = x
@@ -634,4 +640,7 @@ class ChipsViewerX(QMainWindow):
         self.gui.plot_window.canvas.draw()
 
         # Clear the list of previously clicked ARD observations because they can't be referenced in the new time-series
-        self.gui.ui.ListWidget_selected.clear()
+        # self.gui.ui.ListWidget_selected.clear()
+
+    def exit(self):
+        self.close()
