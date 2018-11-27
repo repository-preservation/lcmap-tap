@@ -615,8 +615,6 @@ class ChipsViewerX(QMainWindow):
                                self.gui.plot_specs.date_mask]]
                        }
 
-        log.debug("y look thru {}".format(y_look_thru))
-
         for key, x in x_look_thru.items():
             if self.date_x in x:
                 self.x_series = x

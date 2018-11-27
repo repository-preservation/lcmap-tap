@@ -188,7 +188,7 @@ def draw_figure(data: PlotSpecs, items: list, fig_num: int) -> Tuple[matplotlib.
     all_obs_points = list()
     all_out_points = list()
     all_mask_points = list()
-    empty_point = None
+    all_empty_points = list()
 
     match_dates = None
 
@@ -216,13 +216,9 @@ def draw_figure(data: PlotSpecs, items: list, fig_num: int) -> Tuple[matplotlib.
                                              picker=3,
                                              linewidth=0))
 
-        # log.debug("empty_point created")
-        # log.debug("empty_point=%s" % str(empty_point))
-
         # Store a reference to the empty point which will be used to display clicked points on the plot
         artist_map[b] = empty_point[0]
-
-        # log.debug("Referencing empty_point[0] which is %s for subplot %s" % (str(empty_point[0]), b))
+        all_empty_points.append(empty_point[0][0])
 
         """ ---- Plot the observed values within the PyCCD time range ---- """
         #: class matplotlib.collections.PathCollection:
@@ -401,7 +397,7 @@ def draw_figure(data: PlotSpecs, items: list, fig_num: int) -> Tuple[matplotlib.
         labels = ["Selected", "Clear", "Masked", "Unused", "End Date", "Break Date", "Start Date",
                   "Start Date = Break Date", "Model Fit", "Datelines"]
 
-        lines = [empty_point[0], all_obs_points, all_mask_points, all_out_points, end_lines, break_lines, start_lines,
+        lines = [all_empty_points, all_obs_points, all_mask_points, all_out_points, end_lines, break_lines, start_lines,
                  match_lines, model_lines, date_lines]
 
     else:
@@ -411,7 +407,7 @@ def draw_figure(data: PlotSpecs, items: list, fig_num: int) -> Tuple[matplotlib.
         labels = ["Selected", "Clear", "Masked", "Unused", "End Date", "Break Date", "Start Date",
                   "Model Fit", "Datelines"]
 
-        lines = [empty_point[0], all_obs_points, all_mask_points, all_out_points, end_lines, break_lines, start_lines,
+        lines = [all_empty_points, all_obs_points, all_mask_points, all_out_points, end_lines, break_lines, start_lines,
                  model_lines, date_lines]
 
     """Add whichever land cover classes are present to the legend handles and labels"""

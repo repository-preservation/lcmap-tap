@@ -202,6 +202,7 @@ class PlotWindow(QtWidgets.QMainWindow):
 
         # This references which object on the plot was hit by the pick
         self.artist = event.artist
+        log.debug('Artist: {}'.format(self.artist))
 
         # Only works using left-click (event.mouseevent.button==1)
         # and on any of the scatter point series (PathCollection artists)
@@ -272,7 +273,7 @@ class PlotWindow(QtWidgets.QMainWindow):
             None
 
         """
-        # log.debug("highlight_pick method self.artist= %s" % str(self.artist))
+        log.debug("highlight_pick method self.artist= %s" % str(self.artist))
 
         # Remove the highlight from the previously selected point
         try:
@@ -285,9 +286,12 @@ class PlotWindow(QtWidgets.QMainWindow):
         # Use index '0' because self.artist_map[b] is referencing a list of 1 item
         highlight = self.artist_map[self.b][0]
 
-        # log.debug("Method highlight_pick, highlight=%s" % str(highlight))
+        log.debug("Method highlight_pick, highlight=%s" % str(highlight))
 
         self.prev_highlight = highlight
+
+        log.debug("artist_data[0]: {}".format(self.artist_data[0]))
+        log.debug("artist_data[1]: {}".format(self.artist_data[1]))
 
         highlight.set_data(self.artist_data[0], self.artist_data[1])
 
@@ -333,7 +337,6 @@ class PlotWindow(QtWidgets.QMainWindow):
 
         for l in origlines:
             if type(l) is not list:
-
                 # Reference the opposite of the line's current visibility
                 vis = not l.get_visible()
 
