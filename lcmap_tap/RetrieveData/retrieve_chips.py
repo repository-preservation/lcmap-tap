@@ -100,6 +100,10 @@ class Chips:
         # Note: This is the UL coord of the lower right chip in the mosaic
         self.mosaic_coord_lr = GeoInfo.find_lr(self.coords)
 
+        self.chips_ul = GeoInfo.find_ul(self.coords_snap)
+
+        self.chips_lr = GeoInfo.find_lr(self.coords_snap)
+
         self.qa = self.mosaic(grid=self.grid, ubid='qas', ul=self.mosaic_coord_ul, lr=self.mosaic_coord_lr)
 
         self.rgb = np.dstack((self.rescale_array(self.mosaic(grid=self.grid, ubid=self.r_channel[0],
