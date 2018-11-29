@@ -59,7 +59,7 @@ def draw_figure(data: PlotSpecs, items: list, fig_num: int) -> Tuple[matplotlib.
     """
 
     Args:
-        data: an instance of the CCDReader class, contains all of the plotting attributes and data
+        data: an instance of the PlotSpecs class, contains all of the plotting attributes and data
         items: A list of strings representing the subplots to be plotted
         fig_num: Will be used as a figure identifier
 
