@@ -35,13 +35,6 @@ from PyQt5.QtWidgets import QMainWindow, QFileDialog
 # Tell matplotlib to use the QT5Agg Backend
 matplotlib.use('Qt5Agg')
 
-# # Can be used to quickly load paths on start-up for debugging
-# if os.path.exists('helper.yaml'):
-#     helper = yaml.load(open('helper.yaml', 'r'))
-#
-# else:
-#     helper = None
-
 sys.excepthook = exc_handler
 
 try:
@@ -429,8 +422,8 @@ class MainControls(QMainWindow):
         self.ard_observations = ARDData(geo=self.geo_info,
                                         url=self.merlin_url,
                                         items=self.item_list,
-                                        cache=self.cache_data,
-                                        controls=self)
+                                        cache=self.cache_data)
+                                        # controls=self)
 
         self.cache_data = update_cache(self.cache_data, self.ard_observations.cache, self.ard_observations.key)
 

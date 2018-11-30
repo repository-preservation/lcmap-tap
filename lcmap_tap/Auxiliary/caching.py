@@ -8,6 +8,7 @@ import subprocess
 from subprocess import CalledProcessError
 import datetime as dt
 from lcmap_tap.logger import log, HOME, exc_handler
+from collections import OrderedDict
 
 sys.excepthook = exc_handler
 
@@ -40,7 +41,11 @@ def read_cache(geo_info, cache_data):
 
             if fname in contents:
                 with f.open(fname, 'r') as p:
-                    temp = {os.path.splitext(fname)[0]: pickle.load(p)}
+                    _key = os.path.splitext(fname)[0]
+
+                    temp = {_key: pickle.load(p)}
+
+                    temp[_key] = OrderedDict({t[0]: t[1] for t in temp[_key]})
 
                 cache_data = update_cache(cache_data, temp, key)
 
@@ -49,7 +54,7 @@ def read_cache(geo_info, cache_data):
                 log.info("Chip file %s does not exist yet" % fname)
 
     except (FileNotFoundError, EOFError):
-        log.info("Cache file %s not found but will be generated on exit" % CACHE)
+        log.info("Cache file %s not found" % CACHE)
 
     return cache_data
 
