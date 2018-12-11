@@ -3,8 +3,8 @@ Establish the main GUI Window using PyQt, provide the main interactions with chi
 """
 
 from lcmap_tap.UserInterface import ui_main_workshop
-from lcmap_tap.Controls import units
-from lcmap_tap.RetrieveData import aliases
+from lcmap_tap.Controls import UNITS
+from lcmap_tap.RetrieveData import aliases, RowColumn
 from lcmap_tap.RetrieveData.retrieve_ard import ARDData
 from lcmap_tap.RetrieveData.retrieve_ccd import CCDReader
 from lcmap_tap.RetrieveData.retrieve_geo import GeoInfo
@@ -29,8 +29,10 @@ import matplotlib.pyplot as plt
 import yaml
 import pkg_resources
 import pandas as pd
+import numpy as np
 from osgeo import ogr, osr
 from PyQt5.QtWidgets import QMainWindow, QFileDialog
+from PyQt5 import QtCore
 
 # Tell matplotlib to use the QT5Agg Backend
 matplotlib.use('Qt5Agg')
@@ -115,6 +117,9 @@ class MainControls(QMainWindow):
 
         self.connect_widgets()
 
+        self.ui.LineEdit_x1.setText('-2193585')
+        self.ui.LineEdit_y1.setText('1886805')
+
         self.show()
 
     def connect_widgets(self):
@@ -196,28 +201,28 @@ class MainControls(QMainWindow):
         """
         self.selected_units = self.ui.ComboBox_units.currentText()
 
-        self.ui.Label_x1.setText(units[self.selected_units]["Label_x1"])
+        self.ui.Label_x1.setText(UNITS[self.selected_units]["Label_x1"])
 
-        self.ui.Label_y1.setText(units[self.selected_units]["Label_y1"])
+        self.ui.Label_y1.setText(UNITS[self.selected_units]["Label_y1"])
 
-        self.ui.Label_x2.setText(units[self.selected_units]["Label_x2"])
+        self.ui.Label_x2.setText(UNITS[self.selected_units]["Label_x2"])
 
-        self.ui.Label_y2.setText(units[self.selected_units]["Label_y2"])
+        self.ui.Label_y2.setText(UNITS[self.selected_units]["Label_y2"])
 
-        self.ui.Label_convertedUnits.setText(units[self.selected_units]["Label_convertedUnits"])
+        self.ui.Label_convertedUnits.setText(UNITS[self.selected_units]["Label_convertedUnits"])
 
         if len(self.ui.LineEdit_x1.text()) > 0 and len(self.ui.LineEdit_y1.text()) > 0:
             # <GeoCoordinate> containing the converted coordinates to display
             temp = GeoInfo.unit_conversion(coord=GeoInfo.get_geocoordinate(xstring=self.ui.LineEdit_x1.text(),
                                                                            ystring=self.ui.LineEdit_y1.text()),
-                                           src=units[self.selected_units]["unit"],
-                                           dest=units[self.ui.Label_convertedUnits.text()]["unit"])
+                                           src=UNITS[self.selected_units]["unit"],
+                                           dest=UNITS[self.ui.Label_convertedUnits.text()]["unit"])
 
             self.ui.LineEdit_x2.setText(str(temp.x))
 
             self.ui.LineEdit_y2.setText(str(temp.y))
 
-            if units[self.selected_units]["unit"] == "meters":
+            if UNITS[self.selected_units]["unit"] == "meters":
                 geocoord = GeoInfo.get_geocoordinate(xstring=self.ui.LineEdit_x1.text(),
                                                      ystring=self.ui.LineEdit_y1.text())
 
@@ -415,7 +420,7 @@ class MainControls(QMainWindow):
 
         self.geo_info = GeoInfo(x=self.ui.LineEdit_x1.text(),
                                 y=self.ui.LineEdit_y1.text(),
-                                units=units[self.selected_units]["unit"])
+                                units=UNITS[self.selected_units]["unit"])
 
         self.cache_data = read_cache(self.geo_info, self.cache_data)
 
@@ -423,7 +428,6 @@ class MainControls(QMainWindow):
                                         url=self.merlin_url,
                                         items=self.item_list,
                                         cache=self.cache_data)
-                                        # controls=self)
 
         self.cache_data = update_cache(self.cache_data, self.ard_observations.cache, self.ard_observations.key)
 
@@ -489,8 +493,10 @@ class MainControls(QMainWindow):
         self.plot_window = PlotWindow(fig=self.fig,
                                       axes=self.axes,
                                       artist_map=self.artist_map,
-                                      lines_map=self.lines_map,
-                                      gui=self)
+                                      lines_map=self.lines_map
+                                      )
+
+        self.plot_window.selected_obs.connect(self.connect_plot_selection)
 
         # Make these buttons available once a figure has been created
         self.ui.PushButton_clear.setEnabled(True)
@@ -579,11 +585,14 @@ class MainControls(QMainWindow):
                                     y=self.geo_info.coord.y,
                                     date=date,
                                     url=self.merlin_url,
-                                    gui=self,
+                                    subplot=self.plot_window.b,
                                     geo=self.geo_info,
                                     r=self.store_r,
                                     g=self.store_g,
-                                    b=self.store_b)
+                                    b=self.store_b,
+                                    outdir=self.working_directory)
+
+            self.ard.update_plot_signal.connect(self.update_plot)
 
         except (AttributeError, IndexError) as _e:
             log.error("Display ARD raised an exception: %s" % _e, exc_info=True)
@@ -654,3 +663,108 @@ class MainControls(QMainWindow):
 
         """
         self.exit_plot()
+
+    @QtCore.pyqtSlot(object)
+    def connect_plot_selection(self, val):
+        """
+        Display the selected observation in the main control window
+
+        Args:
+            val (dict): Information describing which observation was selected in a particular axes
+
+        Returns:
+
+        """
+        log.debug("emitted selection: {}".format(val))
+
+        output = "Obs. Date: {:%Y-%b-%d}\n{}-Value: {}".format(val['date'], val['b'], val['value'])
+
+        self.plot_window.b = val['b']
+
+        self.ui.ListWidget_selected.addItem(output)
+
+    @QtCore.pyqtSlot(object)
+    def update_plot(self):
+        """
+        Generate a new plot for the clicked point location
+
+        Returns:
+            None
+
+        """
+        # Gather information to retrieve necessary data for the new plot
+        rowcol = RowColumn(row=self.ard.row, column=self.ard.col)
+
+        coords = GeoInfo.rowcol_to_geo(affine=self.ard.pixel_image_affine,
+                                       rowcol=rowcol)
+
+        # Update the x and y so that they are displayed correctly with save_img
+        self.ard.x = coords.x
+        self.ard.y = coords.y
+
+        log.debug("New point selected: %s" % str(coords))
+
+        # Update the X and Y coordinates in the GUI with the new point
+        if UNITS[self.selected_units]["unit"] == "meters":
+
+            self.ui.LineEdit_x1.setText(str(coords.x))
+
+            self.ui.LineEdit_y1.setText(str(coords.y))
+
+        # Convert to lat/long before updating the coordinate text on the GUI
+        else:
+            _coords = GeoInfo.unit_conversion(coords)
+
+            self.ui.LineEdit_x1.setText(str(_coords.x))
+
+            self.ui.LineEdit_y1.setText(str(_coords.y))
+
+        # Do the plotting and generate a new figure
+        self.check_values()
+
+        self.plot()
+
+        """Need to determine the y-axis value for the new time series.  Can be done by determining the index within
+        the new time-series of the x-axis (i.e. date) value from the previous time series """
+        x_look_thru = {"obs_points": self.plot_specs.dates_in[self.plot_specs.qa_mask[
+            self.plot_specs.date_mask]],
+
+                       "out_points": self.plot_specs.dates_out[self.plot_specs.fill_out],
+
+                       "mask_points": self.plot_specs.dates_in[~self.plot_specs.qa_mask[
+                           self.plot_specs.date_mask]]
+                       }
+
+        y_look_thru = {"obs_points": self.plot_specs.all_lookup[self.ard.ax][0][self.plot_specs.date_mask][
+            self.plot_specs.qa_mask[
+                self.plot_specs.date_mask]],
+
+                       "out_points": self.plot_specs.all_lookup[self.ard.ax][0][~self.plot_specs.date_mask][
+                           self.plot_specs.fill_out],
+
+                       "mask_points": self.plot_specs.all_lookup[self.ard.ax][0][self.plot_specs.date_mask][
+                           ~self.plot_specs.qa_mask[
+                               self.plot_specs.date_mask]]
+                       }
+
+        for key, x in x_look_thru.items():
+            if self.ard.date_x in x:
+                x_series = x
+
+                y_series = y_look_thru[key]
+
+                #: int: the location of the date in the new time series
+                ind = np.where(x_series == self.ard.date_x)
+
+                #: the reflectance or index value for the new time series
+                data_y = np.take(y_series, ind)
+
+                # Display the highlighted pixel in the new plot
+                highlight = self.plot_window.artist_map[self.ard.ax][0]
+
+                # highlight.set_data(self.date_x[0], self.data_y[0])
+                highlight.set_data(self.ard.date_x, data_y)
+
+                self.plot_window.canvas.draw()
+
+                break
