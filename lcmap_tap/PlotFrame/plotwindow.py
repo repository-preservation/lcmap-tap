@@ -55,6 +55,8 @@ class PlotWindow(QtWidgets.QMainWindow):
 
     selected_obs = QtCore.pyqtSignal(object)
 
+    change_symbology = QtCore.pyqtSignal(object)
+
     def __init__(self, fig, axes, artist_map, lines_map, parent=None):
         """
         TODO Add a summary
@@ -376,41 +378,10 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.label = self.artist.get_label()
 
         if self.label in POINTS:
-            self.symbol_selector = SymbologyWindow(target=self.label)
-
-            self.symbol_selector.selected_marker.connect(self.connect_symbology)
-
-    @QtCore.pyqtSlot(object)
-    def connect_symbology(self, val):
-        log.debug("emitted marker: {}".format(val))
-
-        log.debug("marker type: {}".format(type(val)))
-
-        self.config = PlotConfig()
-
-        self.config.update_config(self.label, {'marker': val})
-
-        log.debug("new opts: {}".format(self.config.opts))
-
-        self.symbol_selector.close()
-
-        # self.update_figure()
-
-    # def update_figure(self):
-    #     self.fig, self.artist_map, self.lines_map, self.axes = make_plots.draw_figure(data=self.gui.plot_specs,
-    #                                                                                   items=self.gui.item_list,
-    #                                                                                   fig_num=self.gui.fig_num,
-    #                                                                                   config=self.config.opts)
-    #
-    #     self.canvas = MplCanvas(fig=self.fig)
-    #
-    #     self.canvas.draw()
-    #
-    #     self.widget.layout().removeWidget(self.canvas)
-    #
-    #     self.show()
-    #
-    #     self.initial_legend()
+            # self.symbol_selector = SymbologyWindow()
+            #
+            # self.symbol_selector.selected_marker.connect(self.connect_symbology)
+            self.change_symbology.emit(self.label)
 
     def enter_axes(self, event=None):
         """
