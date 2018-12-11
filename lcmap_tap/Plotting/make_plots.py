@@ -2,7 +2,6 @@
 
 from lcmap_tap.Plotting.plot_specs import PlotSpecs
 from lcmap_tap.Plotting import plot_functions, NAMES, COLORS
-from lcmap_tap.Plotting.plot_config import PlotConfig
 from lcmap_tap.logger import log, exc_handler
 
 import sys
@@ -18,8 +17,6 @@ import matplotlib.lines as mlines
 from matplotlib.figure import Figure
 
 sys.excepthook = exc_handler
-
-plot_config = PlotConfig()
 
 
 def get_plot_items(data: PlotSpecs, items: list) -> dict:
@@ -57,7 +54,7 @@ def get_plot_items(data: PlotSpecs, items: list) -> dict:
         return data.band_lookup
 
 
-def draw_figure(data: PlotSpecs, items: list, fig_num: int, config: dict=plot_config.opts) -> \
+def draw_figure(data: PlotSpecs, items: list, fig_num: int, config: dict) -> \
         Tuple[matplotlib.figure.Figure, dict, dict, ndarray]:
     """
 
@@ -107,6 +104,9 @@ def draw_figure(data: PlotSpecs, items: list, fig_num: int, config: dict=plot_co
         return mlines.Line2D([], [], **kwargs)
 
     plt.style.use('ggplot')
+
+    leg_config = config['LEG_DEFAULTS']
+    m_config = config['DEFAULTS']
 
     # get year values for labeling plots
     year1 = str(dt.datetime.fromordinal(data.dates[-1]))[:4]
@@ -220,7 +220,7 @@ def draw_figure(data: PlotSpecs, items: list, fig_num: int, config: dict=plot_co
         #                                      picker=3,
         #                                      linewidth=0))
 
-        empty_point.append(axes[num, 0].plot([], [], **config['highlight_pick']))
+        empty_point.append(axes[num, 0].plot([], [], **m_config['highlight_pick']))
 
         # Store a reference to the empty point which will be used to display clicked points on the plot
         artist_map[b] = empty_point[0]
@@ -239,7 +239,7 @@ def draw_figure(data: PlotSpecs, items: list, fig_num: int, config: dict=plot_co
 
         obs = axes[num, 0].scatter(x=data.dates_in[total_mask[data.date_mask]],
                                    y=plot_data[b][0][data.date_mask][total_mask[data.date_mask]],
-                                   **config['clear_obs'])
+                                   **m_config['clear_obs'])
 
         obs_points.append(obs)
         all_obs_points.append(obs)
@@ -262,7 +262,7 @@ def draw_figure(data: PlotSpecs, items: list, fig_num: int, config: dict=plot_co
 
         out = axes[num, 0].scatter(x=data.dates_out[fill_out],
                                    y=plot_data[b][0][~data.date_mask][fill_out],
-                                   **config['out_obs']
+                                   **m_config['out_obs']
                                    )
 
         out_points.append(out)
@@ -282,7 +282,7 @@ def draw_figure(data: PlotSpecs, items: list, fig_num: int, config: dict=plot_co
 
         mask = axes[num, 0].scatter(x=data.dates_in[~total_mask[data.date_mask]],
                                     y=plot_data[b][0][data.date_mask][~total_mask[data.date_mask]],
-                                    **config['mask_obs']
+                                    **m_config['mask_obs']
                                     )
 
         mask_points.append(mask)
@@ -385,25 +385,25 @@ def draw_figure(data: PlotSpecs, items: list, fig_num: int, config: dict=plot_co
         axes[num, 0].tick_params(axis='both', which='both', labelsize=12, labelbottom=True)
 
     """Create custom legend handles"""
-    empty_leg = get_legend_handle(**config['highlight_pick_leg'])
+    empty_leg = get_legend_handle(**leg_config['highlight_pick'])
 
-    obs_leg = get_legend_handle(**config['clear_obs_leg'])
+    obs_leg = get_legend_handle(**leg_config['clear_obs'])
 
-    mask_leg = get_legend_handle(**config['mask_obs_leg'])
+    mask_leg = get_legend_handle(**leg_config['mask_obs'])
 
-    out_leg = get_legend_handle(**config['out_obs_leg'])
+    out_leg = get_legend_handle(**leg_config['out_obs'])
 
-    end_leg = get_legend_handle(**config['end_lines'])
+    end_leg = get_legend_handle(**leg_config['end_lines'])
 
-    break_leg = get_legend_handle(**config['break_lines'])
+    break_leg = get_legend_handle(**leg_config['break_lines'])
 
-    start_leg = get_legend_handle(**config['start_lines'])
+    start_leg = get_legend_handle(**leg_config['start_lines'])
 
-    match_leg = get_legend_handle(**config['match_lines'])
+    match_leg = get_legend_handle(**leg_config['match_lines'])
 
-    model_leg = get_legend_handle(**config['model_lines'])
+    model_leg = get_legend_handle(**leg_config['model_lines'])
 
-    date_leg = get_legend_handle(**config['date_lines'])
+    date_leg = get_legend_handle(**leg_config['date_lines'])
 
     if match_dates is not None:
 
