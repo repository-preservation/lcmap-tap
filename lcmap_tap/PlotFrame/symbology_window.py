@@ -1,9 +1,8 @@
 """Build a Qt Window with functionality to allow for setting custom symbology"""
 
 import sys
-import numpy as np
 import pkg_resources
-# from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtCore import pyqtSignal
@@ -12,36 +11,11 @@ import matplotlib
 matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+from matplotlib import colors as mcolors
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from lcmap_tap.logger import exc_handler, log
 
 sys.excepthook = exc_handler
-
-
-def split_list(a_list):
-    """
-    Source: https://matplotlib.org/gallery/lines_bars_and_markers/marker_reference.html
-    Args:
-        a_list (list): Input list to split in half
-
-    Returns:
-        Tuple[list, list]
-    """
-    i_half = len(a_list) // 2
-
-    return a_list[:i_half], a_list[i_half:]
-
-
-def nice_repr(text):
-    # Source: https://matplotlib.org/gallery/lines_bars_and_markers/marker_reference.html
-    return repr(text).lstrip('u')
-
-
-def format_axes(ax):
-    # Source: https://matplotlib.org/gallery/lines_bars_and_markers/marker_reference.html
-    ax.margins(0.2)
-    ax.set_axis_off()
-    ax.invert_yaxis()
 
 
 class MplCanvas(FigureCanvas):
@@ -68,17 +42,17 @@ class MplCanvas(FigureCanvas):
 
 
 class SymbologyWindow(QtWidgets.QMainWindow):
-    points = np.ones(3)  # Draw 3 points for each line
-
     text_style = dict(horizontalalignment='right', verticalalignment='center',
                       fontsize=12, fontdict={'family': 'monospace'})
 
     marker_style = dict(linestyle=':', color='0.8', markersize=10,
-                        mfc="C0", mec="C0", picker=3)
+                        mfc="C0", mec="C0", picker=6)
+
+    marker_names = [n for m, n in Line2D.markers.items() if n != 'nothing']
 
     selected_marker = pyqtSignal(object)
 
-    def __init__(self, target, parent=None):
+    def __init__(self, parent=None):
         """
         TODO Add a summary
         """
@@ -86,41 +60,102 @@ class SymbologyWindow(QtWidgets.QMainWindow):
 
         icon = QIcon(QPixmap(pkg_resources.resource_filename("lcmap_tap", "/".join(("Auxiliary", "icon.PNG")))))
 
+        self.fig = plt.figure()
+
+        self.ax = self.fig.add_subplot(1, 1, 1)
+        self.ax.grid(False)
+        self.ax.set_xticks([])
+        self.ax.set_yticks([])
+
         self.setWindowIcon(icon)
 
         self.setWindowTitle('Select Symbology')
 
         self.widget = QtWidgets.QWidget()
         self.setCentralWidget(self.widget)
-        self.widget.setLayout(QtWidgets.QVBoxLayout())
-        self.widget.layout().setContentsMargins(0, 0, 0, 0)
-        self.widget.layout().setSpacing(0)
 
-        self.target = target
+        self.main_QVBoxLayout = QtWidgets.QVBoxLayout()
+        self.main_QVBoxLayout.setContentsMargins(10, 10, 10, 10)
+        self.main_QVBoxLayout.setSpacing(10)
 
-        self.fig, self.axes = plt.subplots(ncols=2)
+        self.widget.setLayout(self.main_QVBoxLayout)
 
-        self.markers = [m for m, func in Line2D.markers.items() if func != 'nothing']
+        # --- Create Combo Boxes -----------------------
+        self.symbol_comboBox = QtWidgets.QComboBox()
 
-        self.lines = [l for l, func in Line2D.lineStyles.items() if func != 'nothing']
+        for name in self.marker_names:
+            self.symbol_comboBox.addItem(name)
 
-        self.data = dict()
+        self.size_comboBox = QtWidgets.QComboBox()
 
-        log.debug("lines: {}".format(self.lines))
+        for i in range(1, 101):
+            self.size_comboBox.addItem(str(i))
 
-        for ax, markers in zip(self.axes, split_list(self.markers)):
-            self.data[ax] = dict()
+        self.size_comboBox.setCurrentIndex(13)
 
-            for y, marker in enumerate(markers):
-                ax.text(-0.5, y, nice_repr(marker), **self.text_style)
+        self.color_comboBox = QtWidgets.QComboBox()
 
-                ax.plot(y * self.points, marker=marker, label=y, **self.marker_style)
+        for c in mcolors.CSS4_COLORS.keys():
+            self.color_comboBox.addItem(c)
+        # ----------------------------------------------
 
-                self.data[ax][str(y)] = marker
+        self.preview_QPushButton = QtWidgets.QPushButton('Preview', self.widget)
+        self.preview_QPushButton.clicked.connect(self.preview)
 
-                format_axes(ax)
+        self.apply_QPushButton = QtWidgets.QPushButton('Apply', self.widget)
+        self.apply_QPushButton.clicked.connect(self.apply)
 
-        self.fig.suptitle('Select Marker Symbol', fontsize=14)
+        self.combo_HBoxLayout = QtWidgets.QHBoxLayout()
+        self.combo_HBoxLayout.setContentsMargins(10, 10, 10, 10)
+        self.combo_HBoxLayout.setSpacing(10)
+
+        self.button_HBoxLayout = QtWidgets.QHBoxLayout()
+        self.button_HBoxLayout.setContentsMargins(10, 10, 10, 10)
+        self.button_HBoxLayout.setSpacing(20)
+
+        self.combo_HBoxLayout.addWidget(self.symbol_comboBox)
+        self.combo_HBoxLayout.addWidget(self.size_comboBox)
+        self.combo_HBoxLayout.addWidget(self.color_comboBox)
+
+        self.button_HBoxLayout.addWidget(self.preview_QPushButton)
+        self.button_HBoxLayout.addWidget(self.apply_QPushButton)
+
+        self.main_QVBoxLayout.addLayout(self.combo_HBoxLayout)
+
+        self.main_QVBoxLayout.addLayout(self.button_HBoxLayout)
+
+        self.markers = {func: m for m, func in Line2D.markers.items() if func != 'nothing'}
+
+        self.resize(300, 400)
+
+        self.show()
+
+    def preview(self):
+        """
+        Display a preview of the custom symbology
+
+        Returns:
+
+        """
+        try:
+            self.ax.cla()
+
+            self.ax.grid(False)
+            self.ax.set_xticks([])
+            self.ax.set_yticks([])
+
+            self.widget.layout().removeWidget(self.canvas)
+
+        except AttributeError:
+            pass
+
+        color_key = self.color_comboBox.currentText()
+
+        marker_key = self.symbol_comboBox.currentText()
+
+        markersize_key = int(self.size_comboBox.currentText())
+
+        self.ax.plot(0.5, 0.5, color=color_key, marker=self.markers[marker_key], markersize=markersize_key, linewidth=0)
 
         plt.tight_layout()
 
@@ -130,21 +165,19 @@ class SymbologyWindow(QtWidgets.QMainWindow):
 
         self.widget.layout().addWidget(self.canvas)
 
-        self.scroll = QtWidgets.QScrollArea(self.widget)
+    def apply(self):
+        """Emit the new customized symbol parameters"""
+        color = self.color_comboBox.currentText()
 
-        self.scroll.setWidgetResizable(True)
+        marker = self.markers[self.symbol_comboBox.currentText()]
 
-        self.scroll.setWidget(self.canvas)
+        markersize = int(self.size_comboBox.currentText())
 
-        self.widget.layout().addWidget(self.scroll)
+        new_symbol = {'color': color,
+                      'marker': marker,
+                      'markersize': markersize}
 
-        self.setMinimumSize(15, 15)
-
-        self.canvas.mpl_connect("pick_event", self.point_pick)
-
-        self.resize(700, 700)
-
-        self.show()
+        self.selected_marker.emit(new_symbol)
 
     def point_pick(self, event=None):
         """
@@ -186,7 +219,7 @@ class SymbologyWindow(QtWidgets.QMainWindow):
 #
 #     # session_id = "session_{}".format(MainControls.get_time())
 #
-#     s = SymbologyWindow()
+#     s = SymbologyWindow(None)
 #
 #     if s:
 #         # Enter the main event loop, begin event handling for application widgets until exit() is called
