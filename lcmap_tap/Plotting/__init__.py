@@ -22,13 +22,24 @@ NAMES = {1: 'Developed',
 DEFAULTS = {'highlight_pick': {'marker': 'D', 'ms': 12, 'c': 'none', 'mec': 'lime',  # plot params
                                'mew': 1.75, 'linewidth': 0, 'label': 'Selected', 'picker': 3},
 
+            'highlight_pick_leg': {'marker': 'D', 'ms': 8, 'c': 'none', 'mec': 'lime',  # plot params
+                               'mew': 1.75, 'linewidth': 0, 'label': 'Selected', 'picker': 3},
+
             'clear_obs': {'marker': 'o', 's': 44, 'c': 'green', 'edgecolors': 'black',  # scatter params
                           'label': 'Clear', 'picker': 3},
 
+            'clear_obs_leg': {'marker': "o", 'ms': 8, 'color': "green", 'mec': 'k', 'mew': 0.3, 'linewidth': 0,
+                                'label': 'Clear'},
+
             'mask_obs': {'marker': 'o', 's': 21, 'color': '0.65', 'label': 'Masked', 'picker': 2},  # scatter params
+
+            'mask_obs_leg': {'marker': 'o', 'ms': 4, 'color': '0.65', 'label': 'Masked', 'linewidth': 0},
 
             'out_obs': {'marker': 'o', 's': 21, 'color': 'red', 'edgecolors': 'black',  # scatter params
                         'label': 'Unused', 'picker': 3},
+
+            'out_obs_leg': {'marker': 'o', 'ms': 4, 'color': 'red', 'mec': 'k', 'mew': 0.3,
+                            'label': 'Unused', 'linewidth': 0},
 
             'end_lines': {'color': 'maroon', 'linewidth': 1.5, 'label': 'End Date'},
 
