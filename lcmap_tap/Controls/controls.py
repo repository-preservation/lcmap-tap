@@ -10,7 +10,9 @@ from lcmap_tap.RetrieveData.retrieve_ccd import CCDReader
 from lcmap_tap.RetrieveData.retrieve_geo import GeoInfo
 from lcmap_tap.RetrieveData.retrieve_classes import SegmentClasses
 from lcmap_tap.PlotFrame.plotwindow import PlotWindow
+from lcmap_tap.PlotFrame.symbology_window import SymbologyWindow
 from lcmap_tap.Plotting import make_plots
+from lcmap_tap.Plotting.plot_config import PlotConfig
 from lcmap_tap.Plotting.plot_specs import PlotSpecs
 from lcmap_tap.Auxiliary import projections
 from lcmap_tap.Visualization.chip_viewer import ChipsViewerX
@@ -99,6 +101,8 @@ class MainControls(QMainWindow):
         self.begin = dt.date(year=1982, month=1, day=1)
         self.end = dt.date(year=2017, month=12, day=31)
 
+        self.plotconfig = PlotConfig()
+
         # Use these to store ARD viewer color channels
         self.store_r = 3
         self.store_g = 2
@@ -166,6 +170,8 @@ class MainControls(QMainWindow):
         self.ui.PushButton_locator.clicked.connect(self.show_locator_map)
 
         self.ui.PushButton_export.clicked.connect(self.export_data)
+
+        self.ui.PushButton_saveconfig.clicked.connect(self.save_plot_config)
 
     def show_locator_map(self):
         """
@@ -476,7 +482,8 @@ class MainControls(QMainWindow):
         """
         self.fig, self.artist_map, self.lines_map, self.axes = make_plots.draw_figure(data=self.plot_specs,
                                                                                       items=self.item_list,
-                                                                                      fig_num=self.fig_num)
+                                                                                      fig_num=self.fig_num,
+                                                                                      config=self.plotconfig.opts)
 
         if not os.path.exists(self.ui.LineEdit_outputDir.text()):
             os.makedirs(self.ui.LineEdit_outputDir.text())
@@ -497,6 +504,8 @@ class MainControls(QMainWindow):
                                       )
 
         self.plot_window.selected_obs.connect(self.connect_plot_selection)
+
+        self.plot_window.change_symbology.connect(self.change_symbology)
 
         # Make these buttons available once a figure has been created
         self.ui.PushButton_clear.setEnabled(True)
@@ -768,3 +777,41 @@ class MainControls(QMainWindow):
                 self.plot_window.canvas.draw()
 
                 break
+
+    @QtCore.pyqtSlot(object)
+    def change_symbology(self, label):
+        self.label = label
+
+        self.symbol_selector = SymbologyWindow()
+
+        self.symbol_selector.selected_marker.connect(self.redraw_plot)
+
+    @QtCore.pyqtSlot(object)
+    def redraw_plot(self, val):
+        self.fig_num += 1
+
+        log.debug("Received plot config vals: {}".format(val))
+
+        self.plotconfig.update_config(self.label, {'marker': val['marker'],
+                                                   's': val['markersize'],
+                                                   'color': val['color']})
+
+        self.symbol_selector.close()
+
+        self.fig, self.artist_map, self.lines_map, self.axes = make_plots.draw_figure(data=self.plot_specs,
+                                                                                      items=self.item_list,
+                                                                                      fig_num=self.fig_num,
+                                                                                      config=self.plotconfig.opts)
+
+        self.plot_window = PlotWindow(fig=self.fig,
+                                      axes=self.axes,
+                                      artist_map=self.artist_map,
+                                      lines_map=self.lines_map
+                                      )
+
+        self.plot_window.selected_obs.connect(self.connect_plot_selection)
+
+        self.plot_window.change_symbology.connect(self.change_symbology)
+
+    def save_plot_config(self):
+        self.plotconfig.save_config()
