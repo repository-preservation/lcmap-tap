@@ -25,10 +25,17 @@ class SegmentClasses:
             tile: String-formatted H-V tile name
 
         """
-        self.p_file = CCDReader.find_file(file_ls=[os.path.join(class_dir, f) for f in os.listdir(class_dir)],
-                                          string=f'{tile}_{chip_coord_ul.x}_{chip_coord_ul.y}_class.p')
+        try:
+            self.p_file = CCDReader.find_file(file_ls=[os.path.join(class_dir, f) for f in os.listdir(class_dir)],
+                                              string=f'{tile}_{chip_coord_ul.x}_{chip_coord_ul.y}_class.p')
 
-        self.results = self.extract_results(class_file=self.p_file, rc=rc)
+            self.results = self.extract_results(class_file=self.p_file, rc=rc)
+
+        except PermissionError:
+            log.warning("Could not access class results file location")
+
+            self.results = None
+
 
     @staticmethod
     def extract_results(class_file: str, rc: RowColumn) -> List[dict]:
