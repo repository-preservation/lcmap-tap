@@ -1,6 +1,11 @@
 """Generate a matplotlib canvas and add it to a QWidget contained in a QMainWindow.  This will provide the
 display and interactions for the PyCCD plots."""
 
+from lcmap_tap.logger import log, exc_handler
+from lcmap_tap.Plotting import POINTS, VLINES, PLINES, make_plots
+from lcmap_tap.Plotting.plot_config import PlotConfig
+from lcmap_tap.PlotFrame.symbology_window import SymbologyWindow
+
 import sys
 import datetime as dt
 import numpy as np
@@ -14,7 +19,6 @@ from matplotlib.collections import PathCollection
 from matplotlib.lines import Line2D
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-from lcmap_tap.logger import log, exc_handler
 
 sys.excepthook = exc_handler
 
@@ -48,7 +52,10 @@ class MplCanvas(FigureCanvas):
 
 
 class PlotWindow(QtWidgets.QMainWindow):
-    def __init__(self, fig, axes, artist_map, lines_map, gui, parent=None):
+
+    selected_obs = QtCore.pyqtSignal(object)
+
+    def __init__(self, fig, axes, artist_map, lines_map, parent=None):
         """
         TODO Add a summary
         Args:
@@ -56,7 +63,6 @@ class PlotWindow(QtWidgets.QMainWindow):
             axes:
             artist_map:
             lines_map:
-            gui:
             parent:
 
         """
@@ -76,7 +82,7 @@ class PlotWindow(QtWidgets.QMainWindow):
 
         self.artist_map = artist_map
         self.lines_map = lines_map
-        self.gui = gui
+        # self.gui = gui
 
         self.prev_highlight = None
         self.ind = None
@@ -202,7 +208,6 @@ class PlotWindow(QtWidgets.QMainWindow):
 
         # This references which object on the plot was hit by the pick
         self.artist = event.artist
-        log.debug('Artist: {}'.format(self.artist))
 
         # Only works using left-click (event.mouseevent.button==1)
         # and on any of the scatter point series (PathCollection artists)
@@ -233,19 +238,30 @@ class PlotWindow(QtWidgets.QMainWindow):
 
                 self.value_holder["temp"] = [point_clicked, self.artist_data]
 
-                test_str = "{:%Y%m%d}".format(self.value_holder["temp"][1][0])
+                # test_str = "{:%Y%m%d}".format(self.value_holder["temp"][1][0])
 
                 # log.debug("Point clicked: %s" % point_clicked)
                 # log.debug("Nearest artist: %s" % self.value_holder)
                 # log.debug("Artist data: %s" % self.artist_data)
                 # log.debug("Subplot: %s" % self.b)
 
-                self.gui.ui.ListWidget_selected.addItem("Obs. Date: {:%Y-%b-%d}\n"
-                                                        "{}-Value: {}".format(
-                    self.value_holder['temp'][1][0],
-                    self.b,
-                    self.value_holder['temp'][1][1][0])
-                )
+                # selection_info = "Obs. Date: {:%Y-%b-%d}\n" \
+                #                  "{}-Value: {}".format(self.value_holder['temp'][1][0],
+                #                                        self.b,
+                #                                        self.value_holder['temp'][1][1][0])
+
+                selection_info = {'date': self.value_holder['temp'][1][0],
+                                  'b': self.b,
+                                  'value': self.value_holder['temp'][1][1][0]}
+
+                self.selected_obs.emit(selection_info)
+
+                # self.gui.ui.ListWidget_selected.addItem("Obs. Date: {:%Y-%b-%d}\n"
+                #                                         "{}-Value: {}".format(
+                #     self.value_holder['temp'][1][0],
+                #     self.b,
+                #     self.value_holder['temp'][1][1][0])
+                # )
 
                 self.highlight_pick()
 
@@ -261,6 +277,9 @@ class PlotWindow(QtWidgets.QMainWindow):
             except KeyError:
                 pass
 
+        elif isinstance(self.artist, Line2D) and mouse_event.button == 3:
+            self.init_configure()
+
         else:
             # Do this so nothing happens when the other mouse buttons are clicked while over a plot
             return False, dict()
@@ -273,8 +292,6 @@ class PlotWindow(QtWidgets.QMainWindow):
             None
 
         """
-        log.debug("highlight_pick method self.artist= %s" % str(self.artist))
-
         # Remove the highlight from the previously selected point
         try:
             self.prev_highlight.set_data([], [])
@@ -285,8 +302,6 @@ class PlotWindow(QtWidgets.QMainWindow):
         # <class 'matplotlib.lines.Line2D'> This points to the Line2D curve that will contain the highlighted point
         # Use index '0' because self.artist_map[b] is referencing a list of 1 item
         highlight = self.artist_map[self.b][0]
-
-        log.debug("Method highlight_pick, highlight=%s" % str(highlight))
 
         self.prev_highlight = highlight
 
@@ -354,6 +369,48 @@ class PlotWindow(QtWidgets.QMainWindow):
 
         # Redraw the canvas with the line or points turned on/off
         self.canvas.draw()
+
+    def init_configure(self):
+        log.debug("Selected Legend Label: {}".format(self.artist.get_label()))
+
+        self.label = self.artist.get_label()
+
+        if self.label in POINTS:
+            self.symbol_selector = SymbologyWindow(target=self.label)
+
+            self.symbol_selector.selected_marker.connect(self.connect_symbology)
+
+    @QtCore.pyqtSlot(object)
+    def connect_symbology(self, val):
+        log.debug("emitted marker: {}".format(val))
+
+        log.debug("marker type: {}".format(type(val)))
+
+        self.config = PlotConfig()
+
+        self.config.update_config(self.label, {'marker': val})
+
+        log.debug("new opts: {}".format(self.config.opts))
+
+        self.symbol_selector.close()
+
+        # self.update_figure()
+
+    # def update_figure(self):
+    #     self.fig, self.artist_map, self.lines_map, self.axes = make_plots.draw_figure(data=self.gui.plot_specs,
+    #                                                                                   items=self.gui.item_list,
+    #                                                                                   fig_num=self.gui.fig_num,
+    #                                                                                   config=self.config.opts)
+    #
+    #     self.canvas = MplCanvas(fig=self.fig)
+    #
+    #     self.canvas.draw()
+    #
+    #     self.widget.layout().removeWidget(self.canvas)
+    #
+    #     self.show()
+    #
+    #     self.initial_legend()
 
     def enter_axes(self, event=None):
         """
