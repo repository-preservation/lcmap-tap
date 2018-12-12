@@ -2,9 +2,7 @@
 display and interactions for the PyCCD plots."""
 
 from lcmap_tap.logger import log, exc_handler
-from lcmap_tap.Plotting import POINTS, VLINES, PLINES, make_plots
-from lcmap_tap.Plotting.plot_config import PlotConfig
-from lcmap_tap.PlotFrame.symbology_window import SymbologyWindow
+from lcmap_tap.Plotting import POINTS, LINES
 
 import sys
 import datetime as dt
@@ -379,7 +377,7 @@ class PlotWindow(QtWidgets.QMainWindow):
 
         self.label = self.artist.get_label()
 
-        if self.label in POINTS:
+        if self.label in POINTS or self.label in LINES:
             # self.symbol_selector = SymbologyWindow()
             #
             # self.symbol_selector.selected_marker.connect(self.connect_symbology)

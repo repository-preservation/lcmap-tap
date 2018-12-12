@@ -295,35 +295,44 @@ def draw_figure(data: PlotSpecs, items: list, fig_num: int, config: dict) -> \
         match_dates = check_for_matches(data.start_dates, data.break_dates)
 
         for ind, e in enumerate(data.end_dates):
-            lines1 = axes[num, 0].axvline(e, color="maroon", linewidth=1.5)
+            # lines1 = axes[num, 0].axvline(e, color="maroon", linewidth=1.5)
+            lines1 = axes[num, 0].axvline(e, **m_config['end_lines'])
 
             end_lines.append(lines1)
 
         for ind, br in enumerate(data.break_dates):
-            lines2 = axes[num, 0].axvline(br, color='r', linewidth=1.5)
+            # lines2 = axes[num, 0].axvline(br, color='r', linewidth=1.5)
+            lines2 = axes[num, 0].axvline(br, **m_config['break_lines'])
 
             break_lines.append(lines2)
 
         for ind, s in enumerate(data.start_dates):
-            lines3 = axes[num, 0].axvline(s, color='b', linewidth=1.5)
+            # lines3 = axes[num, 0].axvline(s, color='b', linewidth=1.5)
+            lines3 = axes[num, 0].axvline(s, **m_config['start_lines'])
+
 
             start_lines.append(lines3)
 
         if match_dates is not None:
 
             for ind, m in enumerate(match_dates):
-                lines4 = axes[num, 0].axvline(m, color="magenta", linewidth=1.5)
+                # lines4 = axes[num, 0].axvline(m, color="magenta", linewidth=1.5)
+                lines4 = axes[num, 0].axvline(m, **m_config['match_lines'])
+
 
                 match_lines.append(lines4)
 
         """ ---- Draw the predicted curves ---- """
         if data.results is not None:
             for c in range(0, len(data.results["change_models"])):
+                # lines5, = axes[num, 0].plot(data.prediction_dates[c * len(data.bands)],
+                #                             plot_data[b][1][c],
+                #                             color="orange",
+                #                             linewidth=3,
+                #                             alpha=0.8)
                 lines5, = axes[num, 0].plot(data.prediction_dates[c * len(data.bands)],
                                             plot_data[b][1][c],
-                                            color="orange",
-                                            linewidth=3,
-                                            alpha=0.8)
+                                            **m_config['model_lines'])
 
                 model_lines.append(lines5)
 
@@ -377,9 +386,13 @@ def draw_figure(data: PlotSpecs, items: list, fig_num: int, config: dict) -> \
 
         """ ---- Plot a vertical line at January 1 of each year on the time series ---- """
         for date in datetimes:
-            lines7 = axes[num, 0].axvline(date, color='dimgray', linewidth=1.5, visible=False)
+            # lines7 = axes[num, 0].axvline(date, color='dimgray', linewidth=1.5, visible=False)
+            lines7 = axes[num, 0].axvline(date, visible=False, **m_config['date_lines'])
 
             date_lines.append(lines7)
+
+        # Set the axis face color
+        axes[num, 0].patch.set_facecolor(m_config['background']['color'])
 
         # With sharex=True, set all x-axis tick labels to visible
         axes[num, 0].tick_params(axis='both', which='both', labelsize=12, labelbottom=True)

@@ -11,7 +11,7 @@ from lcmap_tap.RetrieveData.retrieve_geo import GeoInfo
 from lcmap_tap.RetrieveData.retrieve_classes import SegmentClasses
 from lcmap_tap.PlotFrame.plotwindow import PlotWindow
 from lcmap_tap.PlotFrame.symbology_window import SymbologyWindow
-from lcmap_tap.Plotting import make_plots, LOOKUP
+from lcmap_tap.Plotting import make_plots, LOOKUP, LINES, POINTS
 from lcmap_tap.Plotting.plot_config import PlotConfig
 from lcmap_tap.Plotting.plot_specs import PlotSpecs
 from lcmap_tap.Auxiliary import projections
@@ -786,17 +786,34 @@ class MainControls(QMainWindow):
 
         current_settings = self.plotconfig.opts['DEFAULTS'][pick]
 
-        marker = current_settings['marker']
+        # --- Reference the currently used marker or line style ---
+        if 'marker' in current_settings.keys():
+            marker = current_settings['marker']
 
-        try:
+        else:
+            marker = current_settings['linestyle']
+
+        # --- Reference the currently used marker size or line width ---
+        if 's' in current_settings.keys():
             size = current_settings['s']
 
-        except KeyError:
+        elif 'ms' in current_settings.keys():
             size = current_settings['ms']
 
-        color = current_settings['color']
+        else:
+            size = current_settings['linewidth']
 
-        self.symbol_selector = SymbologyWindow(marker, size, color)
+        # --- Reference the currently used color name ---
+        if self.label is 'Selected':
+            color = current_settings['mec']
+
+        else:
+            color = current_settings['color']
+
+        # --- Reference the currently used background color ---
+        bg = self.plotconfig.opts['DEFAULTS']['background']['color']
+
+        self.symbol_selector = SymbologyWindow(marker, size, color, bg, self.label)
 
         self.symbol_selector.selected_marker.connect(self.redraw_plot)
 
@@ -806,9 +823,17 @@ class MainControls(QMainWindow):
 
         log.debug("Received plot config vals: {}".format(val))
 
-        self.plotconfig.update_config(self.label, {'marker': val['marker'],
-                                                   's': val['markersize'],
-                                                   'color': val['color']})
+        if self.label in POINTS:
+            self.plotconfig.update_config(self.label, {'marker': val['marker'],
+                                                       's': val['markersize'],
+                                                       'color': val['color'],
+                                                       'background': val['background']})
+
+        else:
+            self.plotconfig.update_config(self.label, {'linestyle': val['marker'],
+                                                       'linewidth': val['markersize'],
+                                                       'color': val['color'],
+                                                       'background': val['background']})
 
         self.symbol_selector.close()
 

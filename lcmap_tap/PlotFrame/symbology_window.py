@@ -1,9 +1,11 @@
 """Build a Qt Window with functionality to allow for setting custom symbology"""
 
 from lcmap_tap.UserInterface.ui_symbology import Ui_MainWindow_symbology
+from lcmap_tap.Plotting import POINTS, LINES
 
 import sys
 import pkg_resources
+import numpy as np
 from PyQt5.QtWidgets import QApplication
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QIcon, QPixmap
@@ -44,21 +46,22 @@ class MplCanvas(FigureCanvas):
 
 
 class SymbologyWindow(QtWidgets.QMainWindow):
-    text_style = dict(horizontalalignment='right', verticalalignment='center',
-                      fontsize=12, fontdict={'family': 'monospace'})
-
-    marker_style = dict(linestyle=':', color='0.8', markersize=10,
-                        mfc="C0", mec="C0", picker=6)
 
     marker_names = [n for m, n in Line2D.markers.items() if n != 'nothing']
 
+    line_names = [n for m, n in Line2D.lineStyles.items() if not 'nothing' in n]
+
     selected_marker = pyqtSignal(object)
 
-    def __init__(self, marker, size, color):
+    def __init__(self, marker, size, color, bg_color, target):
         """
         TODO Add a summary
         """
         super().__init__()
+
+        self.target = target
+
+        self.bg_color = bg_color
 
         self.ui = Ui_MainWindow_symbology()
 
@@ -75,16 +78,28 @@ class SymbologyWindow(QtWidgets.QMainWindow):
 
         self.setWindowIcon(icon)
 
-        for name in self.marker_names:
-            self.ui.comboBox_marker.addItem(name)
+        if self.target in POINTS:
+            for name in self.marker_names:
+                self.ui.comboBox_marker.addItem(name)
 
-        for i in range(1, 101):
-            self.ui.comboBox_size.addItem(str(i))
+            for i in range(1, 101):
+                self.ui.comboBox_size.addItem(str(i))
+
+            init_marker = [n for s, n in Line2D.markers.items() if Line2D.markers[marker] is n][0]
+
+        else:
+            for name in self.line_names:
+                self.ui.comboBox_marker.addItem(name)
+
+            for i in np.arange(0, 5.25, 0.25):
+                self.ui.comboBox_size.addItem(str(i))
+
+            init_marker = [n for s, n in Line2D.lineStyles.items() if Line2D.lineStyles[marker] is n][0]
 
         for c in mcolors.CSS4_COLORS.keys():
             self.ui.comboBox_color.addItem(c)
 
-        init_marker = [n for s, n in Line2D.markers.items() if Line2D.markers[marker] is n][0]
+            self.ui.comboBox_background.addItem(c)
 
         self.ui.comboBox_marker.setCurrentText(init_marker)
 
@@ -92,11 +107,15 @@ class SymbologyWindow(QtWidgets.QMainWindow):
 
         self.ui.comboBox_color.setCurrentText(color)
 
+        self.ui.comboBox_background.setCurrentText(self.bg_color)
+
         self.ui.pushButton_preview.clicked.connect(self.preview)
 
         self.ui.pushButton_apply.clicked.connect(self.apply)
 
         self.markers = {func: m for m, func in Line2D.markers.items() if func != 'nothing'}
+
+        self.lines = {func: m for m, func in Line2D.lineStyles.items() if not 'nothing' in func}
 
         self.show()
 
@@ -119,13 +138,27 @@ class SymbologyWindow(QtWidgets.QMainWindow):
         except AttributeError:
             pass
 
+        bg_key = self.ui.comboBox_background.currentText()
+
         color_key = self.ui.comboBox_color.currentText()
 
         marker_key = self.ui.comboBox_marker.currentText()
 
-        markersize_key =  int(self.ui.comboBox_size.currentText())
+        if self.target in POINTS:
+            markersize_key = int(self.ui.comboBox_size.currentText())
 
-        self.ax.plot(0.5, 0.5, color=color_key, marker=self.markers[marker_key], markersize=markersize_key, linewidth=0)
+            self.ax.plot(0.5, 0.5, color=color_key, marker=self.markers[marker_key], markersize=markersize_key,
+                         linewidth=0)
+
+            self.ax.patch.set_facecolor(bg_key)
+
+        else:
+            markersize_key = float(self.ui.comboBox_size.currentText())
+
+            self.ax.axvline(x=0.5, color=color_key, marker=None, linestyle=self.lines[marker_key],
+                         linewidth=markersize_key)
+
+            self.ax.patch.set_facecolor(bg_key)
 
         plt.tight_layout()
 
@@ -145,13 +178,22 @@ class SymbologyWindow(QtWidgets.QMainWindow):
         """Emit the new customized symbol parameters"""
         color = self.ui.comboBox_color.currentText()
 
-        marker = self.markers[self.ui.comboBox_marker.currentText()]
+        new_bg = self.ui.comboBox_background.currentText()
 
-        markersize =  int(self.ui.comboBox_size.currentText())
+        if self.target in POINTS:
+            marker = self.markers[self.ui.comboBox_marker.currentText()]
+
+            markersize =  int(self.ui.comboBox_size.currentText())
+
+        else:
+            marker = self.lines[self.ui.comboBox_marker.currentText()]
+
+            markersize = float(self.ui.comboBox_size.currentText())
 
         new_symbol = {'color': color,
                       'marker': marker,
-                      'markersize': markersize}
+                      'markersize': markersize,
+                      'background': new_bg}
 
         self.selected_marker.emit(new_symbol)
 

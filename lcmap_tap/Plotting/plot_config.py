@@ -33,7 +33,13 @@ class PlotConfig:
             # 's' won't work for plots, only for scatters
             params['ms'] = params['s']
 
+            params['mec'] = params['color']
+
             params.pop('s', None)
+
+            params.pop('color', None)
+
+        bg_color = params.pop('background')
 
         temp = self.opts['DEFAULTS'][_id]
 
@@ -41,6 +47,8 @@ class PlotConfig:
             temp[key] = value
 
         self.opts['DEFAULTS'][_id] = temp
+
+        self.opts['DEFAULTS']['background']['color'] = bg_color
 
         temp = self.opts['LEG_DEFAULTS'][_id]
 
