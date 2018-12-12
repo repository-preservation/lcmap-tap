@@ -80,7 +80,7 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(self.widget)
         self.widget.setLayout(QtWidgets.QVBoxLayout())
         self.widget.layout().setContentsMargins(0, 0, 0, 0)
-        self.widget.layout().setSpacing(0)
+        self.widget.layout().setSpacing(2)
 
         self.artist_map = artist_map
         self.lines_map = lines_map
@@ -134,6 +134,8 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.canvas.mpl_connect("scroll_event", self.zoom_event)
 
         self.show()
+
+        self.resize(1200, 400)
 
         self.initial_legend()
 
