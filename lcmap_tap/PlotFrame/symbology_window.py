@@ -1,5 +1,7 @@
 """Build a Qt Window with functionality to allow for setting custom symbology"""
 
+from lcmap_tap.UserInterface.ui_symbology import Ui_MainWindow_symbology
+
 import sys
 import pkg_resources
 from PyQt5.QtWidgets import QApplication
@@ -31,7 +33,7 @@ class MplCanvas(FigureCanvas):
         """
         FigureCanvas.__init__(self, fig)
 
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Ignored)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
 
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -52,11 +54,15 @@ class SymbologyWindow(QtWidgets.QMainWindow):
 
     selected_marker = pyqtSignal(object)
 
-    def __init__(self, parent=None):
+    def __init__(self, marker, size, color):
         """
         TODO Add a summary
         """
-        super(SymbologyWindow, self).__init__(parent)
+        super().__init__()
+
+        self.ui = Ui_MainWindow_symbology()
+
+        self.ui.setupUi(self)
 
         icon = QIcon(QPixmap(pkg_resources.resource_filename("lcmap_tap", "/".join(("Auxiliary", "icon.PNG")))))
 
@@ -69,64 +75,28 @@ class SymbologyWindow(QtWidgets.QMainWindow):
 
         self.setWindowIcon(icon)
 
-        self.setWindowTitle('Select Symbology')
-
-        self.widget = QtWidgets.QWidget()
-        self.setCentralWidget(self.widget)
-
-        self.main_QVBoxLayout = QtWidgets.QVBoxLayout()
-        self.main_QVBoxLayout.setContentsMargins(10, 10, 10, 10)
-        self.main_QVBoxLayout.setSpacing(10)
-
-        self.widget.setLayout(self.main_QVBoxLayout)
-
-        # --- Create Combo Boxes -----------------------
-        self.symbol_comboBox = QtWidgets.QComboBox()
-
         for name in self.marker_names:
-            self.symbol_comboBox.addItem(name)
-
-        self.size_comboBox = QtWidgets.QComboBox()
+            self.ui.comboBox_marker.addItem(name)
 
         for i in range(1, 101):
-            self.size_comboBox.addItem(str(i))
-
-        self.size_comboBox.setCurrentIndex(13)
-
-        self.color_comboBox = QtWidgets.QComboBox()
+            self.ui.comboBox_size.addItem(str(i))
 
         for c in mcolors.CSS4_COLORS.keys():
-            self.color_comboBox.addItem(c)
-        # ----------------------------------------------
+            self.ui.comboBox_color.addItem(c)
 
-        self.preview_QPushButton = QtWidgets.QPushButton('Preview', self.widget)
-        self.preview_QPushButton.clicked.connect(self.preview)
+        init_marker = [n for s, n in Line2D.markers.items() if Line2D.markers[marker] is n][0]
 
-        self.apply_QPushButton = QtWidgets.QPushButton('Apply', self.widget)
-        self.apply_QPushButton.clicked.connect(self.apply)
+        self.ui.comboBox_marker.setCurrentText(init_marker)
 
-        self.combo_HBoxLayout = QtWidgets.QHBoxLayout()
-        self.combo_HBoxLayout.setContentsMargins(10, 10, 10, 10)
-        self.combo_HBoxLayout.setSpacing(10)
+        self.ui.comboBox_size.setCurrentText(str(size))
 
-        self.button_HBoxLayout = QtWidgets.QHBoxLayout()
-        self.button_HBoxLayout.setContentsMargins(10, 10, 10, 10)
-        self.button_HBoxLayout.setSpacing(20)
+        self.ui.comboBox_color.setCurrentText(color)
 
-        self.combo_HBoxLayout.addWidget(self.symbol_comboBox)
-        self.combo_HBoxLayout.addWidget(self.size_comboBox)
-        self.combo_HBoxLayout.addWidget(self.color_comboBox)
+        self.ui.pushButton_preview.clicked.connect(self.preview)
 
-        self.button_HBoxLayout.addWidget(self.preview_QPushButton)
-        self.button_HBoxLayout.addWidget(self.apply_QPushButton)
-
-        self.main_QVBoxLayout.addLayout(self.combo_HBoxLayout)
-
-        self.main_QVBoxLayout.addLayout(self.button_HBoxLayout)
+        self.ui.pushButton_apply.clicked.connect(self.apply)
 
         self.markers = {func: m for m, func in Line2D.markers.items() if func != 'nothing'}
-
-        self.resize(300, 400)
 
         self.show()
 
@@ -144,16 +114,16 @@ class SymbologyWindow(QtWidgets.QMainWindow):
             self.ax.set_xticks([])
             self.ax.set_yticks([])
 
-            self.widget.layout().removeWidget(self.canvas)
+            self.ui.horizontalLayout_preview.removeWidget(self.canvas)
 
         except AttributeError:
             pass
 
-        color_key = self.color_comboBox.currentText()
+        color_key = self.ui.comboBox_color.currentText()
 
-        marker_key = self.symbol_comboBox.currentText()
+        marker_key = self.ui.comboBox_marker.currentText()
 
-        markersize_key = int(self.size_comboBox.currentText())
+        markersize_key =  int(self.ui.comboBox_size.currentText())
 
         self.ax.plot(0.5, 0.5, color=color_key, marker=self.markers[marker_key], markersize=markersize_key, linewidth=0)
 
@@ -163,15 +133,21 @@ class SymbologyWindow(QtWidgets.QMainWindow):
 
         self.canvas.draw()
 
-        self.widget.layout().addWidget(self.canvas)
+        try:
+            self.ui.horizontalLayout_preview.removeWidget(self.ui.frame)
+
+        except Exception:
+            pass
+
+        self.ui.horizontalLayout_preview.addWidget(self.canvas)
 
     def apply(self):
         """Emit the new customized symbol parameters"""
-        color = self.color_comboBox.currentText()
+        color = self.ui.comboBox_color.currentText()
 
-        marker = self.markers[self.symbol_comboBox.currentText()]
+        marker = self.markers[self.ui.comboBox_marker.currentText()]
 
-        markersize = int(self.size_comboBox.currentText())
+        markersize =  int(self.ui.comboBox_size.currentText())
 
         new_symbol = {'color': color,
                       'marker': marker,
@@ -179,39 +155,39 @@ class SymbologyWindow(QtWidgets.QMainWindow):
 
         self.selected_marker.emit(new_symbol)
 
-    def point_pick(self, event=None):
-        """
-        Define a picker method to grab data off of the plot wherever the mouse cursor is clicked
-
-        Args:
-            event: A mouse-click event
-                   event.button == 1 <left-click>
-                   event.button == 2 <wheel-click>
-                   event.button == 3 <right-click>
-
-        Returns:
-            The x_data and y_data for the selected artist using a mouse click event
-
-        """
-        # Reference useful information about the pick location
-        # mouse_event = event.mouseevent
-
-        # This references which object on the plot was hit by the pick
-        self.artist = event.artist
-
-        event_axis = self.artist.axes
-
-        # log.debug('Event axis: {}'.format(event_axis))
-
-        event_label = self.artist.get_label()
-
-        # log.debug('event_label: {}'.format(event_label))
-        #
-        # log.debug('mouse_event: {}'.format(mouse_event))
-        #
-        # log.debug('Marker: {}'.format(self.data[event_axis][event_label]))
-
-        self.selected_marker.emit(self.data[event_axis][event_label])
+    # def point_pick(self, event=None):
+    #     """
+    #     Define a picker method to grab data off of the plot wherever the mouse cursor is clicked
+    #
+    #     Args:
+    #         event: A mouse-click event
+    #                event.button == 1 <left-click>
+    #                event.button == 2 <wheel-click>
+    #                event.button == 3 <right-click>
+    #
+    #     Returns:
+    #         The x_data and y_data for the selected artist using a mouse click event
+    #
+    #     """
+    #     # Reference useful information about the pick location
+    #     # mouse_event = event.mouseevent
+    #
+    #     # This references which object on the plot was hit by the pick
+    #     self.artist = event.artist
+    #
+    #     event_axis = self.artist.axes
+    #
+    #     # log.debug('Event axis: {}'.format(event_axis))
+    #
+    #     event_label = self.artist.get_label()
+    #
+    #     # log.debug('event_label: {}'.format(event_label))
+    #     #
+    #     # log.debug('mouse_event: {}'.format(mouse_event))
+    #     #
+    #     # log.debug('Marker: {}'.format(self.data[event_axis][event_label]))
+    #
+    #     self.selected_marker.emit(self.data[event_axis][event_label])
 
 # def main():
 #     # Create a QApplication object, necessary to manage the GUI control flow and settings

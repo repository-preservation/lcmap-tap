@@ -11,7 +11,7 @@ from lcmap_tap.RetrieveData.retrieve_geo import GeoInfo
 from lcmap_tap.RetrieveData.retrieve_classes import SegmentClasses
 from lcmap_tap.PlotFrame.plotwindow import PlotWindow
 from lcmap_tap.PlotFrame.symbology_window import SymbologyWindow
-from lcmap_tap.Plotting import make_plots
+from lcmap_tap.Plotting import make_plots, LOOKUP
 from lcmap_tap.Plotting.plot_config import PlotConfig
 from lcmap_tap.Plotting.plot_specs import PlotSpecs
 from lcmap_tap.Auxiliary import projections
@@ -782,7 +782,21 @@ class MainControls(QMainWindow):
     def change_symbology(self, label):
         self.label = label
 
-        self.symbol_selector = SymbologyWindow()
+        pick = LOOKUP[self.label]
+
+        current_settings = self.plotconfig.opts['DEFAULTS'][pick]
+
+        marker = current_settings['marker']
+
+        try:
+            size = current_settings['s']
+
+        except KeyError:
+            size = current_settings['ms']
+
+        color = current_settings['color']
+
+        self.symbol_selector = SymbologyWindow(marker, size, color)
 
         self.symbol_selector.selected_marker.connect(self.redraw_plot)
 
