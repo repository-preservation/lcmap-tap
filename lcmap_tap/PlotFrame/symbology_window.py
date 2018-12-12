@@ -3,6 +3,7 @@
 from lcmap_tap.UserInterface.ui_symbology import Ui_MainWindow_symbology
 from lcmap_tap.Plotting import POINTS, LINES
 
+import os
 import sys
 import pkg_resources
 import numpy as np
@@ -52,6 +53,10 @@ class SymbologyWindow(QtWidgets.QMainWindow):
     line_names = [n for m, n in Line2D.lineStyles.items() if not 'nothing' in n]
 
     selected_marker = pyqtSignal(object)
+
+    file_saver = pyqtSignal(object)
+
+    file_loader = pyqtSignal(object)
 
     def __init__(self, marker, size, color, bg_color, target):
         """
@@ -116,6 +121,10 @@ class SymbologyWindow(QtWidgets.QMainWindow):
         self.markers = {func: m for m, func in Line2D.markers.items() if func != 'nothing'}
 
         self.lines = {func: m for m, func in Line2D.lineStyles.items() if not 'nothing' in func}
+
+        self.ui.actionLoad.triggered.connect(self.load_file)
+
+        self.ui.actionSave.triggered.connect(self.save_file)
 
         self.show()
 
@@ -197,39 +206,25 @@ class SymbologyWindow(QtWidgets.QMainWindow):
 
         self.selected_marker.emit(new_symbol)
 
-    # def point_pick(self, event=None):
-    #     """
-    #     Define a picker method to grab data off of the plot wherever the mouse cursor is clicked
-    #
-    #     Args:
-    #         event: A mouse-click event
-    #                event.button == 1 <left-click>
-    #                event.button == 2 <wheel-click>
-    #                event.button == 3 <right-click>
-    #
-    #     Returns:
-    #         The x_data and y_data for the selected artist using a mouse click event
-    #
-    #     """
-    #     # Reference useful information about the pick location
-    #     # mouse_event = event.mouseevent
-    #
-    #     # This references which object on the plot was hit by the pick
-    #     self.artist = event.artist
-    #
-    #     event_axis = self.artist.axes
-    #
-    #     # log.debug('Event axis: {}'.format(event_axis))
-    #
-    #     event_label = self.artist.get_label()
-    #
-    #     # log.debug('event_label: {}'.format(event_label))
-    #     #
-    #     # log.debug('mouse_event: {}'.format(mouse_event))
-    #     #
-    #     # log.debug('Marker: {}'.format(self.data[event_axis][event_label]))
-    #
-    #     self.selected_marker.emit(self.data[event_axis][event_label])
+    def load_file(self):
+        in_file = QtWidgets.QFileDialog.getOpenFileName(self, filter='*.yml')
+
+        self.file_loader.emit(self.check_filename(in_file))
+
+    def save_file(self):
+        out_file = QtWidgets.QFileDialog.getSaveFileName(self, filter='.yml')
+
+        self.file_saver.emit(self.check_filename(out_file))
+
+    @staticmethod
+    def check_filename(parts):
+        if os.path.splitext(parts[0])[-1] is '':
+            filename = parts[0] + parts[1]
+
+        else:
+            filename = parts[0]
+
+        return filename
 
 # def main():
 #     # Create a QApplication object, necessary to manage the GUI control flow and settings

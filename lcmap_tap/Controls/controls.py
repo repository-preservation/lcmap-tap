@@ -171,8 +171,6 @@ class MainControls(QMainWindow):
 
         self.ui.PushButton_export.clicked.connect(self.export_data)
 
-        self.ui.PushButton_saveconfig.clicked.connect(self.save_plot_config)
-
     def show_locator_map(self):
         """
         Open the Leaflet map for selecting a coordinate for plotting
@@ -817,6 +815,10 @@ class MainControls(QMainWindow):
 
         self.symbol_selector.selected_marker.connect(self.redraw_plot)
 
+        self.symbol_selector.file_saver.connect(self.save_plot_config)
+
+        self.symbol_selector.file_loader.connect(self.load_plot_config)
+
     @QtCore.pyqtSlot(object)
     def redraw_plot(self, val):
         self.fig_num += 1
@@ -852,5 +854,36 @@ class MainControls(QMainWindow):
 
         self.plot_window.change_symbology.connect(self.change_symbology)
 
-    def save_plot_config(self):
-        self.plotconfig.save_config()
+    @QtCore.pyqtSlot(object)
+    def save_plot_config(self, outfile):
+        """Save the plot configuration settings for use in a different session"""
+        log.debug('plot config outfile: {}'.format(outfile))
+
+        with open(outfile, 'w') as f:
+            yaml.dump(self.plotconfig.opts, f)
+
+        self.symbol_selector.close()
+
+    @QtCore.pyqtSlot(object)
+    def load_plot_config(self, infile):
+        with open(infile, 'r') as f:
+            self.plotconfig.opts = yaml.load(f)
+
+        self.symbol_selector.close()
+
+        self.fig_num += 1
+
+        self.fig, self.artist_map, self.lines_map, self.axes = make_plots.draw_figure(data=self.plot_specs,
+                                                                                      items=self.item_list,
+                                                                                      fig_num=self.fig_num,
+                                                                                      config=self.plotconfig.opts)
+
+        self.plot_window = PlotWindow(fig=self.fig,
+                                      axes=self.axes,
+                                      artist_map=self.artist_map,
+                                      lines_map=self.lines_map
+                                      )
+
+        self.plot_window.selected_obs.connect(self.connect_plot_selection)
+
+        self.plot_window.change_symbology.connect(self.change_symbology)
