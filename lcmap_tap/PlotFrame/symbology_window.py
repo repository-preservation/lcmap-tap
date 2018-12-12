@@ -225,20 +225,3 @@ class SymbologyWindow(QtWidgets.QMainWindow):
             filename = parts[0]
 
         return filename
-
-# def main():
-#     # Create a QApplication object, necessary to manage the GUI control flow and settings
-#     app = QApplication(sys.argv)
-#
-#     # session_id = "session_{}".format(MainControls.get_time())
-#
-#     s = SymbologyWindow(None)
-#
-#     if s:
-#         # Enter the main event loop, begin event handling for application widgets until exit() is called
-#
-#         sys.exit(app.exec_())
-#
-#
-# if __name__ == "__main__":
-#     main()
