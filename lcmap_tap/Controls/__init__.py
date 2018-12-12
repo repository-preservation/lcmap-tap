@@ -1,4 +1,4 @@
-units = {"Projected Meters - Albers CONUS WGS 84": {"unit": "meters",
+UNITS = {"Projected Meters - Albers CONUS WGS 84": {"unit": "meters",
                                                     "Label_x1": "X (meters)",
                                                     "Label_y1": "Y (meters)",
                                                     "Label_x2": "Long (dec. deg.)",

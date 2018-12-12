@@ -6,7 +6,7 @@ The Timeseries Analysis and Plotting (TAP) Tool is being developed to provide ex
 Change Monitoring, Assessment, and Projection 
 ([LCMAP](https://eros.usgs.gov/science/land-change-monitoring-assessment-and-projection-lcmap)) project at 
 [USGS EROS](https://eros.usgs.gov/).  TAP is an open-source project written in python that uses PyQt5 and matplotlib 
-for generating interactive GUIs and plots.  Currently, it provides the following functionalities:
+for generating interactive GUIs and plots.  Currently, it provides the following functionality:
 
 * Plot a timeseries of Landsat Analysis Read Data 
 ([ARD](https://landsat.usgs.gov/ard))
@@ -37,7 +37,7 @@ These instructions work for both Windows and Linux systems.
 
 lcmap_tap has been installed and tested successfully on Windows 7 & 10, and CentOS Linux (version 7).
 
-Version 1.0.1
+Version 1.1.0
 
 _Note: some functionality may still be unstable as development is currently ongoing._
 ##

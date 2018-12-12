@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'UI_MAIN.UI'
+# Form implementation generated from reading ui file 'UI_MAIN.ui'
 #
 # Created by: PyQt5 UI code generator 5.9.2
 #
@@ -182,6 +182,17 @@ class Ui_MainWindow_tap(object):
         self.PushButton_export.setMaximumSize(QtCore.QSize(75, 16777215))
         self.PushButton_export.setObjectName("PushButton_export")
         self.HBoxLayout_buttons.addWidget(self.PushButton_export)
+        self.PushButton_savesession = QtWidgets.QPushButton(self.centralwidget)
+        self.PushButton_savesession.setEnabled(False)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.PushButton_savesession.sizePolicy().hasHeightForWidth())
+        self.PushButton_savesession.setSizePolicy(sizePolicy)
+        self.PushButton_savesession.setMinimumSize(QtCore.QSize(90, 0))
+        self.PushButton_savesession.setMaximumSize(QtCore.QSize(90, 16777215))
+        self.PushButton_savesession.setObjectName("PushButton_savesession")
+        self.HBoxLayout_buttons.addWidget(self.PushButton_savesession)
         self.PushButton_clear = QtWidgets.QPushButton(self.centralwidget)
         self.PushButton_clear.setEnabled(False)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
@@ -307,6 +318,7 @@ class Ui_MainWindow_tap(object):
         self.PushButton_plot.setText(_translate("MainWindow_tap", "Plot"))
         self.PushButton_saveFigure.setText(_translate("MainWindow_tap", "Save Figure"))
         self.PushButton_export.setText(_translate("MainWindow_tap", "Export"))
+        self.PushButton_savesession.setText(_translate("MainWindow_tap", "Save Session"))
         self.PushButton_clear.setText(_translate("MainWindow_tap", "Clear"))
         self.PushButton_close.setText(_translate("MainWindow_tap", "Close"))
         self.Label_outputDir.setText(_translate("MainWindow_tap", "Specify working directory:"))

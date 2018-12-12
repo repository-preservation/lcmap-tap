@@ -26,10 +26,15 @@ class CCDReader:
         Returns:
 
         """
-        self.json_file = self.find_file(file_ls=[os.path.join(json_dir, f) for f in os.listdir(json_dir)],
-                                        string="{tile}_{x}_{y}.json".format(tile=tile,
-                                                                            x=chip_coord.x,
-                                                                            y=chip_coord.y))
+        try:
+            self.json_file = self.find_file(file_ls=[os.path.join(json_dir, f) for f in os.listdir(json_dir)],
+                                            string="{tile}_{x}_{y}.json".format(tile=tile,
+                                                                                x=chip_coord.x,
+                                                                                y=chip_coord.y))
+        except PermissionError:
+            log.warning("Couldn't access PyCCD results file location %s")
+
+            self.results = [{}]
 
         if self.json_file is not None:
             self.results = self.check_dates(
@@ -59,9 +64,9 @@ class CCDReader:
         return next(gen, None)
 
     @staticmethod
-    def load_ccd(results_chip: str) -> dict:
+    def chip_results(results_chip: str) -> dict:
         """
-        Method for loading a JSON file
+        Method for loading and returning the contents of a JSON file that contains a chip of change results.
 
         Args:
             results_chip: The full path to a JSON file

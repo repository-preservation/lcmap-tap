@@ -58,7 +58,8 @@ class PlotSpecs:
             self.ccd_mask = np.array(self.results['processing_mask'], dtype=np.bool)
 
         except (AttributeError, TypeError) as e:
-            log.error('Exception: %s' % e, exc_info=True)
+            # log.debug('Exception: %s' % e, exc_info=True)
+            log.info('No CCD results were found')
 
             self.results = None
 
@@ -68,7 +69,8 @@ class PlotSpecs:
             self.segment_classes = segs.results
 
         except (AttributeError, TypeError) as e:
-            log.error('Exception: %s' % e, exc_info=True)
+            # log.debug('Exception: %s' % e, exc_info=True)
+            log.info('No classification results were found')
 
             self.segment_classes = None
 

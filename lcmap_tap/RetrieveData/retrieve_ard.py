@@ -7,15 +7,10 @@ from lcmap_tap.logger import log, exc_handler
 import os
 import sys
 import time
-# import yaml
 import glob
 import merlin
 from collections import OrderedDict
-# from itertools import chain
-# from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal, QThread, QCoreApplication
 from multiprocessing.dummy import Pool as ThreadPool
-
-# TODAY = dt.datetime.now().strftime("%Y-%m-%d")
 
 sys.excepthook = exc_handler
 
@@ -45,75 +40,10 @@ def get_image_ids(path: str) -> list:
     return sorted([os.path.splitext(os.path.basename(f))[0] for f in file_list])
 
 
-# class Worker(QObject):
-#     result = pyqtSignal(object)
-#
-#     # finished = pyqtSignal(int)
-#
-#     def __init__(self, required, geo, start, stop, url):
-#         super().__init__()
-#
-#         log.debug("Worker started")
-#
-#         self.geo = geo
-#
-#         self.start = start
-#
-#         self.stop = stop
-#
-#         self.required = required
-#
-#         self.url = url
-#
-#         # self.cfg = cfg
-#
-#         self.pool = ThreadPool(len(self.required))
-#
-#         self.params = self.get_params()
-#
-#         self.timeseries = dict()
-#
-#         self.pool.map(self.call_merlin, self.params)
-#
-#         self.pool.close()
-#
-#         self.pool.join()
-#
-#     def get_params(self):
-#         return [(self.geo, self.start, self.stop, make_cfg(items=[i], url=self.url)) for i in self.required]
-#
-#     def call_merlin(self, params):
-#         # thread_name = QThread.currentThread().objectName()
-#         #
-#         # thread_id = int(QThread.currentThreadId())
-#
-#         # log.debug("THREAD ID: %s" % thread_id)
-#
-#         log.info("Grabbing merlin timeseries")
-#
-#         data = dict(merlin.create(x=int(params[0].coord.x),
-#                                   y=int(params[0].coord.y),
-#                                   acquired="{}/{}".format(params[1], params[2]),
-#                                   cfg=params[3]))
-#
-#         for key in data.keys():
-#             try:
-#                 self.timeseries[key].update(data[key])
-#
-#             except (KeyError, TypeError):
-#                 self.timeseries[key] = data[key]
-#
-#         self.result.emit(data)
-#
-#     @pyqtSlot()
-#     def send_results(self):
-#         self.result.emit(self.timeseries)
-
-
 class ARDData:
     """Use lcmap-merlin to retrieve a time-series ARD for a chip"""
 
-    def __init__(self, geo, url, items, cache, controls, start='1982-01-01', stop='2017-12-31'):
+    def __init__(self, geo, url, items, cache, start='1982-01-01', stop='2017-12-31'):
         """
 
         Args:
@@ -128,7 +58,7 @@ class ARDData:
         """
         # super().__init__()
 
-        self.controls = controls
+        # self.controls = controls
 
         self.cache = cache
 
@@ -137,8 +67,8 @@ class ARDData:
         self.start = start
         self.stop = stop
 
-        self.chip_x = geo.chip_coord.x
-        self.chip_y = geo.chip_coord.y
+        self.chip_x = geo.chip_coord_ul.x
+        self.chip_y = geo.chip_coord_ul.y
 
         self.key = f'{self.chip_x}_{self.chip_y}'
 
@@ -163,7 +93,7 @@ class ARDData:
             self._timeseries = tuple([(k, i) for k, i in self.timeseries.items()])
 
             pixel_ard = self.get_sequence(timeseries=self._timeseries,
-                                          pixel_coord=self.geo.pixel_coord)
+                                          pixel_coord=self.geo.pixel_coord_ul)
 
             self.cache = self.update_cache(key=self.key, cache=self.cache, required=self.required,
                                            timeseries=self._timeseries)
@@ -174,33 +104,9 @@ class ARDData:
             except AttributeError:
                 self.pixel_ard = pixel_ard
 
-            # Return to the main plotting routine
-            # self.controls.plot()
-
-            # cfg = make_cfg(items=self.required, url=url)
-            #
-            # self.controls.qt_handler.set_active(True)
-            #
-            # self.worker = Worker(self.required, geo, start, stop, url)
-            #
-            # self.thread = QThread()
-            #
-            # self.worker.moveToThread(self.thread)
-            #
-            # self.worker.result.connect(self.get_timeseries)
-            #
-            # self.thread.started.connect(self.worker.send_results)
-            #
-            # self.thread.start()
-            #
-            # while self.thread.isRunning():
-            #     QCoreApplication.processEvents()
-            #
-            # self.controls.qt_handler.set_active(False)
-
         if len(self.cached) > 0:
             cached_pixel_ard = self.get_sequence(timeseries=tuple(self.cache[self.key].items()),
-                                                 pixel_coord=self.geo.pixel_coord)
+                                                 pixel_coord=self.geo.pixel_coord_ul)
 
             try:
                 self.pixel_ard.update(cached_pixel_ard)
@@ -239,32 +145,8 @@ class ARDData:
             except (KeyError, TypeError):
                 self.timeseries[key] = ts[key]
 
-    # @pyqtSlot(object)
-    # def get_timeseries(self, ts):
-    #     """
-    #
-    #     """
-    #     self.timeseries = tuple([(k, i) for k, i in ts.items()])
-    #
-    #     pixel_ard = self.get_sequence(timeseries=self.timeseries,
-    #                                   pixel_coord=self.geo.pixel_coord)
-    #
-    #     self.cache = self.update_cache(key=self.key, cache=self.cache, required=self.required,
-    #                                    timeseries=self.timeseries)
-    #
-    #     try:
-    #         self.pixel_ard.update(pixel_ard)
-    #
-    #     except AttributeError:
-    #         self.pixel_ard = pixel_ard
-    #
-    #     # Return to the main plotting routine
-    #     self.controls.plot()
-    #
-    #     return None
-
     @staticmethod
-    def get_sequence(timeseries: tuple, pixel_coord: GeoCoordinate) -> dict:
+    def get_sequence(timeseries, pixel_coord):
         """
         Find the matching time series rod from the chip of results using pixel upper left coordinate
 
@@ -278,16 +160,20 @@ class ARDData:
             pixel_coord: The upper left coordinate of the pixel in projected meters
 
         Returns:
-            Spectral data organized by ubid along with Pixel QA and dates
+            dict: Spectral data organized by ubid along with Pixel QA and dates
 
         """
         #  x is an item in timeseries; x[0] is the tuple of coordinates for that timeseries item.
         gen = filter(lambda x: x[0][2] == pixel_coord.x and x[0][3] == pixel_coord.y, timeseries)
 
-        return next(gen, None)[1]
+        try:
+            return next(gen, None)[1]
 
-    @staticmethod
-    def check_cache(key, cache, items):
+        except TypeError:
+            return next(gen, None)
+
+    # @staticmethod
+    def check_cache(self, key, cache, items):
         """
         Check the contents of the cache file for pre-existing data to avoid making redundant chipmunk requests
 
@@ -298,16 +184,23 @@ class ARDData:
 
         Returns:
             Tuple[list, list]
-                [0]: List of ubids that will be requested using merlin
-                [1]: List of ubids that exist in the cache
+                [0]: List of ubids that exist in the cache
+                [1]: List of ubids that will be requested using merlin
 
         """
         if key in cache.keys():
-            # list of ubids that we need to request with merlin
-            required = [i for i in items if i not in cache[key]['bands']]
+            try:
+                sequence = self.get_sequence(((_key, item) for _key, item in cache[key].items()),
+                                             self.geo.pixel_coord_ul)
 
-            # list of ubids that were previously requested from merlin and exist in the cache
-            cached = [i for i in cache[key]['bands'] if i in items or i is 'qas']
+                required = [i for i in items if i not in sequence.keys()]
+
+                cached = [i for i in sequence.keys() if i not in items or i is 'qas']
+
+            except KeyError:
+                required = items
+
+                cached = list()
 
         else:
             required = items
@@ -350,11 +243,11 @@ class ARDData:
                 except KeyError:
                     cache[key][k] = ts[k]
 
-        if 'bands' not in cache[key].keys():
-            cache[key]['bands'] = required
-
-        else:
-            # Update the 'bands' list to include the newly requested chipmunk ubids
-            cache[key]['bands'] = list(set(cache[key]['bands'] + required))
+        # if 'bands' not in cache[key].keys():
+        #     cache[key]['bands'] = required
+        #
+        # else:
+        #     # Update the 'bands' list to include the newly requested chipmunk ubids
+        #     cache[key]['bands'] = list(set(cache[key]['bands'] + required))
 
         return cache

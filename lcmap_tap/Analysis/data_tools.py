@@ -7,7 +7,9 @@ import warnings
 import datetime as dt
 import pandas as pd
 import numpy as np
+import requests
 from collections import OrderedDict
+from functools import lru_cache
 
 sys.excepthook = exc_handler
 
@@ -43,6 +45,85 @@ def assemble(timeseries, ind, bands):
             out[b][row][col] = t[1][b][ind]
 
     return out
+
+
+@lru_cache()
+def getsnap(x, y, resource):
+    """
+    Source: Kelcy Smith
+    Resource to provide the containing chip and tile upper left coordinates
+
+    Args:
+        x (Num[int, float]): x-coordinate in meters
+        y (Num[int, float]): y-coordinate in meters
+        resource (str): URL
+
+    Returns:
+
+    """
+    snap_url = f'{resource}/grid/snap'
+
+    return requests.get(snap_url, params={'x': x, 'y': y}).json()
+
+
+def findrowscols(ul_coord, lr_coord):
+    """
+    Source: Kelcy Smith
+    Find the total number of rows and cols contained in the coord_ls.
+
+    Args:
+        ul_coord (GeoCoordinate)
+        lr_coord (GeoCoordinate)
+
+    Returns:
+        Tuple[int, int]
+
+    """
+    extent = np.array([ul_coord.x, ul_coord.y]) - np.array([lr_coord.x, lr_coord.y])
+
+    col, row = np.abs(extent / 30) + 100
+
+    return int(row), int(col)
+
+
+def align(inx, iny, resource):
+    """
+    Source: Kelcy Smith
+    Aligns the coordinate to the chip grid
+
+    Args:
+        inx (Num[int, float]): Input x-coordinate in meters
+        iny (Num[int, float]): Input y-coordinate in meters
+        resource (str): URL resource
+
+    Returns:
+        Tuple[int, int]
+
+    """
+    x, y = getsnap(inx, iny, resource)['chip']['proj-pt']
+
+    return int(x), int(y)
+
+
+def zoomout(x, y, factor=1):
+    """
+    Source: Kelcy Smith
+    Generate a list of coordinates centered on the input x and y
+
+    Args:
+        x (int): x-coordinate in meters
+        y (int): y-coordinate in meters
+        factor (int): How far too 'zoom' out from the center chip
+
+    Returns:
+        List[Tuple[int, int]]
+
+    """
+    ul = (x - 3000 * factor, y + 3000 * factor)
+    lr = (x + 3000 * factor, y - 3000 * factor)
+
+    return [(x, y) for x in range(ul[0], lr[0] + 3000, 3000)
+            for y in range(ul[1], lr[1] - 3000, -3000)]
 
 
 def temporal(df, ascending=True, field='dates'):

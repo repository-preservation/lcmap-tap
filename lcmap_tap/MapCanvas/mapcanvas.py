@@ -1,7 +1,7 @@
 """Use Leaflet JavaScript API to display an interactive web map within a QWidget"""
 
 from lcmap_tap.RetrieveData.retrieve_geo import GeoInfo
-from lcmap_tap.Controls import units
+from lcmap_tap.Controls import UNITS
 from lcmap_tap.logger import log, exc_handler
 
 import sys
@@ -112,7 +112,7 @@ class MapCanvas(QWidget):
         log.info("New point selected from locator map: %s" % str(coords))
 
         # If necessary, convert to meters before updating the coordinate text on the GUI
-        if units[self.gui.selected_units]["unit"] == "meters":
+        if UNITS[self.gui.selected_units]["unit"] == "meters":
             coords = GeoInfo.unit_conversion(coords, src="lat/long", dest="meters")
 
             coords = GeoInfo.get_geocoordinate(str(int(coords.x)), str(int(coords.y)))

@@ -1,8 +1,6 @@
 """Make a QWidget that will hold a matplotlib figure to visualize a mosaic of ARD chips"""
 
 from lcmap_tap.logger import log, exc_handler
-from lcmap_tap.Controls import units
-from lcmap_tap.RetrieveData import RowColumn, GeoAffine
 from lcmap_tap.RetrieveData.retrieve_geo import GeoInfo
 from lcmap_tap.RetrieveData.retrieve_chips import Chips
 from lcmap_tap.Visualization.chipviewer_main import Ui_MainWindow_chipviewer
@@ -10,7 +8,6 @@ from lcmap_tap.Visualization.chipviewer_main import Ui_MainWindow_chipviewer
 import os
 import sys
 import time
-import numpy as np
 import datetime as dt
 import matplotlib.pyplot as plt
 
@@ -178,7 +175,6 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
 
 class ChipsViewerX(QMainWindow):
-
     channel_lookup = {'Blue': ['blues'],
                       'Green': ['greens'],
                       'Red': ['reds'],
@@ -198,7 +194,9 @@ class ChipsViewerX(QMainWindow):
                 'g_channel': ('Green', channel_lookup['Green']),
                 'b_channel': ('Blue', channel_lookup['Blue'])}
 
-    def __init__(self, x, y, date, url, gui, geo, r, g, b, **params):
+    update_plot_signal = QtCore.pyqtSignal(object)
+
+    def __init__(self, x, y, date, url, subplot, geo, r, g, b, outdir):
         """
 
         Args:
@@ -206,12 +204,11 @@ class ChipsViewerX(QMainWindow):
             y:
             date:
             url:
-            gui:
+            subplot:
             geo:
             r:
             g:
             b:
-            **params:
         """
         super().__init__()
 
@@ -222,10 +219,9 @@ class ChipsViewerX(QMainWindow):
         self.r = r
         self.g = g
         self.b = b
+        self.working_dir = outdir
 
         self.fig_num = 1
-
-        self.gui = gui
 
         self.geo_info = geo
 
@@ -243,12 +239,7 @@ class ChipsViewerX(QMainWindow):
         self.chips = Chips(x=self.x, y=self.y, date=self.date, url=self.url,
                            lower=self.lower, upper=self.upper, **self.channels)
 
-        self.pixel_image_affine = GeoAffine(ul_x=self.chips.grid['nw']['geo'].chip_coord.x,
-                                            x_res=30,
-                                            rot_1=0,
-                                            ul_y=self.chips.grid['nw']['geo'].chip_coord.y,
-                                            rot_2=0,
-                                            y_res=-30)
+        self.pixel_image_affine = GeoInfo.get_affine(self.chips.chips_ul.x, self.chips.chips_ul.y)
 
         self.pixel_rowcol = GeoInfo.geo_to_rowcol(affine=self.pixel_image_affine, coord=self.geo_info.coord)
 
@@ -275,6 +266,11 @@ class ChipsViewerX(QMainWindow):
         self.init_ui()
 
         self.graphics_view.fitInView()
+
+        # Before generating the new plot, create a reference to the previously clicked date and subplot
+        self.ax = subplot
+
+        self.date_x = self.date.toordinal()  # Date in ordinal datetime format, the x coordinate
 
         self.ui.PushButton_update.clicked.connect(self.update_channels)
 
@@ -315,7 +311,7 @@ class ChipsViewerX(QMainWindow):
         b = self.ui.ComboBox_blue.currentText().lower()
 
         try:
-            outdir = self.gui.working_directory
+            outdir = self.working_dir
 
             if r == b and r == g:
                 outfile = os.path.join(outdir, f'{r}_{date}_{get_time()}.png')
@@ -332,8 +328,10 @@ class ChipsViewerX(QMainWindow):
 
             ax.grid(False)
 
-            _date = dt.datetime.fromordinal(self.chips.grid['c']['data'][0][1]['dates']
-                                           [self.chips.grid['c']['ind']]).strftime('%Y-%m-%d')
+            center = self.chips.tile_geo.chip_coord_ul
+
+            _date = dt.datetime.fromordinal(self.chips.grid[center]['data'][0][1]['dates']
+                                            [self.chips.grid[center]['ind']]).strftime('%Y-%m-%d')
 
             title = f'Date: {_date}'
 
@@ -435,6 +433,7 @@ class ChipsViewerX(QMainWindow):
             None
 
         """
+
         def check_upper(val, limit=0):
             for i in range(50, -1, -1):
                 val_ul = val - i
@@ -525,8 +524,10 @@ class ChipsViewerX(QMainWindow):
         # Only draw a new plot and update the rectangle if this option is selected
         if self.ui.RadioButton_plot.isChecked():
             # Remove the previous rectangle from the scene
-            if self.current_pixel:
-                self.graphics_view.scene.removeItem(self.current_pixel)
+            # if self.current_pixel:
+            self.graphics_view.scene.removeItem(self.current_pixel)
+
+            time.sleep(1)
 
             pen = QtGui.QPen(QtCore.Qt.yellow)
             pen.setWidthF(0.3)
@@ -540,102 +541,13 @@ class ChipsViewerX(QMainWindow):
             self.current_pixel = QtWidgets.QGraphicsRectItem(QtCore.QRectF(upper_left, bottom_right))
             self.current_pixel.setPen(pen)
 
-            # self.graphics_view.scene.addRect(self.rect, pen)
             self.graphics_view.scene.addItem(self.current_pixel)
 
             time.sleep(1)
 
-            self.update_plot()
+            signal = (self.row, self.col)
 
-    def update_plot(self):
-        """
-        Generate a new plot for the clicked point location
+            self.update_plot_signal.emit(signal)
 
-        Returns:
-            None
-
-        """
-        # Before generating the new plot, create a reference to the previously clicked date and subplot
-        self.ax = self.gui.plot_window.b  # Subplot name
-
-        self.date_x = self.gui.plot_window.x  # Date in ordinal datetime format, the x coordinate
-
-        # Gather information to retrieve necessary data for the new plot
-        rowcol = RowColumn(row=self.row, column=self.col)
-
-        coords = GeoInfo.rowcol_to_geo(affine=self.pixel_image_affine,
-                                       rowcol=rowcol)
-
-        # Update the x and y so that they are displayed correctly with save_img
-        self.x = coords.x
-        self.y = coords.y
-
-        log.info("New point selected: %s" % str(coords))
-
-        # Update the X and Y coordinates in the GUI with the new point
-        if units[self.gui.selected_units]["unit"] == "meters":
-
-            self.gui.ui.LineEdit_x1.setText(str(coords.x))
-
-            self.gui.ui.LineEdit_y1.setText(str(coords.y))
-
-        # Convert to lat/long before updating the coordinate text on the GUI
-        else:
-            _coords = GeoInfo.unit_conversion(coords)
-
-            self.gui.ui.LineEdit_x1.setText(str(_coords.x))
-
-            self.gui.ui.LineEdit_y1.setText(str(_coords.y))
-
-        # Do the plotting and generate a new figure
-        self.gui.check_values()
-
-        self.gui.plot()
-
-        """Need to determine the y-axis value for the new time series.  Can be done by determining the index within
-        the new time-series of the x-axis (i.e. date) value from the previous time series """
-        x_look_thru = {"obs_points": self.gui.plot_specs.dates_in[self.gui.plot_specs.qa_mask[
-            self.gui.plot_specs.date_mask]],
-
-                       "out_points": self.gui.plot_specs.dates_out[self.gui.plot_specs.fill_out],
-
-                       "mask_points": self.gui.plot_specs.dates_in[~self.gui.plot_specs.qa_mask[
-                           self.gui.plot_specs.date_mask]]
-                       }
-
-        y_look_thru = {"obs_points": self.gui.plot_specs.all_lookup[self.ax][0][self.gui.plot_specs.date_mask][
-            self.gui.plot_specs.qa_mask[
-                self.gui.plot_specs.date_mask]],
-
-                       "out_points": self.gui.plot_specs.all_lookup[self.ax][0][~self.gui.plot_specs.date_mask][
-                           self.gui.plot_specs.fill_out],
-
-                       "mask_points": self.gui.plot_specs.all_lookup[self.ax][0][self.gui.plot_specs.date_mask][
-                           ~self.gui.plot_specs.qa_mask[
-                               self.gui.plot_specs.date_mask]]
-                       }
-
-        for key, x in x_look_thru.items():
-            if self.date_x in x:
-                self.x_series = x
-
-                self.y_series = y_look_thru[key]
-
-                break
-
-        #: int: the location of the date in the new time series
-        ind = np.where(self.x_series == self.date_x)
-
-        #: the reflectance or index value for the new time series
-        self.data_y = np.take(self.y_series, ind)
-
-        # Display the highlighted pixel in the new plot
-        highlight = self.gui.plot_window.artist_map[self.ax][0]
-
-        # highlight.set_data(self.date_x[0], self.data_y[0])
-        highlight.set_data(self.date_x, self.data_y)
-
-        self.gui.plot_window.canvas.draw()
-
-        # Clear the list of previously clicked ARD observations because they can't be referenced in the new time-series
-        self.gui.ui.ListWidget_selected.clear()
+    def exit(self):
+        self.close()

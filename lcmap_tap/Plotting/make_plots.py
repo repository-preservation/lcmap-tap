@@ -1,8 +1,7 @@
 """Create a matplotlib figure"""
 
 from lcmap_tap.Plotting.plot_specs import PlotSpecs
-from lcmap_tap.Plotting import plot_functions
-from lcmap_tap.Plotting import NAMES, COLORS
+from lcmap_tap.Plotting import plot_functions, NAMES, COLORS
 from lcmap_tap.logger import log, exc_handler
 
 import sys
@@ -55,13 +54,15 @@ def get_plot_items(data: PlotSpecs, items: list) -> dict:
         return data.band_lookup
 
 
-def draw_figure(data: PlotSpecs, items: list, fig_num: int) -> Tuple[matplotlib.figure.Figure, dict, dict, ndarray]:
+def draw_figure(data: PlotSpecs, items: list, fig_num: int, config: dict) -> \
+        Tuple[matplotlib.figure.Figure, dict, dict, ndarray]:
     """
 
     Args:
-        data: an instance of the CCDReader class, contains all of the plotting attributes and data
+        data: an instance of the PlotSpecs class, contains all of the plotting attributes and data
         items: A list of strings representing the subplots to be plotted
         fig_num: Will be used as a figure identifier
+        config: Plot symbology settings
 
     Returns:
         fig: A matplotlib.figure.Figure object
@@ -103,6 +104,9 @@ def draw_figure(data: PlotSpecs, items: list, fig_num: int) -> Tuple[matplotlib.
         return mlines.Line2D([], [], **kwargs)
 
     plt.style.use('ggplot')
+
+    leg_config = config['LEG_DEFAULTS']
+    m_config = config['DEFAULTS']
 
     # get year values for labeling plots
     year1 = str(dt.datetime.fromordinal(data.dates[-1]))[:4]
@@ -188,7 +192,7 @@ def draw_figure(data: PlotSpecs, items: list, fig_num: int) -> Tuple[matplotlib.
     all_obs_points = list()
     all_out_points = list()
     all_mask_points = list()
-    empty_point = None
+    all_empty_points = list()
 
     match_dates = None
 
@@ -207,33 +211,35 @@ def draw_figure(data: PlotSpecs, items: list, fig_num: int) -> Tuple[matplotlib.
         axes[num, 0].set_title('{}'.format(b))
 
         """ ---- Create an empty plot to use for displaying which point is clicked later on ---- """
-        empty_point.append(axes[num, 0].plot([], [],
-                                             ms=12,
-                                             c="none",
-                                             marker="D",
-                                             mec="lime",
-                                             mew=1.75,
-                                             picker=3,
-                                             linewidth=0))
+        # empty_point.append(axes[num, 0].plot([], [],
+        #                                      ms=12,
+        #                                      c="none",
+        #                                      marker="D",
+        #                                      mec="lime",
+        #                                      mew=1.75,
+        #                                      picker=3,
+        #                                      linewidth=0))
 
-        # log.debug("empty_point created")
-        # log.debug("empty_point=%s" % str(empty_point))
+        empty_point.append(axes[num, 0].plot([], [], **m_config['highlight_pick']))
 
         # Store a reference to the empty point which will be used to display clicked points on the plot
         artist_map[b] = empty_point[0]
-
-        # log.debug("Referencing empty_point[0] which is %s for subplot %s" % (str(empty_point[0]), b))
+        all_empty_points.append(empty_point[0][0])
 
         """ ---- Plot the observed values within the PyCCD time range ---- """
         #: class matplotlib.collections.PathCollection:
+        # obs = axes[num, 0].scatter(x=data.dates_in[total_mask[data.date_mask]],
+        #                            y=plot_data[b][0][data.date_mask][total_mask[data.date_mask]],
+        #                            s=44,
+        #                            c="green",
+        #                            marker="o",
+        #                            edgecolors="black",
+        #                            picker=3,
+        #                            )
+
         obs = axes[num, 0].scatter(x=data.dates_in[total_mask[data.date_mask]],
                                    y=plot_data[b][0][data.date_mask][total_mask[data.date_mask]],
-                                   s=44,
-                                   c="green",
-                                   marker="o",
-                                   edgecolors="black",
-                                   picker=3,
-                                   )
+                                   **m_config['clear_obs'])
 
         obs_points.append(obs)
         all_obs_points.append(obs)
@@ -245,13 +251,18 @@ def draw_figure(data: PlotSpecs, items: list, fig_num: int) -> Tuple[matplotlib.
 
         """ ---- Observed values outside of the PyCCD time range ---- """
         #: class matplotlib.collections.PathCollection:
+        # out = axes[num, 0].scatter(x=data.dates_out[fill_out],
+        #                            y=plot_data[b][0][~data.date_mask][fill_out],
+        #                            s=21,
+        #                            color="red",
+        #                            marker="o",
+        #                            edgecolors="black",
+        #                            picker=3,
+        #                            )
+
         out = axes[num, 0].scatter(x=data.dates_out[fill_out],
                                    y=plot_data[b][0][~data.date_mask][fill_out],
-                                   s=21,
-                                   color="red",
-                                   marker="o",
-                                   edgecolors="black",
-                                   picker=3,
+                                   **m_config['out_obs']
                                    )
 
         out_points.append(out)
@@ -261,12 +272,17 @@ def draw_figure(data: PlotSpecs, items: list, fig_num: int) -> Tuple[matplotlib.
 
         """ ---- Plot the observed values masked out by PyCCD ---- """
         #: class matplotlib.collections.PathCollection:
+        # mask = axes[num, 0].scatter(x=data.dates_in[~total_mask[data.date_mask]],
+        #                             y=plot_data[b][0][data.date_mask][~total_mask[data.date_mask]],
+        #                             s=21,
+        #                             color="0.65",
+        #                             marker="o",
+        #                             picker=2,
+        #                             )
+
         mask = axes[num, 0].scatter(x=data.dates_in[~total_mask[data.date_mask]],
                                     y=plot_data[b][0][data.date_mask][~total_mask[data.date_mask]],
-                                    s=21,
-                                    color="0.65",
-                                    marker="o",
-                                    picker=2,
+                                    **m_config['mask_obs']
                                     )
 
         mask_points.append(mask)
@@ -279,35 +295,44 @@ def draw_figure(data: PlotSpecs, items: list, fig_num: int) -> Tuple[matplotlib.
         match_dates = check_for_matches(data.start_dates, data.break_dates)
 
         for ind, e in enumerate(data.end_dates):
-            lines1 = axes[num, 0].axvline(e, color="maroon", linewidth=1.5)
+            # lines1 = axes[num, 0].axvline(e, color="maroon", linewidth=1.5)
+            lines1 = axes[num, 0].axvline(e, **m_config['end_lines'])
 
             end_lines.append(lines1)
 
         for ind, br in enumerate(data.break_dates):
-            lines2 = axes[num, 0].axvline(br, color='r', linewidth=1.5)
+            # lines2 = axes[num, 0].axvline(br, color='r', linewidth=1.5)
+            lines2 = axes[num, 0].axvline(br, **m_config['break_lines'])
 
             break_lines.append(lines2)
 
         for ind, s in enumerate(data.start_dates):
-            lines3 = axes[num, 0].axvline(s, color='b', linewidth=1.5)
+            # lines3 = axes[num, 0].axvline(s, color='b', linewidth=1.5)
+            lines3 = axes[num, 0].axvline(s, **m_config['start_lines'])
+
 
             start_lines.append(lines3)
 
         if match_dates is not None:
 
             for ind, m in enumerate(match_dates):
-                lines4 = axes[num, 0].axvline(m, color="magenta", linewidth=1.5)
+                # lines4 = axes[num, 0].axvline(m, color="magenta", linewidth=1.5)
+                lines4 = axes[num, 0].axvline(m, **m_config['match_lines'])
+
 
                 match_lines.append(lines4)
 
         """ ---- Draw the predicted curves ---- """
         if data.results is not None:
             for c in range(0, len(data.results["change_models"])):
+                # lines5, = axes[num, 0].plot(data.prediction_dates[c * len(data.bands)],
+                #                             plot_data[b][1][c],
+                #                             color="orange",
+                #                             linewidth=3,
+                #                             alpha=0.8)
                 lines5, = axes[num, 0].plot(data.prediction_dates[c * len(data.bands)],
                                             plot_data[b][1][c],
-                                            "orange",
-                                            linewidth=3,
-                                            alpha=0.8)
+                                            **m_config['model_lines'])
 
                 model_lines.append(lines5)
 
@@ -361,37 +386,37 @@ def draw_figure(data: PlotSpecs, items: list, fig_num: int) -> Tuple[matplotlib.
 
         """ ---- Plot a vertical line at January 1 of each year on the time series ---- """
         for date in datetimes:
-            lines7 = axes[num, 0].axvline(date, color='dimgray', linewidth=1.5, visible=False)
+            # lines7 = axes[num, 0].axvline(date, color='dimgray', linewidth=1.5, visible=False)
+            lines7 = axes[num, 0].axvline(date, visible=False, **m_config['date_lines'])
 
             date_lines.append(lines7)
+
+        # Set the axis face color
+        axes[num, 0].patch.set_facecolor(m_config['background']['color'])
 
         # With sharex=True, set all x-axis tick labels to visible
         axes[num, 0].tick_params(axis='both', which='both', labelsize=12, labelbottom=True)
 
     """Create custom legend handles"""
-    empty_leg = get_legend_handle(marker="D", ms=8, color="none", mec="lime", mew=1.75, linewidth=0,
-                                  label="Selected")
+    empty_leg = get_legend_handle(**leg_config['highlight_pick'])
 
-    obs_leg = get_legend_handle(marker="o", ms=8, color="green", mec="k", mew=0.3, linewidth=0,
-                                label="Clear")
+    obs_leg = get_legend_handle(**leg_config['clear_obs'])
 
-    mask_leg = get_legend_handle(marker="o", ms=4, color="0.65", linewidth=0,
-                                 label="Masked")
+    mask_leg = get_legend_handle(**leg_config['mask_obs'])
 
-    out_leg = get_legend_handle(marker="o", ms=4, color="red", mec="black", mew=0.3, linewidth=0,
-                                label="Unused")
+    out_leg = get_legend_handle(**leg_config['out_obs'])
 
-    end_leg = get_legend_handle(color="maroon", linewidth=1.5, label="End Date")
+    end_leg = get_legend_handle(**leg_config['end_lines'])
 
-    break_leg = get_legend_handle(color='r', linewidth=1.5, label="Break Date")
+    break_leg = get_legend_handle(**leg_config['break_lines'])
 
-    start_leg = get_legend_handle(color='b', linewidth=1.5, label="Start Date")
+    start_leg = get_legend_handle(**leg_config['start_lines'])
 
-    match_leg = get_legend_handle(color='magenta', linewidth=1.5, label="Start Date = Break Date")
+    match_leg = get_legend_handle(**leg_config['match_lines'])
 
-    model_leg = get_legend_handle(color="orange", linewidth=3, alpha=0.8, label="Model Fit")
+    model_leg = get_legend_handle(**leg_config['model_lines'])
 
-    date_leg = get_legend_handle(color='dimgray', linewidth=1.5, label="Datelines")
+    date_leg = get_legend_handle(**leg_config['date_lines'])
 
     if match_dates is not None:
 
@@ -401,7 +426,7 @@ def draw_figure(data: PlotSpecs, items: list, fig_num: int) -> Tuple[matplotlib.
         labels = ["Selected", "Clear", "Masked", "Unused", "End Date", "Break Date", "Start Date",
                   "Start Date = Break Date", "Model Fit", "Datelines"]
 
-        lines = [empty_point[0], all_obs_points, all_mask_points, all_out_points, end_lines, break_lines, start_lines,
+        lines = [all_empty_points, all_obs_points, all_mask_points, all_out_points, end_lines, break_lines, start_lines,
                  match_lines, model_lines, date_lines]
 
     else:
@@ -411,7 +436,7 @@ def draw_figure(data: PlotSpecs, items: list, fig_num: int) -> Tuple[matplotlib.
         labels = ["Selected", "Clear", "Masked", "Unused", "End Date", "Break Date", "Start Date",
                   "Model Fit", "Datelines"]
 
-        lines = [empty_point[0], all_obs_points, all_mask_points, all_out_points, end_lines, break_lines, start_lines,
+        lines = [all_empty_points, all_obs_points, all_mask_points, all_out_points, end_lines, break_lines, start_lines,
                  model_lines, date_lines]
 
     """Add whichever land cover classes are present to the legend handles and labels"""

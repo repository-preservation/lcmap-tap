@@ -2,7 +2,6 @@
 
 import os
 import sys
-import traceback
 import glob
 import pkg_resources
 
@@ -183,7 +182,7 @@ class MapsViewer(QMainWindow):
 
         self.col = self.pixel_rowcol.column
 
-        log.debug("MAP VIEWER, pixel_rowcol: %s" % str(self.pixel_rowcol))
+        log.debug("MAP VIEWER, tile_pixel_rowcol: %s" % str(self.pixel_rowcol))
 
         if not os.path.exists(os.path.join(self.root, version)):
             self.version = self.get_version()
