@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'UI_SYMBOLOGY.ui'
+# Form implementation generated from reading ui file 'ui_symbology.ui'
 #
 # Created by: PyQt5 UI code generator 5.6
 #
@@ -11,7 +11,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow_symbology(object):
     def setupUi(self, MainWindow_symbology):
         MainWindow_symbology.setObjectName("MainWindow_symbology")
-        MainWindow_symbology.resize(280, 161)
+        MainWindow_symbology.resize(241, 367)
         self.centralwidget = QtWidgets.QWidget(MainWindow_symbology)
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout = QtWidgets.QGridLayout(self.centralwidget)
@@ -19,6 +19,8 @@ class Ui_MainWindow_symbology(object):
         self.verticalLayout = QtWidgets.QVBoxLayout()
         self.verticalLayout.setObjectName("verticalLayout")
         self.gridLayout_menus = QtWidgets.QGridLayout()
+        self.gridLayout_menus.setSizeConstraint(QtWidgets.QLayout.SetDefaultConstraint)
+        self.gridLayout_menus.setVerticalSpacing(0)
         self.gridLayout_menus.setObjectName("gridLayout_menus")
         self.label_color = QtWidgets.QLabel(self.centralwidget)
         self.label_color.setObjectName("label_color")
@@ -39,6 +41,8 @@ class Ui_MainWindow_symbology(object):
         self.comboBox_color.setObjectName("comboBox_color")
         self.gridLayout_menus.addWidget(self.comboBox_color, 1, 2, 1, 1)
         self.verticalLayout.addLayout(self.gridLayout_menus)
+        spacerItem = QtWidgets.QSpacerItem(20, 10, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        self.verticalLayout.addItem(spacerItem)
         self.horizontalLayout_controls = QtWidgets.QHBoxLayout()
         self.horizontalLayout_controls.setObjectName("horizontalLayout_controls")
         self.pushButton_preview = QtWidgets.QPushButton(self.centralwidget)
@@ -48,13 +52,22 @@ class Ui_MainWindow_symbology(object):
         self.pushButton_apply.setObjectName("pushButton_apply")
         self.horizontalLayout_controls.addWidget(self.pushButton_apply)
         self.verticalLayout.addLayout(self.horizontalLayout_controls)
+        spacerItem1 = QtWidgets.QSpacerItem(20, 10, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        self.verticalLayout.addItem(spacerItem1)
         self.horizontalLayout_preview = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_preview.setSizeConstraint(QtWidgets.QLayout.SetDefaultConstraint)
         self.horizontalLayout_preview.setObjectName("horizontalLayout_preview")
+        self.frame = QtWidgets.QFrame(self.centralwidget)
+        self.frame.setMinimumSize(QtCore.QSize(50, 200))
+        self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.frame.setObjectName("frame")
+        self.horizontalLayout_preview.addWidget(self.frame)
         self.verticalLayout.addLayout(self.horizontalLayout_preview)
         self.gridLayout.addLayout(self.verticalLayout, 0, 0, 1, 1)
         MainWindow_symbology.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow_symbology)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 280, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 241, 21))
         self.menubar.setObjectName("menubar")
         self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
