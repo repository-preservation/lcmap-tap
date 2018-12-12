@@ -37,7 +37,7 @@ These instructions work for both Windows and Linux systems.
 
 lcmap_tap has been installed and tested successfully on Windows 7 & 10, and CentOS Linux (version 7).
 
-Version 1.0.1
+Version 1.1.0
 
 _Note: some functionality may still be unstable as development is currently ongoing._
 ##
