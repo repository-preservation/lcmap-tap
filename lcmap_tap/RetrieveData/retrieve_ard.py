@@ -43,7 +43,7 @@ def get_image_ids(path: str) -> list:
 class ARDData:
     """Use lcmap-merlin to retrieve a time-series ARD for a chip"""
 
-    def __init__(self, geo, url, items, cache, controls, start='1982-01-01', stop='2017-12-31'):
+    def __init__(self, geo, url, items, cache, start='1982-01-01', stop='2017-12-31'):
         """
 
         Args:
@@ -58,7 +58,7 @@ class ARDData:
         """
         # super().__init__()
 
-        self.controls = controls
+        # self.controls = controls
 
         self.cache = cache
 
@@ -146,7 +146,7 @@ class ARDData:
                 self.timeseries[key] = ts[key]
 
     @staticmethod
-    def get_sequence(timeseries: tuple, pixel_coord: GeoCoordinate) -> dict:
+    def get_sequence(timeseries, pixel_coord):
         """
         Find the matching time series rod from the chip of results using pixel upper left coordinate
 
@@ -160,7 +160,7 @@ class ARDData:
             pixel_coord: The upper left coordinate of the pixel in projected meters
 
         Returns:
-            Spectral data organized by ubid along with Pixel QA and dates
+            dict: Spectral data organized by ubid along with Pixel QA and dates
 
         """
         #  x is an item in timeseries; x[0] is the tuple of coordinates for that timeseries item.
@@ -172,8 +172,8 @@ class ARDData:
         except TypeError:
             return next(gen, None)
 
-    @staticmethod
-    def check_cache(key, cache, items):
+    # @staticmethod
+    def check_cache(self, key, cache, items):
         """
         Check the contents of the cache file for pre-existing data to avoid making redundant chipmunk requests
 
@@ -184,16 +184,23 @@ class ARDData:
 
         Returns:
             Tuple[list, list]
-                [0]: List of ubids that will be requested using merlin
-                [1]: List of ubids that exist in the cache
+                [0]: List of ubids that exist in the cache
+                [1]: List of ubids that will be requested using merlin
 
         """
         if key in cache.keys():
-            # list of ubids that we need to request with merlin
-            required = [i for i in items if i not in cache[key]['bands']]
+            try:
+                sequence = self.get_sequence(((_key, item) for _key, item in cache[key].items()),
+                                             self.geo.pixel_coord_ul)
 
-            # list of ubids that were previously requested from merlin and exist in the cache
-            cached = [i for i in cache[key]['bands'] if i in items or i is 'qas']
+                required = [i for i in items if i not in sequence.keys()]
+
+                cached = [i for i in sequence.keys() if i not in items or i is 'qas']
+
+            except KeyError:
+                required = items
+
+                cached = list()
 
         else:
             required = items
@@ -236,11 +243,11 @@ class ARDData:
                 except KeyError:
                     cache[key][k] = ts[k]
 
-        if 'bands' not in cache[key].keys():
-            cache[key]['bands'] = required
-
-        else:
-            # Update the 'bands' list to include the newly requested chipmunk ubids
-            cache[key]['bands'] = list(set(cache[key]['bands'] + required))
+        # if 'bands' not in cache[key].keys():
+        #     cache[key]['bands'] = required
+        #
+        # else:
+        #     # Update the 'bands' list to include the newly requested chipmunk ubids
+        #     cache[key]['bands'] = list(set(cache[key]['bands'] + required))
 
         return cache
