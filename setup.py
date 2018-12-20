@@ -23,7 +23,7 @@ setup(
     packages=find_packages(),
 
     install_requires=[
-        'PyQt5 == 5.10.1',
+        # 'PyQt5 == 5.10.1',
         'matplotlib',
         'numpy',
         'gdal',
@@ -41,9 +41,11 @@ setup(
 
     include_package_data=True,
 
-    author='Daniel Zelenak',
+    keywords='usgs eros lcmap',
 
-    author_email='dzelenak@contractor.usgs.gov',
+    author='USGS EROS LCMAP',
+
+    author_email='',
 
     long_description=__doc__,
 
