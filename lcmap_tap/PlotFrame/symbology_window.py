@@ -1,13 +1,12 @@
 """Build a Qt Window with functionality to allow for setting custom symbology"""
 
 from lcmap_tap.UserInterface.ui_symbology import Ui_MainWindow_symbology
-from lcmap_tap.Plotting import POINTS, LINES
+from lcmap_tap.Plotting import POINTS
 
 import os
 import sys
 import pkg_resources
 import numpy as np
-from PyQt5.QtWidgets import QApplication
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtCore import pyqtSignal
@@ -18,22 +17,13 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib import colors as mcolors
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from lcmap_tap.logger import exc_handler, log
+from lcmap_tap.logger import exc_handler
 
 sys.excepthook = exc_handler
 
 
 class MplCanvas(FigureCanvas):
-    """
-    TODO: Add summary line
-    """
-
     def __init__(self, fig):
-        """
-        TODO: Add Summary
-        Args:
-            fig:
-        """
         FigureCanvas.__init__(self, fig)
 
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
@@ -47,10 +37,9 @@ class MplCanvas(FigureCanvas):
 
 
 class SymbologyWindow(QtWidgets.QMainWindow):
-
     marker_names = [n for m, n in Line2D.markers.items() if n != 'nothing']
 
-    line_names = [n for m, n in Line2D.lineStyles.items() if not 'nothing' in n]
+    line_names = [n for m, n in Line2D.lineStyles.items() if 'nothing' not in n]
 
     selected_marker = pyqtSignal(object)
 
@@ -59,9 +48,6 @@ class SymbologyWindow(QtWidgets.QMainWindow):
     file_loader = pyqtSignal(object)
 
     def __init__(self, marker, size, color, bg_color, target):
-        """
-        TODO Add a summary
-        """
         super().__init__()
 
         self.target = target
@@ -120,7 +106,7 @@ class SymbologyWindow(QtWidgets.QMainWindow):
 
         self.markers = {func: m for m, func in Line2D.markers.items() if func != 'nothing'}
 
-        self.lines = {func: m for m, func in Line2D.lineStyles.items() if not 'nothing' in func}
+        self.lines = {func: m for m, func in Line2D.lineStyles.items() if 'nothing' not in func}
 
         self.ui.actionLoad.triggered.connect(self.load_file)
 
@@ -165,7 +151,7 @@ class SymbologyWindow(QtWidgets.QMainWindow):
             markersize_key = float(self.ui.comboBox_size.currentText())
 
             self.ax.axvline(x=0.5, color=color_key, marker=None, linestyle=self.lines[marker_key],
-                         linewidth=markersize_key)
+                            linewidth=markersize_key)
 
             self.ax.patch.set_facecolor(bg_key)
 
@@ -184,7 +170,10 @@ class SymbologyWindow(QtWidgets.QMainWindow):
         self.ui.horizontalLayout_preview.addWidget(self.canvas)
 
     def apply(self):
-        """Emit the new customized symbol parameters"""
+        """
+        Emit the new customized symbol parameters
+
+        """
         color = self.ui.comboBox_color.currentText()
 
         new_bg = self.ui.comboBox_background.currentText()
@@ -192,7 +181,7 @@ class SymbologyWindow(QtWidgets.QMainWindow):
         if self.target in POINTS:
             marker = self.markers[self.ui.comboBox_marker.currentText()]
 
-            markersize =  int(self.ui.comboBox_size.currentText())
+            markersize = int(self.ui.comboBox_size.currentText())
 
         else:
             marker = self.lines[self.ui.comboBox_marker.currentText()]
