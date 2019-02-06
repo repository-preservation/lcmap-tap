@@ -11,7 +11,7 @@ from lcmap_tap.RetrieveData.retrieve_geo import GeoInfo
 from lcmap_tap.RetrieveData.retrieve_classes import SegmentClasses
 from lcmap_tap.PlotFrame.plotwindow import PlotWindow
 from lcmap_tap.PlotFrame.symbology_window import SymbologyWindow
-from lcmap_tap.Plotting import make_plots, LOOKUP, LINES, POINTS
+from lcmap_tap.Plotting import make_plots, LOOKUP, POINTS
 from lcmap_tap.Plotting.plot_config import PlotConfig
 from lcmap_tap.Plotting.plot_specs import PlotSpecs
 from lcmap_tap.Auxiliary import projections
@@ -121,8 +121,9 @@ class MainControls(QMainWindow):
 
         self.connect_widgets()
 
-        self.ui.LineEdit_x1.setText('-2193585')
-        self.ui.LineEdit_y1.setText('1886805')
+        # Test coordinates
+        # self.ui.LineEdit_x1.setText('-2193585')
+        # self.ui.LineEdit_y1.setText('1886805')
 
         self.show()
 
@@ -477,6 +478,7 @@ class MainControls(QMainWindow):
         lines_map <dict> mapping of artist lines and points to the legend lines
         
         axes <ndarray> 2D array of matplotlib.axes.Axes objects
+        
         """
         self.fig, self.artist_map, self.lines_map, self.axes = make_plots.draw_figure(data=self.plot_specs,
                                                                                       items=self.item_list,
