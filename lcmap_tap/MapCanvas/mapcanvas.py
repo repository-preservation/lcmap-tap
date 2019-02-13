@@ -109,6 +109,12 @@ class MapCanvas(QWidget):
         """
         coords = GeoInfo.get_geocoordinate(xstring=str(lng), ystring=str(lat))
 
+        xy = GeoInfo.unit_conversion(coord=coords, src="lat/long", dest="meters")
+
+        h, v = GeoInfo.get_hv(xy.x, xy.y)
+
+        tile = "h{:02}v{:02}".format(h, v)
+
         log.info("New point selected from locator map: %s" % str(coords))
 
         # If necessary, convert to meters before updating the coordinate text on the GUI
@@ -128,6 +134,7 @@ class MapCanvas(QWidget):
         self.gui.ui.ListWidget_selected.clear()
 
         # Display the coordinate in the QLabel window below the map
-        self.text.setText("Point {lat}, {lng}".format(lat=lat, lng=lng))
+        self.text.setText("SELECTED - Tile {t} | Lat/Lng {lat}, {lng} | "
+                          "Meters XY {x}, {y}".format(lat=lat, lng=lng, t=tile, x=int(xy.x), y=int(xy.y)))
 
         return None
