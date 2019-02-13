@@ -26,6 +26,8 @@ class CCDReader:
         Returns:
 
         """
+        log.debug(f'SEARCHING - json - {tile}_{chip_coord.x}_{chip_coord.y}.json')
+
         try:
             self.json_file = self.find_file(file_ls=[os.path.join(json_dir, f) for f in os.listdir(json_dir)],
                                             string="{tile}_{x}_{y}.json".format(tile=tile,
