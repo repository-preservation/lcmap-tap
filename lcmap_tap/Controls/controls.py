@@ -154,7 +154,6 @@ class MainControls(QMainWindow):
 
         # Call the activated signal when the user clicks on any item (new or old) in the comboBox
         # [str] calls the overloaded signal that passes the Qstring, not the index of the item
-        # self.ui.version_comboBox.activated[str].connect(self.set_version)
 
         self.ui.PushButton_outputDir.clicked.connect(self.browse_output)
 
@@ -320,8 +319,7 @@ class MainControls(QMainWindow):
 
         checks = [self.ui.LineEdit_x1.text(),
                   self.ui.LineEdit_y1.text(),
-                  self.ui.LineEdit_outputDir.text(),
-                  self.ui.LineEdit_changeDir.text()]
+                  self.ui.LineEdit_outputDir.text()]
 
         # Parse through the checks list to check for entered text
         for check in checks:
