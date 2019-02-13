@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>612</width>
-    <height>597</height>
+    <width>500</width>
+    <height>684</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,13 +15,13 @@
   </property>
   <property name="windowIcon">
    <iconset>
-    <normaloff>../../../../../Pictures/lcmap_tap5.PNG</normaloff>../../../../../Pictures/lcmap_tap5.PNG</iconset>
+    <normaloff>../../../../Pictures/lcmap_tap5.PNG</normaloff>../../../../Pictures/lcmap_tap5.PNG</iconset>
   </property>
   <property name="unifiedTitleAndToolBarOnMac">
    <bool>false</bool>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout_3">
+   <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
      <layout class="QGridLayout" name="GridLayout_coordinates">
       <item row="1" column="1">
@@ -362,7 +362,224 @@
       </item>
      </layout>
     </item>
+    <item row="1" column="0">
+     <widget class="QLabel" name="Label_outputDir">
+      <property name="text">
+       <string>Specify working directory:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="0">
+     <layout class="QHBoxLayout" name="HBoxLayout_outputDir">
+      <item>
+       <widget class="QLineEdit" name="LineEdit_outputDir"/>
+      </item>
+      <item>
+       <widget class="QPushButton" name="PushButton_outputDir">
+        <property name="minimumSize">
+         <size>
+          <width>35</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>25</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>...</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="3" column="0">
+     <widget class="QLabel" name="Label_pyccdDir">
+      <property name="text">
+       <string>Change Results Directory:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="0">
+     <layout class="QHBoxLayout" name="HBoxLayout_changeDir">
+      <item>
+       <widget class="QLineEdit" name="LineEdit_changeDir"/>
+      </item>
+      <item>
+       <widget class="QPushButton" name="PushButton_changeDir">
+        <property name="minimumSize">
+         <size>
+          <width>35</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>25</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>...</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
     <item row="5" column="0">
+     <widget class="QLabel" name="Label_classDir">
+      <property name="text">
+       <string>Class Results Directory:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="6" column="0">
+     <layout class="QHBoxLayout" name="HBoxLayout_classDir">
+      <item>
+       <widget class="QLineEdit" name="LineEdit_classDir"/>
+      </item>
+      <item>
+       <widget class="QPushButton" name="PushButton_classDir">
+        <property name="minimumSize">
+         <size>
+          <width>35</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>25</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>...</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="7" column="0">
+     <widget class="QListWidget" name="ListWidget_items">
+      <property name="alternatingRowColors">
+       <bool>false</bool>
+      </property>
+      <property name="selectionMode">
+       <enum>QAbstractItemView::MultiSelection</enum>
+      </property>
+      <item>
+       <property name="text">
+        <string>All Spectral Bands</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>All Indices</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Blue</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Green</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Red</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>NIR</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>SWIR-1</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>SWIR-2</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Thermal</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>NDVI</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>MSAVI</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>EVI</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>SAVI</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>NDMI</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>NBR</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>NBR-2</string>
+       </property>
+      </item>
+     </widget>
+    </item>
+    <item row="8" column="0">
+     <widget class="QLabel" name="Label_results">
+      <property name="text">
+       <string>Model Results:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="9" column="0">
+     <widget class="QPlainTextEdit" name="PlainTextEdit_results">
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item row="10" column="0">
+     <widget class="QLabel" name="Label_selected">
+      <property name="text">
+       <string>Selected Observations:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="11" column="0">
+     <widget class="QListWidget" name="ListWidget_selected">
+      <property name="alternatingRowColors">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item row="12" column="0">
      <layout class="QHBoxLayout" name="HBoxLayout_buttons">
       <item>
        <widget class="QPushButton" name="PushButton_locator">
@@ -523,161 +740,6 @@
         </property>
         <property name="text">
          <string>Close</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
-    <item row="4" column="0">
-     <layout class="QVBoxLayout" name="VBoxLayout_main">
-      <item>
-       <widget class="QLabel" name="Label_outputDir">
-        <property name="text">
-         <string>Specify working directory:</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <layout class="QHBoxLayout" name="HBoxLayout_outputDir">
-        <item>
-         <widget class="QLineEdit" name="LineEdit_outputDir"/>
-        </item>
-        <item>
-         <widget class="QPushButton" name="PushButton_outputDir">
-          <property name="minimumSize">
-           <size>
-            <width>35</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>25</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>...</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <widget class="QListWidget" name="ListWidget_items">
-        <property name="alternatingRowColors">
-         <bool>false</bool>
-        </property>
-        <property name="selectionMode">
-         <enum>QAbstractItemView::MultiSelection</enum>
-        </property>
-        <item>
-         <property name="text">
-          <string>All Spectral Bands</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>All Indices</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Blue</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Green</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Red</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>NIR</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>SWIR-1</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>SWIR-2</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Thermal</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>NDVI</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>MSAVI</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>EVI</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>SAVI</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>NDMI</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>NBR</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>NBR-2</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="Label_results">
-        <property name="text">
-         <string>Model Results:</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPlainTextEdit" name="PlainTextEdit_results">
-        <property name="readOnly">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="Label_selected">
-        <property name="text">
-         <string>Selected Observations:</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QListWidget" name="ListWidget_selected">
-        <property name="alternatingRowColors">
-         <bool>true</bool>
         </property>
        </widget>
       </item>
