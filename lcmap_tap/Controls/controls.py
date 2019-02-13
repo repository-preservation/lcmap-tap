@@ -100,6 +100,8 @@ class MainControls(QMainWindow):
         self.plot_specs = None  # container for plotting data
         self.begin = dt.date(year=1982, month=1, day=1)
         self.end = dt.date(year=2017, month=12, day=31)
+        self.class_directory = None
+        self.ccd_directory = None
 
         self.plotconfig = PlotConfig()
 
@@ -155,6 +157,10 @@ class MainControls(QMainWindow):
         # self.ui.version_comboBox.activated[str].connect(self.set_version)
 
         self.ui.PushButton_outputDir.clicked.connect(self.browse_output)
+
+        self.ui.PushButton_changeDir.clicked.connect(self.browse_change)
+
+        self.ui.PushButton_classDir.clicked.connect(self.browse_class)
 
         self.ui.LineEdit_outputDir.textChanged.connect(self.check_values)
 
@@ -289,10 +295,10 @@ class MainControls(QMainWindow):
 
         """
         # self.set_units()
-        if self.tile:
-            self.class_directory = os.path.join(CONFIG['CCD'], self.tile, 'class', 'annualized', 'pickles')
-
-            self.ccd_directory = os.path.join(CONFIG['CCD'], self.tile, 'change', 'n-compare', 'json')
+        # if self.tile:
+        #     self.class_directory = os.path.join(CONFIG['CCD'], self.tile, 'class', 'annualized', 'pickles')
+        #
+        #     self.ccd_directory = os.path.join(CONFIG['CCD'], self.tile, 'change', 'n-compare', 'json')
 
         self.working_directory = self.ui.LineEdit_outputDir.text()
 
@@ -314,7 +320,8 @@ class MainControls(QMainWindow):
 
         checks = [self.ui.LineEdit_x1.text(),
                   self.ui.LineEdit_y1.text(),
-                  self.ui.LineEdit_outputDir.text()]
+                  self.ui.LineEdit_outputDir.text(),
+                  self.ui.LineEdit_changeDir.text()]
 
         # Parse through the checks list to check for entered text
         for check in checks:
@@ -362,6 +369,27 @@ class MainControls(QMainWindow):
 
         if len(output_dir) > 0:
             self.ui.LineEdit_outputDir.setText(output_dir)
+
+    def browse_change(self):
+        """
+        Open a QFileDialog to manually browse to and retrieve the full path to the change results directory
+
+        """
+        self.ccd_directory = QFileDialog.getExistingDirectory(self)
+
+        if len(self.ccd_directory) > 0:
+            self.ui.LineEdit_changeDir.setText(self.ccd_directory)
+
+    def browse_class(self):
+        """
+        Open a QFileDialog to manually browse to and retrieve the full path to a directory containing
+        classification results
+
+        """
+        self.class_directory = QFileDialog.getExistingDirectory(self)
+
+        if len(self.class_directory) > 0:
+            self.ui.LineEdit_classDir.setText(self.class_directory)
 
     def show_model_params(self, results, geo):
         """
@@ -437,10 +465,11 @@ class MainControls(QMainWindow):
         self.cache_data = update_cache(self.cache_data, self.ard_observations.cache, self.ard_observations.key)
 
         try:
-            self.ccd_results = CCDReader(tile=self.geo_info.tile,
-                                         chip_coord=self.geo_info.chip_coord_ul,
-                                         pixel_coord=self.geo_info.pixel_coord_ul,
-                                         json_dir=self.ccd_directory)
+            if self.ccd_directory is not None or self.ccd_directory != "":
+                self.ccd_results = CCDReader(tile=self.geo_info.tile,
+                                             chip_coord=self.geo_info.chip_coord_ul,
+                                             pixel_coord=self.geo_info.pixel_coord_ul,
+                                             json_dir=self.ccd_directory)
 
         except (IndexError, AttributeError, TypeError, ValueError, FileNotFoundError) as _e:
             log.error('Exception: %s' % _e, exc_info=True)
@@ -448,10 +477,11 @@ class MainControls(QMainWindow):
             self.ccd_results = None
 
         try:
-            self.class_results = SegmentClasses(chip_coord_ul=self.geo_info.chip_coord_ul,
-                                                class_dir=self.class_directory,
-                                                rc=self.geo_info.chip_pixel_rowcol,
-                                                tile=self.geo_info.tile)
+            if self.class_directory is not None or self.class_results != "":
+                self.class_results = SegmentClasses(chip_coord_ul=self.geo_info.chip_coord_ul,
+                                                    class_dir=self.class_directory,
+                                                    rc=self.geo_info.chip_pixel_rowcol,
+                                                    tile=self.geo_info.tile)
 
         except (IndexError, AttributeError, TypeError, ValueError, FileNotFoundError) as _e:
             log.error('Exception: %s' % _e, exc_info=True)
