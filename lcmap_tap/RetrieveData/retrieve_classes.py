@@ -15,22 +15,27 @@ sys.excepthook = exc_handler
 class SegmentClasses:
     """Find and retain the classification results for the current time series"""
 
-    def __init__(self, chip_coord: GeoCoordinate, class_dir: str, rc: RowColumn, tile: str):
+    def __init__(self, chip_coord_ul: GeoCoordinate, class_dir: str, rc: RowColumn, tile: str):
         """
 
         Args:
-            chip_coord: The upper left coordinate of the chip in projected meters
+            chip_coord_ul: The upper left coordinate of the chip in projected meters
             class_dir: Absolute path to the directory containing classification results stored as pickle files
             rc: Row and column of the pixel within the chip array
             tile: String-formatted H-V tile name
 
         """
-        self.results = self.extract_results(class_file=CCDReader.find_file(
-            file_ls=[os.path.join(class_dir, f) for f in os.listdir(class_dir)],
-            string="{tile}_{x}_{y}_class.p".format(tile=tile,
-                                                   x=chip_coord.x,
-                                                   y=chip_coord.y)),
-            rc=rc)
+        try:
+            self.p_file = CCDReader.find_file(file_ls=[os.path.join(class_dir, f) for f in os.listdir(class_dir)],
+                                              string=f'{tile}_{chip_coord_ul.x}_{chip_coord_ul.y}_class.p')
+
+            self.results = self.extract_results(class_file=self.p_file, rc=rc)
+
+        except PermissionError:
+            log.warning("Could not access class results file location")
+
+            self.results = None
+
 
     @staticmethod
     def extract_results(class_file: str, rc: RowColumn) -> List[dict]:
@@ -48,3 +53,17 @@ class SegmentClasses:
         results = np.reshape(pickle.load(open(class_file, "rb")), (100, 100))
 
         return results[rc.row, rc.column]
+
+    @staticmethod
+    def chip_results(class_file: str) -> np.ndarray:
+        """
+        A method for opening and returning all of the contents within a p file that contains classification results
+
+        Args:
+            class_file: The full path to a pickle file containing a chip of classification results
+
+        Returns:
+            The file contents in a chip-shaped array
+
+        """
+        return pickle.load(open(class_file, 'rb'))

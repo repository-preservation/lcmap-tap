@@ -26,13 +26,27 @@ class CCDReader:
         Returns:
 
         """
-        self.json_file = self.find_file(file_ls=[os.path.join(json_dir, f) for f in os.listdir(json_dir)],
-                                        string="{tile}_{x}_{y}.json".format(tile=tile,
-                                                                            x=chip_coord.x,
-                                                                            y=chip_coord.y))
+        log.debug(f'SEARCHING - json - {tile}_{chip_coord.x}_{chip_coord.y}.json')
 
-        self.results = self.extract_jsoncurve(pixel_info=self.pixel_ccd_info(results_chip=self.json_file,
-                                                                             coord=pixel_coord))
+        try:
+            self.json_file = self.find_file(file_ls=[os.path.join(json_dir, f) for f in os.listdir(json_dir)],
+                                            string="{tile}_{x}_{y}.json".format(tile=tile,
+                                                                                x=chip_coord.x,
+                                                                                y=chip_coord.y))
+        except PermissionError:
+            log.warning("Couldn't access PyCCD results file location %s")
+
+            self.results = [{}]
+
+        if self.json_file is not None:
+            self.results = self.check_dates(
+                self.extract_jsoncurve(pixel_info=self.pixel_ccd_info(results_chip=self.json_file,
+                                                                      coord=pixel_coord)))
+
+        else:
+            log.warning("No PyCCD results exist for tile %s" % tile)
+
+            self.results = [{}]
 
     @staticmethod
     def find_file(file_ls, string) -> str:
@@ -52,6 +66,20 @@ class CCDReader:
         return next(gen, None)
 
     @staticmethod
+    def chip_results(results_chip: str) -> dict:
+        """
+        Method for loading and returning the contents of a JSON file that contains a chip of change results.
+
+        Args:
+            results_chip: The full path to a JSON file
+
+        Returns:
+            Information from a JSON file stored in a dict structure
+
+        """
+        return json.load(open(results_chip, 'r'))
+
+    @staticmethod
     def pixel_ccd_info(results_chip: str, coord: GeoCoordinate) -> dict:
         """
         Find the CCD output for a specific pixel from within the chip by matching the pixel coordinates
@@ -64,15 +92,11 @@ class CCDReader:
             All of the information stored in the target JSON file for the specific pixel coordinate
 
         """
-        try:
-            results = json.load(open(results_chip, "r"))
+        results = json.load(open(results_chip, "r"))
 
-            gen = filter(lambda x: coord.x == x["x"] and coord.y == x["y"], results)
+        gen = filter(lambda x: coord.x == x["x"] and coord.y == x["y"], results)
 
-            return next(gen, None)
-
-        except TypeError:
-            log.warning("No results were found associated with the selected PyCCD version")
+        return next(gen, None)
 
     @staticmethod
     def extract_jsoncurve(pixel_info: dict) -> dict:
@@ -87,3 +111,20 @@ class CCDReader:
 
         """
         return json.loads(pixel_info["result"])
+
+    @staticmethod
+    def check_dates(results):
+        """
+        In cases where the entire time series does not contain a break day, simply make it be equal to the model's
+        end day.
+
+        """
+        # log.debug("RESULTS: %s" % results)
+        # log.debug("RESULTS KEYS: %s" % results.keys())
+        # log.debug("RESULTS CHANGE MODELS %s" % results['change_models'])
+
+        for ind, model in enumerate(results['change_models']):
+            if model['break_day'] < 1:
+                model['break_day'] = model['end_day']
+
+        return results

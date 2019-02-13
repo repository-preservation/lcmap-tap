@@ -1,7 +1,7 @@
 """Use Leaflet JavaScript API to display an interactive web map within a QWidget"""
 
 from lcmap_tap.RetrieveData.retrieve_geo import GeoInfo
-from lcmap_tap.Controls import units
+from lcmap_tap.Controls import UNITS
 from lcmap_tap.logger import log, exc_handler
 
 import sys
@@ -19,7 +19,9 @@ try:
 
     USE = 'UseWebEngineView'
 
-except ImportError:
+except ImportError as e:
+    log.error('Exception: %s' % e, exc_info=True)
+
     # noinspection PyUnresolvedReferences
     from PyQt5.QtWebKitWidgets import QWebView
 
@@ -52,6 +54,8 @@ class MapCanvas(QWidget):
         icon = QIcon(QPixmap(pkg_resources.resource_filename('lcmap_tap', '/'.join(('Auxiliary', 'icon.PNG')))))
 
         self.setWindowIcon(icon)
+
+        self.setWindowTitle('Locator Map')
 
         self.gui = gui
 
@@ -105,23 +109,32 @@ class MapCanvas(QWidget):
         """
         coords = GeoInfo.get_geocoordinate(xstring=str(lng), ystring=str(lat))
 
+        xy = GeoInfo.unit_conversion(coord=coords, src="lat/long", dest="meters")
+
+        h, v = GeoInfo.get_hv(xy.x, xy.y)
+
+        tile = "h{:02}v{:02}".format(h, v)
+
         log.info("New point selected from locator map: %s" % str(coords))
 
         # If necessary, convert to meters before updating the coordinate text on the GUI
-        if units[self.gui.selected_units]["unit"] == "meters":
+        if UNITS[self.gui.selected_units]["unit"] == "meters":
             coords = GeoInfo.unit_conversion(coords, src="lat/long", dest="meters")
 
-        # Update the X and Y coordinates in the GUI with the new point
-        self.gui.ui.x1line.setText(str(coords.x))
+            coords = GeoInfo.get_geocoordinate(str(int(coords.x)), str(int(coords.y)))
 
-        self.gui.ui.y1line.setText(str(coords.y))
+        # Update the X and Y coordinates in the GUI with the new point
+        self.gui.ui.LineEdit_x1.setText(str(coords.x))
+
+        self.gui.ui.LineEdit_y1.setText(str(coords.y))
 
         self.gui.check_values()
 
         # Clear the list of previously clicked ARD observations because they can't be referenced in the new time-series
-        self.gui.ui.clicked_listWidget.clear()
+        self.gui.ui.ListWidget_selected.clear()
 
         # Display the coordinate in the QLabel window below the map
-        self.text.setText("Point {lat}, {lng}".format(lat=lat, lng=lng))
+        self.text.setText("SELECTED - Tile {t} | Lat/Lng {lat}, {lng} | "
+                          "Meters XY {x}, {y}".format(lat=lat, lng=lng, t=tile, x=int(xy.x), y=int(xy.y)))
 
         return None

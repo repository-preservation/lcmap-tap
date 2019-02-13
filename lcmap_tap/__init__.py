@@ -8,4 +8,4 @@ HOME = os.path.join(str(Path.home()), 'lcmap_tap')
 if not os.path.exists(HOME):
     os.makedirs(HOME)
 
-__version__ = '0.4.0'
+__version__ = '1.1.0'

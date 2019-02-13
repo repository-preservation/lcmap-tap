@@ -1,6 +1,9 @@
 """Generate a matplotlib canvas and add it to a QWidget contained in a QMainWindow.  This will provide the
 display and interactions for the PyCCD plots."""
 
+from lcmap_tap.logger import log, exc_handler
+from lcmap_tap.Plotting import POINTS, LINES
+
 import sys
 import datetime as dt
 import numpy as np
@@ -14,7 +17,6 @@ from matplotlib.collections import PathCollection
 from matplotlib.lines import Line2D
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-from lcmap_tap.logger import log, exc_handler
 
 sys.excepthook = exc_handler
 
@@ -48,7 +50,12 @@ class MplCanvas(FigureCanvas):
 
 
 class PlotWindow(QtWidgets.QMainWindow):
-    def __init__(self, fig, axes, artist_map, lines_map, gui, scenes, parent=None):
+
+    selected_obs = QtCore.pyqtSignal(object)
+
+    change_symbology = QtCore.pyqtSignal(object)
+
+    def __init__(self, fig, axes, artist_map, lines_map, parent=None):
         """
         TODO Add a summary
         Args:
@@ -56,8 +63,6 @@ class PlotWindow(QtWidgets.QMainWindow):
             axes:
             artist_map:
             lines_map:
-            gui:
-            scenes:
             parent:
 
         """
@@ -67,16 +72,17 @@ class PlotWindow(QtWidgets.QMainWindow):
 
         self.setWindowIcon(icon)
 
+        self.setWindowTitle('Plot Window')
+
         self.widget = QtWidgets.QWidget()
         self.setCentralWidget(self.widget)
         self.widget.setLayout(QtWidgets.QVBoxLayout())
         self.widget.layout().setContentsMargins(0, 0, 0, 0)
-        self.widget.layout().setSpacing(0)
+        self.widget.layout().setSpacing(2)
 
         self.artist_map = artist_map
         self.lines_map = lines_map
-        self.gui = gui
-        self.scenes = scenes
+        # self.gui = gui
 
         self.prev_highlight = None
         self.ind = None
@@ -127,6 +133,8 @@ class PlotWindow(QtWidgets.QMainWindow):
 
         self.show()
 
+        self.resize(1200, 400)
+
         self.initial_legend()
 
     def initial_legend(self):
@@ -135,6 +143,7 @@ class PlotWindow(QtWidgets.QMainWindow):
         Returns:
 
         """
+
         def set_vis(visibility, line):
             """
             Change the transparency of the picked object in the legend so the user can see explicitly
@@ -184,7 +193,7 @@ class PlotWindow(QtWidgets.QMainWindow):
 
     def point_pick(self, event=None):
         """
-        Define a picker method to grab data off of the plot wherever the mouse cursor is when clicked
+        Define a picker method to grab data off of the plot wherever the mouse cursor is clicked
 
         Args:
             event: A mouse-click event
@@ -231,30 +240,30 @@ class PlotWindow(QtWidgets.QMainWindow):
 
                 self.value_holder["temp"] = [point_clicked, self.artist_data]
 
-                test_str = "{:%Y%m%d}".format(self.value_holder["temp"][1][0])
+                # test_str = "{:%Y%m%d}".format(self.value_holder["temp"][1][0])
 
                 # log.debug("Point clicked: %s" % point_clicked)
                 # log.debug("Nearest artist: %s" % self.value_holder)
                 # log.debug("Artist data: %s" % self.artist_data)
                 # log.debug("Subplot: %s" % self.b)
 
-                # Look through the scene IDs to find which one corresponds to the selected obs. date
-                for scene in self.scenes:
-                    if test_str in scene:
-                        self.value_holder["temp"].append(scene)
+                # selection_info = "Obs. Date: {:%Y-%b-%d}\n" \
+                #                  "{}-Value: {}".format(self.value_holder['temp'][1][0],
+                #                                        self.b,
+                #                                        self.value_holder['temp'][1][1][0])
 
-                        self.gui.ui.clicked_listWidget.addItem("Scene ID: {}\n"
-                                                               "Obs. Date: {:%Y-%b-%d}\n"
-                                                               "{}-Value: {}".format(scene,
-                                                                                     self.value_holder['temp'][1][0],
-                                                                                     self.b,
-                                                                                     self.value_holder['temp'][1][1][
-                                                                                         0]))
-                        log.info("Observation Selected: %s" % scene)
-                        log.info("Observation Date: {:%Y-%b-%d}".format(self.value_holder['temp'][1][0]))
-                        log.info("Observation %s Band Value: %s" % (self.b, self.value_holder['temp'][1][1][0]))
+                selection_info = {'date': self.value_holder['temp'][1][0],
+                                  'b': self.b,
+                                  'value': self.value_holder['temp'][1][1][0]}
 
-                        break
+                self.selected_obs.emit(selection_info)
+
+                # self.gui.ui.ListWidget_selected.addItem("Obs. Date: {:%Y-%b-%d}\n"
+                #                                         "{}-Value: {}".format(
+                #     self.value_holder['temp'][1][0],
+                #     self.b,
+                #     self.value_holder['temp'][1][1][0])
+                # )
 
                 self.highlight_pick()
 
@@ -264,7 +273,14 @@ class PlotWindow(QtWidgets.QMainWindow):
                 pass
 
         elif isinstance(self.artist, Line2D) and mouse_event.button == 1:
-            self.leg_pick()
+            try:
+                self.leg_pick()
+
+            except KeyError:
+                pass
+
+        elif isinstance(self.artist, Line2D) and mouse_event.button == 3:
+            self.init_configure()
 
         else:
             # Do this so nothing happens when the other mouse buttons are clicked while over a plot
@@ -278,8 +294,6 @@ class PlotWindow(QtWidgets.QMainWindow):
             None
 
         """
-        # log.debug("highlight_pick method self.artist= %s" % str(self.artist))
-
         # Remove the highlight from the previously selected point
         try:
             self.prev_highlight.set_data([], [])
@@ -291,9 +305,10 @@ class PlotWindow(QtWidgets.QMainWindow):
         # Use index '0' because self.artist_map[b] is referencing a list of 1 item
         highlight = self.artist_map[self.b][0]
 
-        # log.debug("Method highlight_pick, highlight=%s" % str(highlight))
-
         self.prev_highlight = highlight
+
+        log.debug("artist_data[0]: {}".format(self.artist_data[0]))
+        log.debug("artist_data[1]: {}".format(self.artist_data[1]))
 
         highlight.set_data(self.artist_data[0], self.artist_data[1])
 
@@ -339,7 +354,6 @@ class PlotWindow(QtWidgets.QMainWindow):
 
         for l in origlines:
             if type(l) is not list:
-
                 # Reference the opposite of the line's current visibility
                 vis = not l.get_visible()
 
@@ -357,6 +371,17 @@ class PlotWindow(QtWidgets.QMainWindow):
 
         # Redraw the canvas with the line or points turned on/off
         self.canvas.draw()
+
+    def init_configure(self):
+        log.debug("Selected Legend Label: {}".format(self.artist.get_label()))
+
+        self.label = self.artist.get_label()
+
+        if self.label in POINTS or self.label in LINES:
+            # self.symbol_selector = SymbologyWindow()
+            #
+            # self.symbol_selector.selected_marker.connect(self.connect_symbology)
+            self.change_symbology.emit(self.label)
 
     def enter_axes(self, event=None):
         """
