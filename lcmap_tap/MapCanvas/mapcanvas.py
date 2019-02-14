@@ -135,6 +135,6 @@ class MapCanvas(QWidget):
         self.gui.ui.ListWidget_selected.clear()
 
         # Display the coordinate in the QLabel window below the map
-        self.text.setText(f"SELECTED - Tile {tile} | Lat/Lng {lat}, {lng} | Meters XY {xy.x}, {xy.y}")
+        self.text.setText(f"SELECTED - Tile {tile} | Lat/Lng {lat}, {lng} | Meters XY {int(xy.x)}, {int(xy.y)}")
 
         return None
