@@ -26,13 +26,17 @@ class CCDReader:
         Returns:
 
         """
+        log.debug(f'SEARCHING - dir - {json_dir}')
+
+        log.debug(f'SEARCHING - file - {tile}_{chip_coord.x}_{chip_coord.y}.json')
+
         try:
             self.json_file = self.find_file(file_ls=[os.path.join(json_dir, f) for f in os.listdir(json_dir)],
                                             string="{tile}_{x}_{y}.json".format(tile=tile,
                                                                                 x=chip_coord.x,
                                                                                 y=chip_coord.y))
-        except PermissionError:
-            log.warning("Couldn't access PyCCD results file location %s")
+        except Exception:
+            log.exception("ERROR - retrieving pyccd results failed")
 
             self.results = [{}]
 
@@ -111,16 +115,12 @@ class CCDReader:
         return json.loads(pixel_info["result"])
 
     @staticmethod
-    def check_dates(results):
+    def check_dates(results: dict) -> dict:
         """
         In cases where the entire time series does not contain a break day, simply make it be equal to the model's
         end day.
 
         """
-        # log.debug("RESULTS: %s" % results)
-        # log.debug("RESULTS KEYS: %s" % results.keys())
-        # log.debug("RESULTS CHANGE MODELS %s" % results['change_models'])
-
         for ind, model in enumerate(results['change_models']):
             if model['break_day'] < 1:
                 model['break_day'] = model['end_day']
