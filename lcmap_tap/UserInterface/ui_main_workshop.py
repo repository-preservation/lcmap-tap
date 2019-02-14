@@ -194,7 +194,7 @@ class Ui_MainWindow_tap(object):
         self.PushButton_savesession.setObjectName("PushButton_savesession")
         self.HBoxLayout_buttons.addWidget(self.PushButton_savesession)
         self.PushButton_clear = QtWidgets.QPushButton(self.centralwidget)
-        self.PushButton_clear.setEnabled(False)
+        self.PushButton_clear.setEnabled(True)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
