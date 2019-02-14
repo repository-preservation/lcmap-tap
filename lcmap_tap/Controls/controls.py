@@ -195,7 +195,9 @@ class MainControls(QMainWindow):
 
         self.ui.LineEdit_y1.setText('')
 
-        self.ui.LineEdit_outputDir.setText('')
+        self.ui.LineEdit_x2.setText('')
+
+        self.ui.LineEdit_y2.setText('')
 
         return None
 
@@ -320,8 +322,6 @@ class MainControls(QMainWindow):
         for check in checks:
             if check == "":
                 self.ui.PushButton_plot.setEnabled(False)
-
-                self.ui.PushButton_clear.setEnabled(False)
 
                 self.ui.PushButton_saveFigure.setEnabled(False)
 
