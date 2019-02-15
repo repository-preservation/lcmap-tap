@@ -26,7 +26,7 @@ algorithm
   * NBR
   * NBR-2
 * Display RGB visualizations of Landsat ARD
-* Export plotted Landsat ARD and/or indices to CSV format
+* Export plotted Landsat ARD surface reflectance, brightness temperature, and index values to a .csv file
 * Save a plot figure as a .png file
 * Save a Landsat ARD RGB display as a .png file
 * Save ESRI point shapefile for plotted coordinates
@@ -66,8 +66,6 @@ cython
 
 requests
 
-# 
-
 [lcmap-merlin](https://pypi.org/project/lcmap-merlin/)
 
 \* Note on PyQt5:  For development any version of PyQt5>=5.9 is currently suitable.  For running TAP, it is 
@@ -84,13 +82,14 @@ __The tool currently requires the following data inputs:__
 web-service that is currently available to on-site personnel at USGS EROS only.  In addition, the pre-generated PyCCD 
 results must be stored locally and are expected to be in a specific format.  For these reasons, TAP is not intended
 for general public use until these datasets become widely available at a future date.***
-      
+
+#
 
 ##### Note:
 It is recommended to use an [Anaconda](https://www.anaconda.com/) virtual environment since it provides an easier 
 method of installation for GDAL, cython, and cytoolz.  Otherwise, information for installing GDAL manually can be found 
 [here](https://www.gdal.org/index.html).
-
+#
 #### Create a Virtual Environment
 
 * Install Anaconda or Miniconda
