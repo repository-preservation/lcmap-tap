@@ -87,8 +87,8 @@ for general public use until these datasets become widely available at a future 
 
 ##### Note:
 It is recommended to use an [Anaconda](https://www.anaconda.com/) virtual environment since it provides an easier 
-method of installation for GDAL, cython, and cytoolz.  Otherwise, information for installing GDAL manually can be found 
-[here](https://www.gdal.org/index.html).
+method of installation for GDAL, [cython](https://cython.org/), and [cytoolz](https://github.com/pytoolz/cytoolz).  Otherwise, information for installing GDAL manually can be found 
+[here](https://www.gdal.org/index.html).  
 #
 #### Create a Virtual Environment
 
@@ -109,7 +109,7 @@ method of installation for GDAL, cython, and cytoolz.  Otherwise, information fo
 
   ```
 
-* Download the TAP source code [here](https://github.com/USGS-EROS/lcmap-tap/archive/master.zip) and extract the
+* Download the TAP source code [here](https://github.com/USGS-EROS/lcmap-tap/archive/develop-research.zip) and extract the
 zipped folder.  From the command line, cd into the extracted folder.
 
 #### Install TAP Source Code
