@@ -23,16 +23,11 @@ setup(
     packages=find_packages(),
 
     install_requires=[
-        # 'PyQt5 == 5.10.1',
-        'matplotlib',
-        'numpy',
-        'gdal',
-        'pyyaml',
-        'cytoolz',
-        'cython',
-        'requests',
-        'pandas',
-        'lcmap-merlin'
+        'PyQt5==5.10.1',
+        'matplotlib==3.0.2',
+        'PyYaml==3.13',
+        'requests==2.21.0',
+        'lcmap-merlin==2.3.1'
     ],
 
     entry_points={'gui_scripts': ['lcmap_tap = lcmap_tap.__main__:main']},
