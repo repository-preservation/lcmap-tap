@@ -10,3 +10,4 @@ dependencies:
       - PyQt==5.10.1
       - matplotlib==3.0.2
       - requests==2.21.0
+      - lcmap-merlin==2.3.1
