@@ -8,7 +8,7 @@ Change Monitoring, Assessment, and Projection
 [USGS EROS](https://eros.usgs.gov/).  TAP is an open-source project written in python that uses PyQt5 and matplotlib 
 for generating interactive GUIs and plots.  Currently, it provides the following functionality:
 
-* Plot a timeseries of Landsat Analysis Read Data 
+* Plot a timeseries of Landsat Analysis Ready Data 
 ([ARD](https://landsat.usgs.gov/ard))
   * Landsat 4-7 Bands 1, 2, 3, 4, 5, 7 Surface Reflectance
   * Landsat 8 Bands 2-7 Surface Reflectance
