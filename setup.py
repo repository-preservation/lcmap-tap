@@ -18,21 +18,16 @@ from setuptools import setup, find_packages
 setup(
     name='lcmap_tap',
 
-    version='1.1.0',
+    version='1.2.0',
 
     packages=find_packages(),
 
     install_requires=[
-        'PyQt5 == 5.10.1',
-        'matplotlib',
-        'numpy',
-        'gdal',
-        'pyyaml',
-        'cytoolz',
-        'cython',
-        'requests',
-        'pandas',
-        'lcmap-merlin'
+        'PyQt5==5.10.1',
+        'matplotlib==3.0.2',
+        'PyYaml==3.13',
+        'requests==2.21.0',
+        'lcmap-merlin==2.3.1'
     ],
 
     entry_points={'gui_scripts': ['lcmap_tap = lcmap_tap.__main__:main']},
@@ -41,9 +36,11 @@ setup(
 
     include_package_data=True,
 
-    author='Daniel Zelenak',
+    keywords='usgs eros lcmap',
 
-    author_email='dzelenak@contractor.usgs.gov',
+    author='USGS EROS LCMAP',
+
+    author_email='',
 
     long_description=__doc__,
 

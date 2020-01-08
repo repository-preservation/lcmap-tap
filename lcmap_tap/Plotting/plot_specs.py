@@ -32,7 +32,7 @@ class PlotSpecs:
 
     def __init__(self, ard: dict, change: CCDReader, segs: SegmentClasses, items: list,
                  begin: dt.date = dt.date(year=1982, month=1, day=1),
-                 end: dt.date = dt.date(year=2015, month=12, day=31)):
+                 end: dt.date = dt.date(year=2017, month=12, day=31)):
         """
 
         Args:

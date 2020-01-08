@@ -93,11 +93,12 @@ class MapCanvas(QWidget):
 
         self.layout.addWidget(self.text)
 
-    # This should work for either usage type of PyQt
     @pyqtSlot(float, float)
     def onPointChanged(self, lat, lng):
         """
         Retrieve the coordinate values in decimal degrees from the leaflet map
+
+        Note: This should work for either usage type of PyQt(WebView and WebEngineView)
 
         Args:
             lat: Latitude of mouse-click
@@ -108,6 +109,12 @@ class MapCanvas(QWidget):
 
         """
         coords = GeoInfo.get_geocoordinate(xstring=str(lng), ystring=str(lat))
+
+        xy = GeoInfo.unit_conversion(coord=coords, src="lat/long", dest="meters")
+
+        h, v = GeoInfo.get_hv(xy.x, xy.y)
+
+        tile = "h{:02}v{:02}".format(h, v)
 
         log.info("New point selected from locator map: %s" % str(coords))
 
@@ -128,6 +135,6 @@ class MapCanvas(QWidget):
         self.gui.ui.ListWidget_selected.clear()
 
         # Display the coordinate in the QLabel window below the map
-        self.text.setText("Point {lat}, {lng}".format(lat=lat, lng=lng))
+        self.text.setText(f"SELECTED - Tile {tile} | Lat/Lng {lat}, {lng} | Meters XY {int(xy.x)}, {int(xy.y)}")
 
         return None
