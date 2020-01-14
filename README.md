@@ -148,7 +148,7 @@ lcmap_tap
 
 ## Packaging
 
-Packing tap-tool using PyInstaller for distribution of an executable binary.
+Packaging tap-tool using PyInstaller for distribution of an executable binary.
 
 ### Pre-Reqs
 
